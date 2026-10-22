@@ -8,7 +8,11 @@ Your own toolkit for Windows: AirDrop-style file transfer with your phone, plus 
 
 - **Phone transfer** — send files between your phone and this PC over your own network. Nothing to install on the phone.
 - **Share links** — send files or folders to anyone with a link, straight from this PC (through Tailscale), with a time limit, download or per-person limits and an optional password.
-- **File converter**, **Image editor**, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test**, **Ad blocker test**.
+- **Request files** — a link people use to send files *to* you, with size and file limits and an optional password.
+- **PC remote** — media keys, volume and arrow keys from your phone (off until you switch it on).
+- **Security tools** — an encrypted **Vault**, **Network devices** (who's on your home network) and **Is my PC exposed?**
+- **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Disk space** map, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test**, **Ad blocker test**.
+- Right-click any file in File Explorer → *Send to phone*, *Share with a link* or *Convert*.
 - English, Deutsch, Polski, Italiano. Accent colours and your own background picture.
 
 ## Install
@@ -73,6 +77,30 @@ Ping, jitter, download and upload against Cloudflare's nearest server, with a li
 ### Ad blocker test
 Checks ~45 well-known ad, tracker and analytics domains in six groups and shows which are blocked, plus your DNS servers. It tests blocking for the whole PC or network (AdGuard DNS, NextDNS, Pi-hole, router, hosts file). Browser extensions like uBlock Origin only work inside the browser, so no app can detect them.
 
+### Request files
+On **Share links**, *Request files* makes a link others use to upload files to a folder you pick. You set how long it works, the most files and the biggest total size, and optionally a password. The link only accepts uploads: it never shows or offers anything that's already in the folder or what others sent. Received files are marked as coming from the internet (Windows warns before running them) and never overwrite anything.
+
+### PC remote
+Off until you switch it on in Settings. Paired phones then get a *Remote* tab: play/pause, next/previous, volume, mute and arrow keys (for slides). Sleep and shut down are a separate switch; shut down waits 60 seconds and can be cancelled.
+
+### PDF tools
+Drop one or more PDFs: pages appear as a board you can reorder by dragging, rotate, remove and select. Save as a new PDF (several PDFs are merged in order), **split** (selected pages start new parts, or every page on its own), **sign** (draw your signature or use a picture, then click where it goes) or **make smaller** (turns pages into pictures). The originals are never changed.
+
+### Video trimmer
+Pick start and end on a filmstrip. *Fast cut* (instant, no quality loss, starts at the nearest keyframe), *Exact cut*, *Fit a size* (Discord 10 MB, email 20 MB, WhatsApp 64 MB or your own) or *Sound only* (MP3).
+
+### Disk space
+Pick a drive or folder and see what takes up the room as a map of blocks you can click into, plus the biggest files. Junctions and links aren't followed, so nothing is counted twice. *Move to the Recycle Bin* is the only way to remove something (so it can be restored); it's never offered for Windows, program folders, app data or your user folders, nor on drives without a Recycle Bin (USB sticks, network drives).
+
+### Vault
+Files locked with your password. A random 256-bit key encrypts every file with AES-256-GCM in 1 MB pieces; your password (stretched with scrypt) only unlocks that key, so changing the password is instant. File names are encrypted too. Each piece is tied to its file and position, so a changed, swapped or cut-off file refuses to open instead of giving back damaged data. Opened files go to a private temporary folder that's wiped when the vault locks, which it does after a few quiet minutes and when Swiftlane closes. **There is no password recovery.** The vault is a normal folder: back it up or move it to a USB stick and open it on another PC with Swiftlane.
+
+### Network devices
+Who's on your home network: name (from your router), address, hardware address, whether it's the router, this PC, or a phone-style private address. Only your own private /24 network is checked, with one ping per address plus Windows' own address table; no ports are tried. Devices are remembered on this PC, so new ones are marked, and you can name them. Optionally, Swiftlane checks every 10 minutes and notifies you when a new device joins.
+
+### Is my PC exposed?
+A read-only check: is the firewall on, is this network Public or Private, is Remote Desktop or the old SMB1 file sharing on, which programs accept connections from the network (and what they are), whether your router opens ports to the internet by itself (UPnP) and which, and what Swiftlane itself has open. Fixes are buttons you click; changes to Windows ask for admin permission.
+
 ### Settings
 Appearance (accent colour, background picture with blur and darkening, language), features on/off (switching off phone transfer stops Swiftlane listening on the network), where received files go and sorting, notifications, new pairing code, default download folder, calculator angle unit, start with Windows.
 
@@ -91,7 +119,11 @@ The first time, iOS asks to let Shortcuts find devices on your local network: al
 - Every phone request needs the pairing code; an address is locked out for 15 minutes after 10 wrong tries. Only private-network and Tailscale addresses are accepted.
 - Download links for PC → phone files are signed and expire after 10 minutes.
 - Received file names are cleaned; nothing is overwritten; partial uploads are deleted.
-- Transfers are plain HTTP: fine on your home Wi-Fi (WPA2/WPA3); on public Wi-Fi use the Tailscale address or switch phone transfer off.
+- Phone transfer can be encrypted (HTTPS): Swiftlane makes its own certificate authority, limited by name constraints to private and Tailscale addresses (it can't vouch for any website), with its key protected by Windows (DPAPI). Install it on the phone once from *Connect phone*; then *Only allow encrypted connections* refuses plain HTTP.
+- Request links accept uploads only, within the limits you set; uploads are written to a temporary file and only kept when complete; received files get Windows' "from the internet" mark.
+- PC remote is off by default, needs the pairing code, accepts only a fixed list of keys and is rate-limited.
+- The vault never stores or sends your password; see *Vault* above for how files are encrypted.
+- Network devices only pings your own home /24 network; Is my PC exposed? only reads, and talks to nothing but your router (and only at its own address).
 - Share links: a separate small server that listens on this PC only (127.0.0.1:8766), reachable from outside only through Tailscale Funnel and only while something is shared. Download only; links are random 128-bit IDs and never contain file paths; pages have no scripts; every file is sent as a download. Passwords are stored as scrypt hashes; 5 wrong tries from one address (40 on one link) wait 15 minutes. At most 48 connections at once. Anyone who downloads a file can pass it on: limits control the link, not the file.
 
 ## For developers: the Source folder

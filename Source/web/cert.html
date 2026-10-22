@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a2340">
+<title>Swiftlane · encrypted connection</title>
+<style>
+  :root { --text: #fff; --muted: rgba(255,255,255,.72); --pane: rgba(26,28,38,.55); --accent: #14b8e0; --on-accent: #06222b; --line: rgba(255,255,255,.12);
+          --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; color-scheme: dark; }
+  @media (prefers-color-scheme: light) { :root { --text: #111217; --muted: rgba(17,18,23,.66); --pane: rgba(255,255,255,.75); --line: rgba(0,0,0,.08); color-scheme: light; } body { background: #cfe6f7; } }
+  * { box-sizing: border-box; } body { margin: 0; font: 16px/1.45 var(--sans); color: var(--text); background: #1a2340; }
+  main { max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 20px) 16px 40px; }
+  h1 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 6px; } p { color: var(--muted); margin: 0 0 16px; }
+  .card { background: var(--pane); border-radius: 24px; padding: 18px; margin-top: 14px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .card h2 { font-size: 17px; margin: 0 0 8px; } ol { margin: 0; padding-left: 20px; color: var(--muted); } li { margin: 6px 0; } b { color: var(--text); }
+  .btn { display: block; text-align: center; text-decoration: none; background: var(--accent); color: var(--on-accent); font-weight: 600; padding: 15px; border-radius: 999px; margin-top: 12px; }
+  .fp { font: 600 17px ui-monospace, Menlo, monospace; letter-spacing: .04em; text-align: center; padding: 12px; border-radius: 14px; background: rgba(0,0,0,.25); margin-top: 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1 data-t="title">Encrypt the connection to your PC</h1>
+  <p data-t="intro">Once this is set up, everything between this phone and Swiftlane is encrypted, even at home. You only do this once.</p>
+
+  <div class="card">
+    <h2 data-t="check">First, check it's really your PC</h2>
+    <p data-t="checkText">Swiftlane on your PC shows this code under Connect phone. It must be exactly the same:</p>
+    <div class="fp">{{FINGERPRINT}}</div>
+  </div>
+
+  <div class="card" id="ios">
+    <h2>iPhone / iPad</h2>
+    <ol>
+      <li data-t="i1">Tap the button below and allow the download.</li>
+      <li data-t="i2">Open <b>Settings</b> → <b>Profile Downloaded</b> → <b>Install</b>.</li>
+      <li data-t="i3">Then <b>Settings</b> → <b>General</b> → <b>About</b> → <b>Certificate Trust Settings</b> → turn on <b>Swiftlane</b>.</li>
+      <li data-t="i4">Come back here and tap <b>Open encrypted Swiftlane</b>.</li>
+    </ol>
+    <a class="btn" href="/swiftlane.mobileconfig" data-t="iBtn">Download the certificate</a>
+  </div>
+
+  <div class="card" id="android">
+    <h2>Android</h2>
+    <ol>
+      <li data-t="a1">Tap the button below to download the certificate.</li>
+      <li data-t="a2">Open <b>Settings</b> → search for <b>Install certificate</b> → <b>CA certificate</b> → choose <b>Swiftlane.cer</b>.</li>
+      <li data-t="a3">Come back here and tap <b>Open encrypted Swiftlane</b>.</li>
+    </ol>
+    <a class="btn" href="/swiftlane-ca.cer" download="Swiftlane.cer" data-t="aBtn">Download the certificate</a>
+  </div>
+
+  <div class="card">
+    <h2 data-t="safe">Is this safe?</h2>
+    <p data-t="safeText">Yes. This certificate only works for addresses inside your home network and Tailscale. It can never vouch for websites like your bank, so it can't be misused to read your other traffic. You can remove it any time in Settings.</p>
+    <a class="btn" id="open" href="#" data-t="open">Open encrypted Swiftlane</a>
+  </div>
+</main>
+<script>
+const ua = navigator.userAgent;
+if (/android/i.test(ua)) document.getElementById('ios').hidden = true;
+else if (/iphone|ipad|ipod|macintosh/i.test(ua)) document.getElementById('android').hidden = true;
+document.getElementById('open').href = 'https://' + location.hostname + ':' + (location.port || 80) + '/';
+const T = {
+  de: { title: 'Verbindung zum PC verschlüsseln', intro: 'Danach ist alles zwischen diesem Handy und Swiftlane verschlüsselt, auch zu Hause. Das machst du nur einmal.',
+        check: 'Prüfe zuerst, ob es wirklich dein PC ist', checkText: 'Swiftlane auf dem PC zeigt diesen Code unter „Handy verbinden“. Er muss genau gleich sein:',
+        i1: 'Tippe auf den Knopf unten und erlaube den Download.', i2: 'Öffne <b>Einstellungen</b> → <b>Profil geladen</b> → <b>Installieren</b>.', i3: 'Dann <b>Einstellungen</b> → <b>Allgemein</b> → <b>Info</b> → <b>Zertifikatsvertrauenseinstellungen</b> → <b>Swiftlane</b> einschalten.', a2: 'Öffne <b>Einstellungen</b> → suche nach <b>Zertifikat installieren</b> → <b>CA-Zertifikat</b> → wähle <b>Swiftlane.cer</b>.', i4: 'Komm hierher zurück und tippe auf „Verschlüsseltes Swiftlane öffnen“.', iBtn: 'Zertifikat laden', aBtn: 'Zertifikat laden',
+        a1: 'Tippe auf den Knopf unten, um das Zertifikat zu laden.', a3: 'Komm hierher zurück und tippe auf „Verschlüsseltes Swiftlane öffnen“.',
+        safe: 'Ist das sicher?', safeText: 'Ja. Dieses Zertifikat gilt nur für Adressen in deinem Heimnetz und Tailscale. Für Websites wie deine Bank kann es nie bürgen, also kann es nicht missbraucht werden. Du kannst es jederzeit in den Einstellungen entfernen.', open: 'Verschlüsseltes Swiftlane öffnen' },
+  pl: { title: 'Zaszyfruj połączenie z komputerem', intro: 'Potem wszystko między tym telefonem a Swiftlane jest szyfrowane, także w domu. Robisz to tylko raz.',
+        check: 'Najpierw sprawdź, czy to na pewno twój komputer', checkText: 'Swiftlane na komputerze pokazuje ten kod w „Połącz telefon”. Musi być identyczny:',
+        i1: 'Stuknij przycisk poniżej i zezwól na pobranie.', i2: 'Otwórz <b>Ustawienia</b> → <b>Pobrano profil</b> → <b>Zainstaluj</b>.', i3: 'Potem <b>Ustawienia</b> → <b>Ogólne</b> → <b>To urządzenie</b> → <b>Ustawienia zaufania certyfikatów</b> → włącz <b>Swiftlane</b>.', a2: 'Otwórz <b>Ustawienia</b> → wyszukaj <b>Zainstaluj certyfikat</b> → <b>Certyfikat CA</b> → wybierz <b>Swiftlane.cer</b>.', i4: 'Wróć tutaj i stuknij „Otwórz zaszyfrowany Swiftlane”.', iBtn: 'Pobierz certyfikat', aBtn: 'Pobierz certyfikat',
+        a1: 'Stuknij przycisk poniżej, aby pobrać certyfikat.', a3: 'Wróć tutaj i stuknij „Otwórz zaszyfrowany Swiftlane”.',
+        safe: 'Czy to bezpieczne?', safeText: 'Tak. Ten certyfikat działa tylko dla adresów w sieci domowej i Tailscale. Nigdy nie potwierdzi stron jak twój bank, więc nie da się go nadużyć. Możesz go usunąć w ustawieniach.', open: 'Otwórz zaszyfrowany Swiftlane' },
+  it: { title: 'Cifra la connessione al PC', intro: 'Dopo, tutto tra questo telefono e Swiftlane è cifrato, anche a casa. Si fa una volta sola.',
+        check: 'Prima controlla che sia proprio il tuo PC', checkText: 'Swiftlane sul PC mostra questo codice in “Collega telefono”. Deve essere identico:',
+        i1: 'Tocca il pulsante qui sotto e consenti il download.', i2: 'Apri <b>Impostazioni</b> → <b>Profilo scaricato</b> → <b>Installa</b>.', i3: 'Poi <b>Impostazioni</b> → <b>Generali</b> → <b>Info</b> → <b>Impostazioni attendibilità certificati</b> → attiva <b>Swiftlane</b>.', a2: 'Apri <b>Impostazioni</b> → cerca <b>Installa certificato</b> → <b>Certificato CA</b> → scegli <b>Swiftlane.cer</b>.', i4: 'Torna qui e tocca “Apri Swiftlane cifrato”.', iBtn: 'Scarica il certificato', aBtn: 'Scarica il certificato',
+        a1: 'Tocca il pulsante qui sotto per scaricare il certificato.', a3: 'Torna qui e tocca “Apri Swiftlane cifrato”.',
+        safe: 'È sicuro?', safeText: 'Sì. Questo certificato vale solo per indirizzi della rete di casa e di Tailscale. Non può mai garantire siti come la tua banca, quindi non può essere usato contro di te. Puoi rimuoverlo in Impostazioni.', open: 'Apri Swiftlane cifrato' },
+};
+const d = T[(localStorage.getItem('swiftlane-lang') || navigator.language || 'en').slice(0, 2)];
+// our own fixed strings only (never text from outside), so setting them as markup is safe here
+if (d) document.querySelectorAll('[data-t]').forEach(e => { if (d[e.dataset.t]) e.innerHTML = d[e.dataset.t]; });
+</script>
+</body>
+</html>

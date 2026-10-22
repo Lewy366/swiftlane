@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#07070d">
+<meta name="theme-color" content="#1a2340">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Swiftlane">
@@ -11,113 +11,139 @@
 <link rel="apple-touch-icon" href="/icon-180.png">
 <title>Swiftlane</title>
 <style>
+  /* Swiftlane phone page: liquid glass over Swiftlane's wallpaper; follows the phone's light/dark setting */
   :root {
-    --bg: #07070d; --surface: rgba(255,255,255,.055); --surface-2: rgba(255,255,255,.09);
-    --border: rgba(255,255,255,.09); --text: #f4f4fb; --muted: #9a9ab3;
-    --violet: #7c5cff; --cyan: #00c8ff; --ok: #3ddc97; --err: #ff5d73;
-    --grad: linear-gradient(135deg, var(--violet), var(--cyan));
+    --text: #fff; --muted: rgba(255,255,255,.72); --faint: rgba(255,255,255,.46);
+    --pane: rgba(26,28,38,.42); --fill: rgba(255,255,255,.12); --line: rgba(255,255,255,.12); --sunken: rgba(0,0,0,.28);
+    --accent: #14b8e0; --on-accent: #06222b; --ok: #30d158; --err: #ff453a;
     --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    --depth: inset 0 1px 22px rgba(255,255,255,.07), inset 0 -20px 30px -20px rgba(0,0,0,.4), 0 24px 50px -22px rgba(0,0,0,.7);
     color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --text: #111217; --muted: rgba(17,18,23,.66); --faint: rgba(17,18,23,.42); --pane: rgba(255,255,255,.62); --fill: rgba(255,255,255,.6);
+            --line: rgba(0,0,0,.08); --sunken: rgba(255,255,255,.55); --accent: #0ea5cf; --on-accent: #fff;
+            --depth: inset 0 1px 22px rgba(255,255,255,.6), inset 0 -20px 30px -20px rgba(30,50,90,.14), 0 24px 50px -24px rgba(30,50,90,.35); color-scheme: light; }
+    .wall .night { display: none; } .wall .day { display: block !important; }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; min-height: 100%; }
-  body {
-    background: var(--bg); color: var(--text);
-    font: 16px/1.4 var(--sans);
-    -webkit-font-smoothing: antialiased; overflow-x: hidden;
-  }
-  body::before, body::after {
-    content: ""; position: fixed; z-index: -1; border-radius: 50%; filter: blur(70px); opacity: .55;
-    animation: drift 18s ease-in-out infinite alternate;
-  }
-  body::before { width: 340px; height: 340px; background: var(--violet); top: -140px; left: -120px; }
-  body::after  { width: 300px; height: 300px; background: var(--cyan); bottom: -150px; right: -130px; animation-delay: -9s; opacity: .35; }
-  @keyframes drift { to { transform: translate(40px, 60px) scale(1.15); } }
+  body { color: var(--text); font: 16px/1.4 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; background: #1a2340; }
+  .wall { position: fixed; inset: 0; z-index: -1; } .wall svg { width: 100%; height: 100%; display: block; } .wall .day { display: none; }
 
-  main { max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 32px); }
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-  header img { width: 40px; height: 40px; border-radius: 11px; box-shadow: 0 6px 20px rgba(124,92,255,.45); }
-  header h1 { font-size: 22px; letter-spacing: -.02em; margin: 0; }
+  main { max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 32px); }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  header .wordmark { width: 150px; height: auto; }
+  .wm-swift { fill: #14b8e0; } .wm-ink { fill: var(--text); } .wm-line { stroke: var(--text); }
   .pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted);
-          background: var(--surface); border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; max-width: 48%; }
+          background: var(--pane); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%);
+          padding: 7px 11px; border-radius: 999px; max-width: 48%; box-shadow: var(--depth); }
   .pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(61,220,151,.6); animation: ping 2s infinite; flex-shrink: 0; }
-  .dot.off { background: var(--err); animation: none; }
-  @keyframes ping { 70% { box-shadow: 0 0 0 7px rgba(61,220,151,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(48,209,88,.22); flex-shrink: 0; }
+  .dot.off { background: var(--err); box-shadow: 0 0 0 3px rgba(255,69,58,.22); }
 
-  .glass { background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
-           backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .glass { background: var(--pane); border-radius: 26px; box-shadow: var(--depth);
+           backdrop-filter: blur(22px) saturate(185%); -webkit-backdrop-filter: blur(22px) saturate(185%); }
 
-  /* pairing */
   #pair { padding: 26px 20px; text-align: center; }
-  #pair h2 { margin: 6px 0 6px; font-size: 22px; letter-spacing: -.02em; }
+  #pair h2 { margin: 6px 0 6px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
   #pair p { color: var(--muted); margin: 0 0 20px; font-size: 15px; }
-  #code { width: 100%; font: 600 20px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .12em; text-align: center;
-          text-transform: uppercase; padding: 16px; border-radius: 14px; border: 1px solid var(--border);
-          background: rgba(0,0,0,.35); color: var(--text); outline: none; }
-  #code:focus { border-color: var(--violet); box-shadow: 0 0 0 4px rgba(124,92,255,.25); }
+  #code { width: 100%; font: 600 20px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .12em; text-align: center; text-transform: uppercase;
+          padding: 16px; border-radius: 16px; border: 0; background: var(--sunken); color: var(--text); outline: none; box-shadow: inset 0 0 0 1px var(--line); }
+  #code:focus { box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 4px rgba(20,184,224,.25); }
   .msg { color: var(--err); font-size: 14px; min-height: 20px; margin: 10px 0 0; }
 
-  .btn { appearance: none; border: 0; font: 600 16px/1 var(--sans); font-family: inherit; color: #fff; cursor: pointer;
-         background: var(--grad); border-radius: 14px; padding: 16px 18px; width: 100%; margin-top: 14px;
-         box-shadow: 0 10px 30px -10px rgba(124,92,255,.8); transition: transform .15s; text-decoration: none; display: inline-block; text-align: center; }
-  .btn:active { transform: scale(.97); }
+  .btn { appearance: none; border: 0; font: 600 16px/1 var(--sans); font-family: inherit; color: var(--on-accent); cursor: pointer;
+         background: var(--accent); border-radius: 999px; padding: 16px 18px; width: 100%; margin-top: 14px;
+         box-shadow: 0 10px 24px -10px rgba(20,184,224,.8); transition: transform .25s cubic-bezier(.3,1.6,.5,1); text-decoration: none; display: inline-block; text-align: center; }
+  .btn:active { transform: scale(.95); }
 
-  /* tabs */
-  .tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 14px; margin-bottom: 16px; position: relative; }
+  .tabs { display: grid; grid-template-columns: repeat(var(--n, 2), 1fr); padding: 4px; border-radius: 999px; margin-bottom: 16px; position: relative; }
   .tabs button { position: relative; z-index: 1; appearance: none; background: none; border: 0; color: var(--muted);
-                 font: 600 15px/1 var(--sans); font-family: inherit; padding: 12px 8px; border-radius: 11px; cursor: pointer; transition: color .2s; }
+                 font: 600 15px/1 var(--sans); font-family: inherit; padding: 12px 8px; border-radius: 999px; cursor: pointer; transition: color .2s; }
   .tabs button.on { color: var(--text); }
-  .tabs .slider { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px);
-                  background: var(--surface-2); border-radius: 11px; transition: transform .3s cubic-bezier(.3,.7,.2,1); }
-  .tabs.right .slider { transform: translateX(100%); }
+  .tabs .slider { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n, 2)); transform: translateX(calc(100% * var(--i, 0)));
+                  background: var(--fill); border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.25); transition: transform .35s cubic-bezier(.3,1.3,.4,1); }
+  .secure-tip { display: block; padding: 14px 16px; margin-bottom: 14px; color: var(--text); text-decoration: none; }
+  .secure-tip b { display: block; } .secure-tip span { color: var(--muted); font-size: 13.5px; }
+  /* PC remote */
+  .remote { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .rlabel { font-size: 12px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .04em; margin: 0 4px 8px; }
+  .rrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .rrow.two { grid-template-columns: 1fr 1fr; }
+  .rbtn { appearance: none; border: 0; border-radius: 20px; padding: 16px 8px 12px; background: var(--fill); color: var(--text); font: 600 13px var(--sans);
+          display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18);
+          transition: transform .25s cubic-bezier(.3,1.6,.5,1), background .15s; }
+  .rbtn:active { transform: scale(.92); background: var(--accent); color: var(--on-accent); }
+  .rbtn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rbtn.big { padding: 22px 8px 16px; } .rbtn.danger { color: var(--err); }
+  .rmsg { text-align: center; color: var(--muted); font-size: 13.5px; min-height: 18px; }
+  .rmsg.err { color: var(--err); }
+  .cancel-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255,69,58,.18); }
+  .cancel-bar span { flex: 1; font-size: 14px; } .cancel-bar .btn { width: auto; margin: 0; padding: 10px 16px; background: var(--err); color: #fff; }
   .badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
-           border-radius: 999px; background: var(--grad); color: #fff; font-size: 12px; }
+           border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 12px; }
   .badge.pop { animation: pop .5s; }
   @keyframes pop { 40% { transform: scale(1.35); } }
 
-  /* send */
-  .drop { display: block; position: relative; overflow: hidden; text-align: center; padding: 34px 20px 30px; cursor: pointer; }
+  .drop { display: block; position: relative; overflow: hidden; text-align: center; padding: 34px 20px 30px; cursor: pointer; transition: transform .3s cubic-bezier(.3,1.5,.5,1); }
+  .drop:active { transform: scale(.98); }
   .drop input { display: none; }
-  .orb { width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%; background: var(--grad); display: grid; place-items: center;
-         box-shadow: 0 14px 40px -8px rgba(124,92,255,.75), inset 0 1px 0 rgba(255,255,255,.35); transition: transform .2s; }
-  .drop:active .orb { transform: scale(.93); }
-  .orb svg { width: 38px; height: 38px; }
-  .drop strong { display: block; font-size: 19px; letter-spacing: -.01em; }
+  .orb { width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 26px; background: var(--accent); display: grid; place-items: center;
+         box-shadow: 0 14px 30px -10px rgba(20,184,224,.8); transition: transform .25s; }
+  .drop:active .orb { transform: scale(.92); }
+  .orb svg { width: 36px; height: 36px; stroke: var(--on-accent); }
+  .drop strong { display: block; font-size: 20px; letter-spacing: -.01em; }
   .drop span { color: var(--muted); font-size: 14px; }
 
-  /* lists */
   .list { margin-top: 14px; padding: 6px 14px; }
   .list:empty { display: none; }
-  .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
   .item:first-child { border-top: 0; }
-  .kind { width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center;
-          font: 700 10.5px/1 var(--sans); letter-spacing: .04em; color: #fff; }
-  .k-img { background: linear-gradient(135deg,#8b5cf6,#c084fc); } .k-vid { background: linear-gradient(135deg,#ec4899,#f97316); }
-  .k-doc { background: linear-gradient(135deg,#3b82f6,#06b6d4); } .k-pdf { background: linear-gradient(135deg,#ef4444,#f97316); }
-  .k-zip { background: linear-gradient(135deg,#f59e0b,#eab308); } .k-aud { background: linear-gradient(135deg,#10b981,#06b6d4); }
-  .k-other { background: linear-gradient(135deg,#475569,#64748b); }
+  .kind { width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px; display: grid; place-items: center;
+          font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: .03em; color: var(--k); background: color-mix(in srgb, var(--k) 18%, transparent); }
+  .k-img { --k: #b4a3ff; } .k-vid { --k: #ff8fb1; } .k-doc { --k: #7fb2ff; } .k-pdf { --k: #ff7d6e; } .k-zip { --k: #f2c35b; } .k-aud { --k: #5fd6a8; } .k-other { --k: #a8a59d; }
   .meta { min-width: 0; flex: 1; }
   .name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
   .done .sub { color: var(--ok); } .failed .sub { color: var(--err); }
-  .bar { height: 4px; border-radius: 4px; background: var(--surface-2); margin-top: 7px; overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 4px; transition: width .2s; }
-  .save { flex-shrink: 0; width: auto; margin: 0; padding: 10px 14px; font-size: 14px; border-radius: 11px; }
+  .bar { height: 4px; border-radius: 4px; background: var(--fill); margin-top: 7px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width .2s; }
+  .save { flex-shrink: 0; width: auto; margin: 0; padding: 10px 15px; font-size: 14px; }
   .empty { text-align: center; color: var(--muted); padding: 40px 24px; font-size: 15px; }
   .empty b { display: block; color: var(--text); font-size: 17px; margin-bottom: 6px; }
-
   .hint { margin-top: 18px; padding: 14px 16px; font-size: 13.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
   .hint button { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 20px; cursor: pointer; }
   .link { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13.5px; display: block; margin: 22px auto 0; cursor: pointer; }
-  [hidden] { display: none !important; }
-</style>
+  [hidden] { display: none !important; }</style>
 </head>
 <body>
+<div class="wall" aria-hidden="true">
+  <svg class="night" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <rect width="1440" height="900" fill="#27305a"/><rect width="1440" height="160" fill="#1f2750"/><rect y="160" width="1440" height="120" fill="#2f3866"/>
+    <rect y="280" width="1440" height="90" fill="#3d4a7c"/><rect y="370" width="1440" height="70" fill="#4f6596"/><rect y="440" width="1440" height="60" fill="#5f86ad"/>
+    <circle cx="1040" cy="470" r="120" fill="#7fd3ea"/><circle cx="1040" cy="470" r="86" fill="#b5ecf7"/>
+    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#2f3a66"/>
+    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#232b52"/>
+    <path d="M0 640 H1440 V900 H0Z" fill="#171d3b"/>
+    <g fill="#7fd3ea" opacity=".5"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/><rect x="1025" y="738" width="30" height="2"/></g>
+    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#10142c"/>
+    <g fill="#fff" opacity=".8"><circle cx="120" cy="60" r="1.6"/><circle cx="330" cy="120" r="1.2"/><circle cx="560" cy="40" r="1.4"/><circle cx="760" cy="150" r="1"/><circle cx="1240" cy="80" r="1.6"/><circle cx="1380" cy="190" r="1.2"/><circle cx="900" cy="60" r="1.1"/></g>
+  </svg>
+  <svg class="day" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <rect width="1440" height="900" fill="#cfe6f7"/><rect width="1440" height="200" fill="#bcdcf4"/><rect y="200" width="1440" height="160" fill="#c7e2f6"/><rect y="360" width="1440" height="140" fill="#dcecf8"/>
+    <circle cx="1060" cy="300" r="90" fill="#fff6d8"/><circle cx="1060" cy="300" r="62" fill="#fffbea"/>
+    <g fill="#fff" opacity=".85"><ellipse cx="260" cy="170" rx="120" ry="26"/><ellipse cx="330" cy="150" rx="70" ry="30"/><ellipse cx="760" cy="110" rx="90" ry="20"/></g>
+    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#9fc2dd"/>
+    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#7fa9c9"/>
+    <path d="M0 640 H1440 V900 H0Z" fill="#5fb3cf"/>
+    <g fill="#fff" opacity=".55"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/></g>
+    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#4c9a6e"/>
+  </svg>
+</div>
 <main>
   <header>
-    <img src="/icon-180.png" alt="">
-    <h1>Swiftlane</h1>
+    <svg class="wordmark" viewBox="0 0 640 150" role="img" aria-label="Swiftlane"><line x1="36.5" y1="20" x2="596.5" y2="20" class="wm-line" stroke-width="5" stroke-linecap="round"/><line x1="19.2" y1="118" x2="579.2" y2="118" class="wm-line" stroke-width="5" stroke-linecap="round"/><g class="wm-swift" style="font-family:-apple-system,Bahnschrift,sans-serif;font-weight:800;font-style:italic;font-size:86px"><text x="34" y="98" opacity=".12">SWIFT</text><text x="46" y="98" opacity=".28">SWIFT</text><text x="60" y="98">SWIFT</text></g><text x="338" y="98" class="wm-ink" style="font-family:-apple-system,Bahnschrift,sans-serif;font-weight:800;font-style:italic;font-size:86px;letter-spacing:2px" translate="no">LANE</text></svg>
     <div class="pill" id="status" hidden><i class="dot" id="dot"></i><span id="pc">Connected</span></div>
   </header>
 
@@ -134,12 +160,13 @@
       <div class="slider"></div>
       <button class="on" data-tab="send">Send to PC</button>
       <button data-tab="inbox">From PC<span class="badge" id="count" hidden>0</span></button>
+      <button data-tab="remote" id="remoteTab" hidden>Remote</button>
     </nav>
 
     <div id="send">
       <label class="drop glass">
         <input type="file" id="files" multiple>
-        <div class="orb"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        <div class="orb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
         <strong>Send files to your PC</strong>
         <span>Photos, videos, documents — any size</span>
       </label>
@@ -149,6 +176,29 @@
     <div id="inbox" hidden>
       <div class="list glass" id="inboxList"></div>
       <div class="empty glass" id="inboxEmpty"><b>Nothing waiting</b>Drag files onto Swiftlane on your PC and they'll show up here.</div>
+    </div>
+
+    <a class="secure-tip glass" id="secureTip" href="/cert" hidden><b>Encrypt this connection</b><span>Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).</span></a>
+    <div id="remote" hidden>
+      <div class="remote glass">
+        <div><div class="rlabel">Sound</div><div class="rrow">
+          <button class="rbtn" data-act="volume_down"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 12h4"/></svg>Quieter</button>
+          <button class="rbtn" data-act="mute"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m17 9 4 6M21 9l-4 6"/></svg>Mute</button>
+          <button class="rbtn" data-act="volume_up"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 12h4M19 10v4"/></svg>Louder</button></div></div>
+        <div><div class="rlabel">Music and video</div><div class="rrow">
+          <button class="rbtn" data-act="previous"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 5 9 12l9 7z"/></svg>Previous</button>
+          <button class="rbtn big" data-act="play_pause"><svg viewBox="0 0 24 24"><path d="M5 5l8 7-8 7zM16 5v14M20 5v14"/></svg>Play / pause</button>
+          <button class="rbtn" data-act="next"><svg viewBox="0 0 24 24"><path d="M18 5v14M6 5l9 7-9 7z"/></svg>Next</button></div></div>
+        <div><div class="rlabel">Presentation</div><div class="rrow two">
+          <button class="rbtn big" data-act="slide_previous"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Previous slide</button>
+          <button class="rbtn big" data-act="slide_next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>Next slide</button></div></div>
+        <div><div class="rlabel">This PC</div><div class="rrow" id="pcRow">
+          <button class="rbtn" data-act="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Lock</button>
+          <button class="rbtn power" data-act="sleep"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Sleep</button>
+          <button class="rbtn danger power" data-act="shutdown"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Shut down</button></div></div>
+        <div class="cancel-bar" id="cancelBar" hidden><span>Shutting down in 60 seconds</span><button class="btn" id="cancelShutdown">Cancel</button></div>
+        <div class="rmsg" id="remoteMsg"></div>
+      </div>
     </div>
 
     <div class="hint glass" id="hint" hidden>
@@ -200,7 +250,7 @@ async function ping(c) {
     const r = await fetch('/ping', { headers: { 'X-Token': c }, cache: 'no-store' });
     const body = await r.json().catch(() => ({}));
     if (body.lang) setLang(body.lang);
-    return r.ok ? { ok: true, pc: body.pc } : { error: body.error || 'Could not connect.' };
+    return r.ok ? { ok: true, pc: body.pc, remote: !!body.remote, power: !!body.power, secure: !!body.secure, tls: !!body.tls } : { error: body.error || 'Could not connect.' };
   } catch (e) { return { error: 'Can’t reach your PC. Is Swiftlane open, and are you on the same Wi-Fi?' }; }
 }
 async function connect(c) {
@@ -217,6 +267,9 @@ async function connect(c) {
   $('pair').hidden = true; $('app').hidden = false; $('status').hidden = false;
   $('pc').textContent = res.pc ? res.pc : 'Connected'; $('dot').classList.remove('off');
   $('hint').hidden = navigator.standalone || store.get('swiftlane-hint') === 'off';
+  setRemote(res.remote, res.power);
+  $('secureTip').hidden = res.secure || !res.tls;   // offer encryption until this phone uses it
+  $('pc').textContent = (res.secure ? '🔒 ' : '') + (res.pc || 'Connected');
   startPolling();
 }
 $('connect').onclick = () => connect($('code').value.trim());
@@ -225,13 +278,42 @@ $('forget').onclick = () => { store.del(KEY); code = ''; history.replaceState(nu
 $('hideHint').onclick = () => { store.set('swiftlane-hint', 'off'); $('hint').hidden = true; };
 
 // ---------- tabs
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
-  tab = b.dataset.tab;
-  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  $('tabs').classList.toggle('right', tab === 'inbox');
-  $('send').hidden = tab !== 'send'; $('inbox').hidden = tab !== 'inbox';
+function showTab(name) {
+  tab = name;
+  const visible = [...document.querySelectorAll('#tabs button')].filter(x => !x.hidden);
+  visible.forEach((x, i) => { x.classList.toggle('on', x.dataset.tab === tab); if (x.dataset.tab === tab) $('tabs').style.setProperty('--i', i); });
+  $('tabs').style.setProperty('--n', visible.length);
+  $('send').hidden = tab !== 'send'; $('inbox').hidden = tab !== 'inbox'; $('remote').hidden = tab !== 'remote';
   if (tab === 'inbox') poll();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+// ---------- PC remote (only if it's switched on in Swiftlane on the PC)
+function setRemote(on, power) {
+  $('remoteTab').hidden = !on;
+  document.querySelectorAll('.rbtn.power').forEach(b => b.hidden = !power);
+  showTab(!on && tab === 'remote' ? 'send' : tab);
+}
+async function press(action) {
+  const msg = $('remoteMsg'); msg.className = 'rmsg'; msg.textContent = '';
+  try {
+    const r = await fetch('/api/remote', { method: 'POST', cache: 'no-store', headers: { 'X-Token': code, 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) { msg.className = 'rmsg err'; msg.textContent = b.error || 'That didn’t work.'; return false; }
+    if (navigator.vibrate) navigator.vibrate(12);
+    return true;
+  } catch (e) { msg.className = 'rmsg err'; msg.textContent = 'Can’t reach your PC.'; return false; }
+}
+document.querySelectorAll('.rbtn').forEach(b => b.onclick = async () => {
+  const a = b.dataset.act;
+  if (a === 'shutdown' && !confirm(tr('Shut down your PC? You get 60 seconds to cancel.'))) return;
+  if (a === 'sleep' && !confirm(tr('Put your PC to sleep?'))) return;
+  if (await press(a)) {
+    if (a === 'shutdown') $('cancelBar').hidden = false;
+    if (a === 'lock' || a === 'sleep') $('remoteMsg').textContent = tr(a === 'lock' ? 'PC locked' : 'PC is going to sleep');
+  }
 });
+$('cancelShutdown').onclick = async () => { if (await press('shutdown_cancel')) { $('cancelBar').hidden = true; $('remoteMsg').textContent = tr('Shutdown cancelled'); } };
 
 // ---------- send to PC
 function upload(file, ui) {
@@ -321,6 +403,21 @@ const L = {
         'Pair with a different code': 'Associa con un altro codice', 'Waiting…': 'In attesa…', 'Failed': 'Non riuscito', 'Connection lost': 'Connessione persa', 'Save': 'Salva',
         'Wrong pairing code.': 'Codice errato.', 'Can’t reach your PC. Is Swiftlane open, and are you on the same Wi-Fi?': 'PC non raggiungibile. Swiftlane è aperto e sei sulla stessa rete Wi-Fi?' },
 };
+Object.assign(L.de, { 'Encrypt this connection': 'Verbindung verschlüsseln', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Handy und PC sind noch nicht verschlüsselt verbunden. Tippe, um es einmalig einzurichten.' });
+Object.assign(L.pl, { 'Encrypt this connection': 'Zaszyfruj połączenie', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Telefon i komputer nie łączą się jeszcze szyfrowanie. Stuknij, aby to ustawić (raz).' });
+Object.assign(L.it, { 'Encrypt this connection': 'Cifra la connessione', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Telefono e PC non usano ancora una connessione cifrata. Tocca per configurarla (una volta).' });
+Object.assign(L.de, { 'Remote': 'Fernbedienung', 'Sound': 'Ton', 'Quieter': 'Leiser', 'Mute': 'Stumm', 'Louder': 'Lauter', 'Music and video': 'Musik und Video', 'Previous': 'Zurück', 'Play / pause': 'Wiedergabe / Pause', 'Next': 'Weiter',
+  'Presentation': 'Präsentation', 'Previous slide': 'Vorherige Folie', 'Next slide': 'Nächste Folie', 'This PC': 'Dieser PC', 'Lock': 'Sperren', 'Sleep': 'Energie sparen', 'Shut down': 'Herunterfahren',
+  'Shutting down in 60 seconds': 'Fährt in 60 Sekunden herunter', 'Cancel': 'Abbrechen', 'Shut down your PC? You get 60 seconds to cancel.': 'PC herunterfahren? Du hast 60 Sekunden zum Abbrechen.', 'Put your PC to sleep?': 'PC in den Energiesparmodus versetzen?',
+  'PC locked': 'PC gesperrt', 'PC is going to sleep': 'PC geht in den Energiesparmodus', 'Shutdown cancelled': 'Herunterfahren abgebrochen', 'Can’t reach your PC.': 'PC nicht erreichbar.' });
+Object.assign(L.pl, { 'Remote': 'Pilot', 'Sound': 'Dźwięk', 'Quieter': 'Ciszej', 'Mute': 'Wycisz', 'Louder': 'Głośniej', 'Music and video': 'Muzyka i wideo', 'Previous': 'Poprzedni', 'Play / pause': 'Odtwórz / pauza', 'Next': 'Następny',
+  'Presentation': 'Prezentacja', 'Previous slide': 'Poprzedni slajd', 'Next slide': 'Następny slajd', 'This PC': 'Ten komputer', 'Lock': 'Zablokuj', 'Sleep': 'Uśpij', 'Shut down': 'Wyłącz',
+  'Shutting down in 60 seconds': 'Wyłączenie za 60 sekund', 'Cancel': 'Anuluj', 'Shut down your PC? You get 60 seconds to cancel.': 'Wyłączyć komputer? Masz 60 sekund na anulowanie.', 'Put your PC to sleep?': 'Uśpić komputer?',
+  'PC locked': 'Komputer zablokowany', 'PC is going to sleep': 'Komputer przechodzi w uśpienie', 'Shutdown cancelled': 'Wyłączenie anulowane', 'Can’t reach your PC.': 'Brak połączenia z komputerem.' });
+Object.assign(L.it, { 'Remote': 'Telecomando', 'Sound': 'Audio', 'Quieter': 'Più basso', 'Mute': 'Muto', 'Louder': 'Più alto', 'Music and video': 'Musica e video', 'Previous': 'Precedente', 'Play / pause': 'Play / pausa', 'Next': 'Successivo',
+  'Presentation': 'Presentazione', 'Previous slide': 'Diapositiva precedente', 'Next slide': 'Diapositiva successiva', 'This PC': 'Questo PC', 'Lock': 'Blocca', 'Sleep': 'Sospendi', 'Shut down': 'Spegni',
+  'Shutting down in 60 seconds': 'Spegnimento tra 60 secondi', 'Cancel': 'Annulla', 'Shut down your PC? You get 60 seconds to cancel.': 'Spegnere il PC? Hai 60 secondi per annullare.', 'Put your PC to sleep?': 'Sospendere il PC?',
+  'PC locked': 'PC bloccato', 'PC is going to sleep': 'Il PC va in sospensione', 'Shutdown cancelled': 'Spegnimento annullato', 'Can’t reach your PC.': 'PC non raggiungibile.' });
 const LP = {
   de: [[/^Sent · (.+)$/, 'Gesendet · $1'], [/^(.+) of (.+)$/, '$1 von $2']],
   pl: [[/^Sent · (.+)$/, 'Wysłano · $1'], [/^(.+) of (.+)$/, '$1 z $2']],

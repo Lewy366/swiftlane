@@ -12,6 +12,13 @@ const ACCENTS = {
 const FEATURES = [
   ['transfer', 'Phone transfer', 'Send and receive files with your phone over your network'],
   ['share', 'Share links', 'Send files to anyone with a link, through Tailscale'],
+  ['remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
+  ['pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
+  ['trimmer', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
+  ['vault', 'Vault', 'Files only your password opens'],
+  ['diskmap', 'Disk space', 'See what fills up your drives'],
+  ['netscan', 'Network devices', 'Who is on your home network'],
+  ['exposure', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
   ['converter', 'File converter', 'Images, video, audio and PDF'],
   ['images', 'Image editor', 'Crop, resize, straighten, adjust colours, compress'],
   ['downloader', 'Video downloader', 'YouTube and other sites'],

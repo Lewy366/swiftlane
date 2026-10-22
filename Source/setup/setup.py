@@ -18,7 +18,7 @@ import installer
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))  # contains web/ (pages, styles, translations)
 PAYLOAD = Path(os.environ.get("SWIFTLANE_PAYLOAD") or ROOT / "payload.zip")
 VERSION = (ROOT / "version.txt").read_text("utf-8").strip() if (ROOT / "version.txt").exists() else "dev"
-FEATURES = ("transfer", "share", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 
 
 def windows_language():
@@ -72,7 +72,7 @@ class SetupApi:
             "download_dir": cfg.get("download_dir", ""),
             "calc_angle": cfg.get("calc_angle", "deg"),
             "notify": cfg.get("notify", True),
-            "features": {f: cfg.get("features", {}).get(f, True) for f in FEATURES},
+            "features": {f: cfg.get("features", {}).get(f, f != "remote") for f in FEATURES},  # the remote starts off
             "theme": {"accent": "cyan", "custom": "#14b8e0", **cfg.get("theme", {})},
             "networks": networks,
             "node": bool(shutil.which("node")),

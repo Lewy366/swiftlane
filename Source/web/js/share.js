@@ -63,7 +63,31 @@
     return row;
   }
 
+  // A request link: people send files to you
+  function requestCard(s) {
+    const card = el('div', 'sh-share' + (s.active ? '' : ' ended'));
+    const head = el('div', 'sh-head'), title = el('div', 'name'), sub = el('div', 'sub');
+    const tn = el('span', null, s.title); tn.setAttribute('translate', 'no'); title.append(el('span', 'sh-kind', 'Request'), tn);
+    sub.append(el('span', null, s.files === 1 ? '1 file received' : s.files + ' files received'), document.createTextNode(' · ' + fmtSize(s.total) + ' of ' + fmtSize(s.max_bytes) + ' · '));
+    sub.append(s.ended ? el('span', 'warn', 'Ended') : !s.active ? el('span', 'warn', 'Expired') : el('span', null, 'ends in ' + left(s.expires - Date.now() / 1000)));
+    head.append(title, sub);
+    const acts = el('div', 'sh-acts');
+    const btn = (label, fn, cls) => { const b = el('button', 'btn small ' + (cls || 'ghost'), label); b.onclick = fn; acts.append(b); };
+    if (s.active && s.links[0] && s.links[0].url) btn('Copy link', async () => { await App.api.share_copy(s.id, s.links[0].id); toast('Link copied'); }, '');
+    btn('Open folder', () => App.api.share_open_folder(s.id));
+    if (s.active) btn('End', async () => { setInfo(await App.api.share_end(s.id)); toast('Link ended'); }, 'danger');
+    else btn('Remove', async () => setInfo(await App.api.share_remove(s.id)), 'danger');
+    card.append(head, acts);
+    if (s.preview.length) {
+      const list = el('div', 'sh-files');
+      for (const f of s.preview) { const r = el('div', 'sh-file'), n = el('span', 'name', f.name); n.setAttribute('translate', 'no'); r.append(n, el('span', 'muted', fmtSize(f.size))); list.append(r); }
+      card.append(list);
+    }
+    return card;
+  }
+
   function shareCard(s) {
+    if (s.kind === 'request') return requestCard(s);
     const card = el('div', 'sh-share' + (s.active ? '' : ' ended'));
     const head = el('div', 'sh-head'), meta = el('div', 'meta'), sub = el('div', 'sub');
     const title = el('div', 'name'), more = s.title.match(/^(.*) (\+ \d+ more)$/);  // names stay as they are, "+ 1 more" is translated
@@ -140,7 +164,8 @@
     $('shCount').textContent = active || '';
     $('shEmpty').hidden = info.shares.length > 0;
     $('shEndAll').hidden = active < 2;
-    const badge = $('navShareBadge'); badge.hidden = !active; badge.textContent = active || '';
+    const badge = $('navShareBadge');  // not there while Share links is switched off
+    if (badge) { badge.hidden = !active; badge.textContent = active || ''; }
     renderNotice();
   }
 
@@ -191,6 +216,19 @@
       bindSeg('shMode', () => { showMode(); saveDefaults(); });
       $('shDrop').onclick = async () => create(await App.api.share_pick(false));
       $('shPickFolder').onclick = async () => create(await App.api.share_pick(true));
+      $('shRequest').onclick = async () => {
+        const title = prompt(t('What should people send you? (shown on their page, e.g. “Holiday photos for Lewy”)'), '');
+        if (title === null) return;
+        const mb = prompt(t('Most they may send in total (MB):'), '2048');
+        if (mb === null) return;
+        const files = prompt(t('Most files they may send:'), '50');
+        if (files === null) return;
+        const o = options();
+        const r = await App.api.share_request({ title, max_mb: +mb || 2048, max_files: +files || 50, hours: o.hours, password: o.password });
+        if (r.error) { toast(r.error); return; }
+        $('shPassword').value = ''; setInfo(r);
+        toast('Request link copied · files people send land in “From links”');
+      };
       $('shEndAll').onclick = async () => { if (confirm(t('End every link?'))) { setInfo(await App.api.share_end_all()); toast('All links ended'); } };
       for (const id of ['shHours', 'shLimit', 'shPeople', 'shAwake']) $(id).onchange = saveDefaults;
       info = await App.api.share_info(false);

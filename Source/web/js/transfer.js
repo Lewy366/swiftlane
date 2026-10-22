@@ -49,6 +49,18 @@
       addrs.append(row);
     }
   }
+  function renderTls() {
+    const t2 = App.state.tls || {};
+    $('tlsCard').hidden = !t2.ready;
+    if (!t2.ready) return;
+    $('tlsCertQr').innerHTML = t2.cert_qr || '';
+    $('tlsSecureQr').innerHTML = t2.secure_qr || '';
+    $('tlsFp').textContent = t2.fingerprint;
+    $('httpsOnly').checked = !!t2.https_only;
+    $('tlsState').textContent = t2.https_only ? 'Encrypted only' : 'Encrypted and unencrypted allowed';
+    $('tlsState').className = 'tls-state ' + (t2.https_only ? 'ok' : 'warn');
+  }
+  App.renderTls = renderTls;
   async function copy(text, msg) { await App.api.copy_text(text); toast(msg); }
   function toggleCode() { codeShown = !codeShown; renderConnect(); }
 
@@ -78,8 +90,15 @@
       $('toggleCode').onclick = toggleCode;
       $('qrWrap').onclick = () => { if (!codeShown) toggleCode(); };
       $('copyCode').onclick = () => copy(App.state.code_pretty, 'Pairing code copied');
+      $('tlsSecureQr').onclick = () => $('tlsSecureQr').classList.remove('blur');
+      $('httpsOnly').onchange = async e => {
+        if (e.target.checked && !confirm(t('Only allow encrypted connections? Phones that haven’t installed the certificate, and the old Send to PC Shortcut address, will stop working until they’re set up.'))) { e.target.checked = false; return; }
+        await App.api.set_option('https_only', e.target.checked);
+        App.state = await App.api.get_state(); renderConnect(); renderTls();
+        toast(e.target.checked ? 'Only encrypted connections are allowed now' : 'Unencrypted connections are allowed again');
+      };
     },
-    show() { codeShown = false; renderConnect(); },
+    show() { codeShown = false; renderConnect(); renderTls(); $('tlsSecureQr').classList.add('blur'); },
   };
   App.renderConnect = renderConnect;
 
@@ -99,7 +118,8 @@
     ui ? ui.row.replaceWith(row) : $('inList').prepend(row);
     updateReceivedMeta();
     if (App.page !== 'transfer') {
-      const badge = $('navTransferBadge'); badge.hidden = false; badge.textContent = (+badge.textContent || 0) + 1;
+      const badge = $('navTransferBadge');
+      if (badge) { badge.hidden = false; badge.textContent = (+badge.textContent || 0) + 1; }
     }
   });
   App.on('incoming-failed', data => {
@@ -108,5 +128,9 @@
   });
   App.on('outbox', renderOutbox);
   App.on('sent', async data => { toast('“' + data.name + '” saved on your phone'); renderOutbox(await App.api.get_outbox()); });
-  document.querySelector('.nav[data-page="transfer"]').addEventListener('click', () => { $('navTransferBadge').hidden = true; $('navTransferBadge').textContent = ''; });
+  // The sidebar is rebuilt now and then (and may not show Phone transfer at all), so listen on the document.
+  document.addEventListener('click', e => {
+    const badge = $('navTransferBadge');
+    if (badge && e.target.closest && e.target.closest('.nav[data-page="transfer"]')) { badge.hidden = true; badge.textContent = ''; }
+  });
 })();

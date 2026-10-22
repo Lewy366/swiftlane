@@ -9,6 +9,7 @@ import ctypes
 import itertools
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -20,11 +21,11 @@ from pathlib import Path
 import server as core
 import share
 import updater
-from toolkit import adblock, calc, convert, currency, downloader, images, speedtest
+from toolkit import adblock, calc, convert, currency, downloader, images, pdftools, speedtest, trimmer, vault, diskmap, netscan, exposure
 from toolkit.common import Cancelled, clipboard_text
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-FEATURES = ("transfer", "share", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 TAILSCALE_PAGES = ("https://login.tailscale.com/",)  # the only outside pages the Share page may open
 CALC_METHODS = {  # what the calculator page may call, nothing else
     "evaluate", "solve", "set_mode", "memory", "memory_add", "clear_memory", "base_n", "statistics",
@@ -165,30 +166,45 @@ class Api:
         self._rates = currency.Rates(core.CONFIG_DIR / "rates.json")
         self._jobs = None  # set once the window exists
         self._start_page = None
+        self._vault = None          # the encrypted vault (locked until you type the password)
+        self._vault_used = 0.0      # last vault activity, for locking it again on its own
+        self._disk = None           # last disk scan: (root folder, biggest files)
+        self._net = None            # last network scan
+        self._net_lock = threading.Lock()
+        self._exposure = None       # last 'Is my PC exposed?' result
         # Sharing: the share server and Tailscale Funnel run only while a link can still be used.
         self._shares = share.Shares(core.CONFIG_DIR / "shares.json", on_change=self._shares_changed)
         self._shares.on_download = self._share_downloaded
+        self._shares.on_upload = lambda s, name, size: self._state.notifier.show_soon("File received through a link", f"{name} · {s['title']}")
         self._funnel = share.Funnel(share.SHARE_PORT)
         self._share_server = None
         self._share_host = None
         self._share_lock = threading.Lock()
         self._funnel_note = None  # last problem switching Funnel on, shown on the Share page
+        state.remote = self._remote
 
     # ---------------------------------------------------------------- app state
     def get_state(self):
         s = self._state
         port = s.cfg["port"]
+        ca = s.ca
+        scheme = "https" if ca and s.cfg.get("https_only") else "http"
         addresses = [{"label": label, "host": f"{ip}:{port}",
-                      "shortcut": f"http://{ip}:{port}/upload?name="}
+                      "shortcut": f"{scheme}://{ip}:{port}/upload?name="}
                      for label, ip in core.local_addresses()]
         first_ip = core.local_addresses()[0][1]
+        tls_info = {"ready": bool(ca), "https_only": bool(s.cfg.get("https_only")),
+                    "fingerprint": ca.fingerprint if ca else "",
+                    "cert_qr": core.qr_svg(f"http://{first_ip}:{port}/cert") if ca else None,
+                    "secure_qr": core.qr_svg(f"https://{first_ip}:{port}/#{s.code}") if ca else None}
         return {
             "version": core.VERSION,
             "features": s.cfg["features"],
             "server_running": self._server is not None,
             "server_error": self._server_error,
             "code_pretty": core.pretty_code(s.code),
-            "qr": core.qr_svg(f"http://{first_ip}:{port}/#{s.code}"),
+            "qr": core.qr_svg(f"{scheme}://{first_ip}:{port}/#{s.code}"),
+            "tls": tls_info,
             "addresses": addresses,
             "save_dir": str(s.save_dir),
             "notify": bool(s.cfg.get("notify")),
@@ -211,6 +227,10 @@ class Api:
             "node": bool(downloader.find_program("node")),
             "start_page": self._start_page,
             "update_check": s.cfg.get("update_check", True),
+            "sidebar": s.cfg.get("sidebar"),
+            "remote_power": bool(s.cfg.get("remote_power")),
+            "context_menu": self._context_menu_on(),
+            "explorer": self._take_explorer(),
             "update": self._update_public(),
             "updated": self._take_whats_new(),
         }
@@ -233,9 +253,24 @@ class Api:
         try:
             self._server = core.start_server(self._state)
             self._server_error = None
+            self._setup_tls()
         except core.PortInUse as e:
             self._server_error = f"Port {e.args[0]} is in use by another program, so phone transfer is off."
             core.log(self._server_error)
+
+    _tls_addrs = ()
+
+    def _setup_tls(self):
+        """Encrypted phone transfer: load (or make) Swiftlane's CA and a certificate for today's addresses."""
+        try:
+            import tls
+            ca = self._state.ca or tls.Authority(core.CONFIG_DIR / "tls")
+            self._tls_addrs = tuple(ip for _, ip in core.local_addresses())
+            self._server.tls = ca.server_context(self._tls_addrs)
+            self._state.ca = ca
+        except Exception as e:
+            core.log(f"Encrypted phone transfer unavailable: {e}")
+            self._state.ca = None
 
     def _stop_server(self):
         if self._server:
@@ -331,6 +366,33 @@ class Api:
             copied = links[0]["url"]
         threading.Thread(target=self._sync_sharing, daemon=True).start()
         return {"share": r["share"], "copied": copied, **self.share_info()}
+
+    def share_request(self, options=None):
+        """A link people use to send files to this PC. Files land in <save folder>\\From links\\<title>."""
+        if not self._state.cfg["features"].get("share"):
+            return {"error": "Sharing is switched off in Settings."}
+        o = options or {}
+        title = str(o.get("title") or "").strip()[:80] or "Files for me"
+        folder = self._state.save_dir / "From links" / core.safe_name(f"{title} {time.strftime('%Y-%m-%d')}")
+        try:
+            r = self._shares.create_request(folder, title, hours=o.get("hours") or 24, max_mb=o.get("max_mb") or 2048,
+                                            max_files=o.get("max_files") or 50, password=str(o.get("password") or ""))
+        except share.ShareError as e:
+            return {"error": str(e)}
+        except (ValueError, TypeError):
+            return {"error": "Check the request settings."}
+        self._ensure_share_server()
+        link = next(s for s in self._shares.summary(self._base_url()) if s["id"] == r["share"])["links"][0]
+        if link["url"]:
+            self.copy_text(link["url"])
+        threading.Thread(target=self._sync_sharing, daemon=True).start()
+        return {"share": r["share"], "copied": link["url"], **self.share_info()}
+
+    def share_open_folder(self, share_id):
+        s = self._shares.shares.get(share_id)
+        if s and s.get("folder"):
+            Path(s["folder"]).mkdir(parents=True, exist_ok=True)
+            os.startfile(s["folder"])
 
     def _share_call(self, fn, *args, sync=False):
         try:
@@ -480,6 +542,8 @@ class Api:
         while True:
             time.sleep(30)
             self._shares.prune()
+            if self._server and self._state.ca and tuple(ip for _, ip in core.local_addresses()) != self._tls_addrs:
+                self._setup_tls()  # new network address: new certificate
             needed = self._sharing_needed()
             if needed != bool(self._share_server):
                 self._sync_sharing()
@@ -588,6 +652,85 @@ class Api:
                     self._jobs.push("update-available", u)
             time.sleep(24 * 3600)
 
+    # ---------------------------------------------------------------- Explorer right-click menu
+    _explorer_batch = None
+    _explorer_lock = threading.Lock()
+
+    def _from_explorer(self, cmd, paths):
+        """Files from the right-click menu. Explorer may start one Swiftlane per file, so requests
+        arriving within a moment are gathered into one batch."""
+        with self._explorer_lock:
+            if self._explorer_batch is None:
+                self._explorer_batch = {"cmd": cmd, "paths": []}
+                threading.Timer(0.8, self._flush_explorer).start()
+            if self._explorer_batch["cmd"] == cmd:
+                self._explorer_batch["paths"] += [p for p in paths if p not in self._explorer_batch["paths"]]
+
+    _explorer_pending = None
+
+    def _flush_explorer(self):
+        with self._explorer_lock:
+            batch, self._explorer_batch = self._explorer_batch, None
+        files = [file_info(p) for p in batch["paths"] if os.path.isfile(p)]
+        request = {"cmd": batch["cmd"], "files": files, "folders": [p for p in batch["paths"] if os.path.isdir(p)]}
+        if self._jobs:
+            self._jobs.push("explorer", request)
+        else:
+            self._explorer_pending = request  # the window isn't ready yet: picked up by get_state
+
+    def _take_explorer(self):
+        request, self._explorer_pending = self._explorer_pending, None
+        return request
+
+    def _context_menu_on(self):
+        try:
+            import context_menu
+            return context_menu.is_enabled()
+        except Exception:
+            return False
+
+    def set_context_menu(self, enabled):
+        import context_menu
+        try:
+            context_menu.enable() if enabled else context_menu.disable()
+        except OSError as e:
+            return {"error": f"Couldn't change the right-click menu ({e.__class__.__name__})"}
+        core.log(f"Explorer right-click menu {'added' if enabled else 'removed'}")
+        return {"ok": True, "enabled": context_menu.is_enabled()}
+
+    def _remote(self, action, ip):
+        """Called by the phone server for a PC-remote press. Returns None, or what to tell the phone."""
+        from toolkit import remote
+        if action not in remote.ACTIONS:
+            return "Unknown action."
+        if action in remote.POWER and not self._state.cfg.get("remote_power"):
+            return "Sleep and shut down from the phone are switched off in Swiftlane's settings."
+        if action in remote.POWER or action == "lock":
+            core.log(f"PC remote from {ip}: {action}")
+        if action == "shutdown":
+            self._state.notifier.show_soon("Shutting down in 60 seconds", "Your phone asked to shut down this PC. Cancel it on the phone, or run: shutdown /a")
+        try:
+            remote.perform(action)
+        except Exception as e:
+            core.log(f"PC remote {action} failed: {e}")
+            return "That didn't work on the PC."
+        return None
+
+    def set_sidebar(self, layout):
+        """Pinned tools and folders. Only plain names and tool ids are stored; the page checks ids itself."""
+        ok_id = lambda x: isinstance(x, str) and re.fullmatch(r"[a-z]{2,24}", x)
+        try:
+            clean = {"pinned": [x for x in layout.get("pinned", []) if ok_id(x)][:60], "folders": []}
+            for f in layout.get("folders", [])[:20]:
+                name = re.sub(r"[\x00-\x1f]", "", str(f.get("name", "")))[:40].strip() or "Folder"
+                clean["folders"].append({"name": name, "items": [x for x in f.get("items", []) if ok_id(x)][:60],
+                                         "open": bool(f.get("open", True))})
+        except (AttributeError, TypeError):
+            return False
+        self._state.cfg["sidebar"] = clean
+        core.save_config(self._state.cfg)
+        return True
+
     def set_option(self, name, value):
         """Simple settings from the Settings page (only these names are accepted)."""
         cfg = self._state.cfg
@@ -599,6 +742,16 @@ class Api:
             cfg["language"] = value
         elif name == "update_check":
             cfg["update_check"] = bool(value)
+        elif name == "https_only":
+            cfg["https_only"] = bool(value)
+            core.log(f"Phone transfer: unencrypted connections {'refused' if value else 'allowed'}")
+        elif name == "net_watch":
+            cfg["net_watch"] = bool(value)
+        elif name == "vault_lock_minutes" and value in (1, 5, 15, 30, 60):
+            cfg["vault_lock_minutes"] = value
+        elif name == "remote_power":
+            cfg["remote_power"] = bool(value)
+            core.log(f"PC remote: sleep and shut down from the phone {'allowed' if value else 'not allowed'}")
         else:
             return False
         core.save_config(cfg)
@@ -812,6 +965,402 @@ class Api:
         except Exception as e:
             return {"error": f"Preview failed: {e}"}
 
+    # ---------------------------------------------------------------- PDF tools
+    def pdf_pick(self):
+        import webview
+        picked = self._window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=True, file_types=("PDF files (*.pdf)", "All files (*.*)"))
+        return list(picked or [])
+
+    def pdf_open(self, paths):
+        out = []
+        for p in paths:
+            try:
+                out.append({"path": p, **pdftools.thumbnails(p)})
+            except (ValueError, OSError) as e:
+                out.append({"path": p, "name": Path(p).name, "error": str(e)})
+        return out
+
+    def pdf_page(self, path, index):
+        try:
+            return pdftools.page_image(path, index)
+        except (ValueError, OSError, IndexError):
+            return None
+
+    def pdf_save(self, sources, plan, signatures=None):
+        if not plan:
+            return {"error": "There are no pages to save."}
+        first = Path(sources[int(plan[0]["src"])])
+        out = self._ask_save(first.parent, f"{first.stem} (edited).pdf", "pdf")
+        if not out:
+            return None
+        return self._jobs.start("pdf", f"{len(plan)} pages → {Path(out).name}",
+                                lambda report, cancelled: pdftools.build(sources, plan, out, signatures or []))
+
+    def pdf_split(self, path, groups):
+        folder = self._ask_folder(Path(path).parent)
+        if not folder:
+            return None
+        return self._jobs.start("pdf", f"Split {Path(path).name} into {len(groups)}",
+                                lambda report, cancelled: pdftools.split(path, folder, groups))
+
+    def pdf_smaller(self, path):
+        src = Path(path)
+        out = self._ask_save(src.parent, f"{src.stem} (smaller).pdf", "pdf")
+        if not out:
+            return None
+        return self._jobs.start("pdf", f"Make {src.name} smaller",
+                                lambda report, cancelled: pdftools.make_smaller(path, out, progress=lambda f: report(f, None), cancelled=cancelled))
+
+    def pick_signature(self):
+        """A picture of a signature, cut down to a sensible size."""
+        import webview, base64, io
+        picked = self._window.create_file_dialog(webview.FileDialog.OPEN, file_types=("Images (*.png;*.jpg;*.jpeg)", "All files (*.*)"))
+        if not picked:
+            return None
+        try:
+            from PIL import Image
+            with Image.open(picked[0]) as im:
+                im = im.convert("RGBA"); im.thumbnail((1200, 600))
+                buf = io.BytesIO(); im.save(buf, "PNG")
+            return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        except Exception:
+            return {"error": "Can't use that picture."}
+
+    # ---------------------------------------------------------------- video trimmer
+    def trim_open(self, path):
+        try:
+            info = trimmer.probe(path)
+        except (ValueError, OSError, subprocess.SubprocessError) as e:
+            return {"error": str(e) or "Can't read this video."}
+        return {**info, "path": path, "strip": trimmer.strip(path, info["duration"], 10), "preview": trimmer.frame(path, 0)}
+
+    def trim_frame(self, path, t):
+        try:
+            return trimmer.frame(path, t)
+        except (OSError, subprocess.SubprocessError):
+            return None
+
+    def trim_save(self, path, start, end, mode, target_mb=10, height=0):
+        src = Path(path)
+        ext = "mp3" if mode == "audio" else (src.suffix.lstrip(".").lower() if mode == "fast" else "mp4") or "mp4"
+        out = self._ask_save(src.parent, f"{src.stem} (cut).{ext}", ext)
+        if not out:
+            return None
+        label = {"fast": "Cut", "exact": "Exact cut", "size": f"Cut to {target_mb} MB", "audio": "Sound only"}.get(mode, "Cut")
+        return self._jobs.start("trim", f"{label} · {src.name}", lambda report, cancelled: trimmer.trim(
+            path, start, end, out, mode, target_mb, height, progress=lambda f: report(f, None), cancelled=cancelled))
+
+    # ---------------------------------------------------------------- encrypted vault
+    def _vault_box(self, touch=True):
+        folder = self._state.cfg.get("vault_dir") or str(core.documents_folder() / f"{core.APP} Vault")
+        if self._vault is None or str(self._vault.folder) != folder:
+            if self._vault:
+                self._vault.lock()
+            self._vault = vault.Vault(folder)
+        if touch:
+            self._vault_used = time.monotonic()
+        return self._vault
+
+    def vault_state(self):
+        v = self._vault_box(touch=False)
+        return {"folder": str(v.folder), "exists": v.exists(), "unlocked": v.unlocked,
+                "items": v.items() if v.unlocked else [], "lock_minutes": self._state.cfg.get("vault_lock_minutes", 5)}
+
+    def vault_create(self, password, again):
+        if password != again:
+            return {"error": "The two passwords don't match."}
+        try:
+            self._vault_box().create(password)
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        core.log("Vault created")
+        return self.vault_state()
+
+    def vault_unlock(self, password):
+        try:
+            self._vault_box().unlock(password)
+        except vault.WrongPassword as e:
+            core.log("Vault: wrong password")
+            time.sleep(1)  # slows down guessing through the window
+            return {"error": str(e)}
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        return self.vault_state()
+
+    def vault_lock(self):
+        if self._vault:
+            self._vault.lock()
+        return self.vault_state()
+
+    def vault_choose_folder(self):
+        """Open a vault somewhere else (e.g. on a USB stick), or pick where a new one goes."""
+        start = Path(self._vault_box(touch=False).folder).parent
+        folder = self._ask_folder(start if start.exists() else Path.home())
+        if not folder:
+            return None
+        chosen = Path(folder)
+        if not (chosen / "vault.json").exists():
+            chosen = chosen / f"{core.APP} Vault"  # never mix vault files into one of your own folders
+        self.vault_lock()
+        self._state.cfg["vault_dir"] = str(chosen)
+        core.save_config(self._state.cfg)
+        return self.vault_state()
+
+    def _vault_open_box(self):
+        v = self._vault_box()
+        if not v.unlocked:
+            raise vault.VaultError("The vault is locked.")
+        return v
+
+    def vault_add(self, paths=None, shred=False):
+        import webview
+        try:
+            v = self._vault_open_box()
+        except vault.VaultError as e:
+            return {"error": str(e)}
+        if not paths:
+            paths = list(self._window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=True) or [])
+        paths = [p for p in paths if Path(p).is_file()]
+        if not paths:
+            return {"error": "Only files can go into the vault (not folders)."}
+
+        def work(report, cancelled):
+            def progress(f):
+                self._vault_used = time.monotonic()  # don't lock in the middle of a big file
+                report(f, None)
+            try:
+                v.add(paths, progress=progress, cancelled=cancelled, shred_originals=bool(shred))
+            finally:
+                self._jobs.push("vault", self.vault_state())
+            return []
+        n = len(paths)
+        return self._jobs.start("vault", f"Lock {n} file{'s' if n != 1 else ''} in the vault", work, notify=False)
+
+    def vault_export(self, ids):
+        try:
+            v = self._vault_open_box()
+        except vault.VaultError as e:
+            return {"error": str(e)}
+        folder = self._ask_folder(self._state.save_dir)
+        if not folder:
+            return None
+        ids = [str(i) for i in ids]
+        return self._jobs.start("vault", f"Take {len(ids)} file{'s' if len(ids) != 1 else ''} out of the vault",
+                                lambda report, cancelled: v.export(ids, folder, cancelled))
+
+    def vault_open(self, file_id):
+        try:
+            path = self._vault_open_box().open_copy(str(file_id))
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        os.startfile(path)
+        return True
+
+    def vault_remove(self, ids):
+        try:
+            self._vault_open_box().remove([str(i) for i in ids])
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        return self.vault_state()
+
+    def vault_rename(self, file_id, name):
+        try:
+            self._vault_open_box().rename(str(file_id), str(name))
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        return self.vault_state()
+
+    def vault_password(self, old, new, again):
+        if new != again:
+            return {"error": "The two new passwords don't match."}
+        try:
+            self._vault_box().change_password(old, new)
+        except vault.WrongPassword as e:
+            time.sleep(1)
+            return {"error": str(e)}
+        except (vault.VaultError, OSError) as e:
+            return {"error": str(e)}
+        core.log("Vault password changed")
+        return True
+
+    def _vault_loop(self):
+        """Wipes copies left by a crash, then locks the vault after a few quiet minutes."""
+        vault.wipe_leftovers()
+        while True:
+            time.sleep(15)
+            v = self._vault
+            idle = time.monotonic() - self._vault_used
+            if v and v.unlocked and idle > 60 * self._state.cfg.get("vault_lock_minutes", 5):
+                v.lock()
+                core.log("Vault locked (not used for a while)")
+                if self._jobs:
+                    self._jobs.push("vault", self.vault_state())
+
+    # ---------------------------------------------------------------- disk space map
+    def disk_drives(self):
+        return diskmap.drives()
+
+    def disk_pick(self):
+        return self._ask_folder(Path.home())
+
+    def disk_scan(self, path):
+        if not path or not Path(path).is_dir():
+            return {"error": "That folder doesn't exist."}
+        self._disk = None
+
+        def work(report, cancelled):
+            root, top, stats = diskmap.scan(path, progress=lambda n, current: report(None, f"{n:,} items · {current[-70:]}"),
+                                            cancelled=cancelled)
+            self._disk = (root, top)
+            self._jobs.push("disk", self.disk_view(root.name))
+            return []
+        return self._jobs.start("disk", f"Scan {Path(path).name or path}", work, notify=False)
+
+    def disk_view(self, path=None):
+        if not self._disk:
+            return None
+        root, top = self._disk
+        node = diskmap.find(root, path) if path else root
+        v = diskmap.view(node or root)
+        v["root"] = root.name
+        v["top"] = [{"name": Path(p).name, "path": p, "size": s, "protected": diskmap.protected(p)} for s, p in top][:40] if (node or root) is root else []
+        for item in v["items"]:
+            item["protected"] = bool(item["path"]) and diskmap.protected(item["path"])
+        return v
+
+    def _in_scan(self, path):
+        return bool(self._disk and path and diskmap.find(self._disk[0], str(Path(path).parent)) is not None)
+
+    def disk_reveal(self, path):
+        if self._in_scan(path) and os.path.lexists(path):
+            subprocess.Popen(["explorer", "/select,", os.path.normpath(path)])
+
+    def disk_trash(self, path):
+        """Recycle Bin only (it can be restored), only for something from the current scan, never system folders."""
+        if not self._in_scan(path):
+            return {"error": "Scan again first."}
+        root, top = self._disk
+        node = diskmap.find(root, path)
+        size = node.size if node else (os.path.getsize(path) if os.path.isfile(path) else 0)
+        try:
+            diskmap.to_recycle_bin(path)
+        except (OSError, PermissionError) as e:
+            return {"error": str(e)}
+        core.log(f"Disk map: moved to the Recycle Bin: {path}")
+        diskmap.remove_from_tree(root, path, size)
+        self._disk = (root, [t for t in top if t[1] != path and not t[1].startswith(path.rstrip("\\") + "\\")])
+        return self.disk_view(str(Path(path).parent))
+
+    # ---------------------------------------------------------------- network scanner
+    def _net_memory(self):
+        return netscan.Memory(core.CONFIG_DIR / "network.json")
+
+    def _net_scan(self, report=None, cancelled=None):
+        with self._net_lock:  # the background check and the button never run at once
+            result = netscan.scan(progress=(lambda f, n: report(f, f"{n} found")) if report else None, cancelled=cancelled)
+            new = self._net_memory().merge(result)
+            self._net = result
+        for d in new:
+            core.log(f"Network: new device {d['ip']} {d['mac']} {d['name'] or ''}")
+        if new:
+            names = ", ".join(d["name"] or d["ip"] for d in new[:3])
+            self._state.notifier.show_soon("New device on your network", names + (f" and {len(new) - 3} more" if len(new) > 3 else ""))
+        if self._jobs:
+            self._jobs.push("net", self.net_state())
+        return result
+
+    def net_state(self):
+        return {"result": self._net, "watch": bool(self._state.cfg.get("net_watch", False))}
+
+    def net_scan(self):
+        def work(report, cancelled):
+            self._net_scan(report, cancelled)
+            return []
+        return self._jobs.start("net", "Scan the home network", work, notify=False)
+
+    def net_label(self, key, text):
+        if not self._net or not self._net_memory().label(self._net, str(key), str(text)):
+            return None
+        for d in self._net["devices"]:
+            if d["key"] == key:
+                d["label"], d["new"] = str(text)[:60], False
+        return self.net_state()
+
+    def net_ack(self):
+        if self._net:
+            self._net_memory().acknowledge(self._net)
+            for d in self._net["devices"]:
+                d["new"] = False
+        return self.net_state()
+
+    def net_forget(self, key):
+        if self._net:
+            self._net_memory().forget(self._net, str(key))
+            self._net["missing"] = [m for m in self._net.get("missing", []) if m["key"] != key]
+        return self.net_state()
+
+    def _net_loop(self):
+        """With 'tell me about new devices' on: a quiet scan every 10 minutes."""
+        while True:
+            time.sleep(600)
+            if self._state.cfg.get("net_watch") and self._state.cfg["features"].get("netscan"):
+                try:
+                    self._net_scan()
+                except Exception as e:
+                    core.log(f"Network check skipped: {e}")
+
+    # ---------------------------------------------------------------- is my PC exposed?
+    def exposure_check(self):
+        cfg = self._state.cfg
+        app = {"server_port": cfg["port"] if self._server else None, "https_only": cfg.get("https_only"),
+               "remote": cfg["features"].get("remote"), "remote_power": cfg.get("remote_power"),
+               "share_links": sum(1 for s in self._shares.summary(None) if s["active"])}
+
+        def work(report, cancelled):
+            self._exposure = exposure.check(app)
+            self._jobs.push("exposure", self._exposure_view())
+            return []
+        return self._jobs.start("exposure", "Check how exposed this PC is", work, notify=False)
+
+    def _exposure_view(self):
+        if not self._exposure:
+            return None
+        view = dict(self._exposure)
+        if view.get("upnp"):  # the window never gets (or sends back) the router's control address
+            view["upnp"] = {"forwards": view["upnp"]["forwards"]}
+        return view
+
+    def exposure_state(self):
+        return self._exposure_view()
+
+    def exposure_fix(self, action, args=None):
+        """Only the fixes the check offered; Windows asks for admin for each one."""
+        offered = {f["fix"]["action"]: f["fix"]["args"] for f in (self._exposure or {}).get("findings", []) if f.get("fix")}
+        if action not in offered or action == "page":
+            return {"error": "Run the check again first."}
+        try:
+            exe, params = exposure.fix_command(action, offered[action])
+        except ValueError as e:
+            return {"error": str(e)}
+        core.log(f"Exposure fix requested: {action}")
+        if not run_elevated(exe, params):
+            return {"error": "Windows didn't get permission, so nothing was changed."}
+        return True
+
+    def exposure_unforward(self, external, protocol):
+        """Asks the router to close one forwarded port (UPnP). Only ports it just listed."""
+        upnp = (self._exposure or {}).get("upnp")
+        match = next((f for f in (upnp or {}).get("forwards", []) if f["external"] == int(external) and f["protocol"] == protocol), None)
+        if not match:
+            return {"error": "Run the check again first."}
+        try:
+            exposure.remove_forward(upnp["control"], upnp["service"], self._exposure["gateway"], match["external"], match["protocol"], match["remote"])
+        except Exception as e:
+            return {"error": f"The router refused ({e.__class__.__name__}). Remove it in the router's settings instead."}
+        core.log(f"Asked the router to close port {external}/{protocol}")
+        upnp["forwards"].remove(match)
+        return self._exposure_view()
+
     # ---------------------------------------------------------------- downloader
     def video_info(self, url):
         try:
@@ -998,6 +1547,11 @@ class UninstallApi:
                 pass
         from setup_paths import desktop_shortcut
         desktop_shortcut().unlink(missing_ok=True)
+        try:  # the right-click menu entries
+            import context_menu
+            context_menu.disable()
+        except Exception:
+            pass
         for leftover in (core.CONFIG_DIR, core.APPDATA / core.OLD_APP, Path.home() / ".cache" / "yt-dlp"):
             shutil.rmtree(leftover, ignore_errors=True)
         return {"ok": True, "deleted_files": deleted}
@@ -1097,11 +1651,19 @@ def main():
     parser.add_argument("--minimized", action="store_true", help="start minimized")
     parser.add_argument("--headless", action="store_true", help="server only, no window")
     parser.add_argument("--page", help="open on this page, e.g. calculator")
+    for flag in ("share", "send", "convert"):  # from Explorer's right-click menu
+        parser.add_argument(f"--{flag}", nargs="+", metavar="PATH", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if sys.stdout:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+    explorer = next(((c, getattr(args, c)) for c in ("share", "send", "convert") if getattr(args, c)), None)
     if not args.headless and already_running():
+        if explorer:  # hand the files to the Swiftlane that's already open
+            import ipc
+            ipc.send(core.CONFIG_DIR, *explorer)
+            focus_existing_window()
+            return
         if not focus_existing_window():
             message_box(f"{core.APP} is already running. Check the taskbar.")
         return
@@ -1119,11 +1681,19 @@ def main():
 
     api = Api(state)
     api._start_page = args.page or cfg.pop("_open_page", None)
+    import ipc
+    ipc.serve(core.CONFIG_DIR, api._from_explorer)
+    if explorer:
+        api._from_explorer(*explorer)
     if cfg["features"]["transfer"]:
         api._start_server()
     threading.Thread(target=api._share_loop, daemon=True).start()
     threading.Thread(target=api._update_loop, daemon=True).start()
+    threading.Thread(target=api._vault_loop, daemon=True).start()
+    threading.Thread(target=api._net_loop, daemon=True).start()
     run_window(state, api, args.minimized)
+    if api._vault:
+        api._vault.lock()  # also wipes files opened from it
     api._shutdown_sharing()
 
 

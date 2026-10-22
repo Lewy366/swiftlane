@@ -2,6 +2,21 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.0 (2026-10-22)
+
+- Folders in the sidebar: arrange tools your way, plus an All tools page and Ctrl+K search
+- Encrypted phone transfer (HTTPS) with Swiftlane's own certificate, and an option to refuse unencrypted connections
+- Request files: a link others use to send files to you, with limits and an optional password
+- PC remote: media keys, volume and arrow keys from your phone (off until you switch it on)
+- Right-click any file in File Explorer: Send to phone, Share with a link, Convert
+- PDF tools: merge, reorder, rotate, split, sign and make smaller
+- Video trimmer: fast or exact cuts, fit a size for Discord, email or WhatsApp, or keep only the sound
+- Disk space: see what fills up your drives and move things to the Recycle Bin
+- Vault: files locked with your password (AES-256), locks itself when not in use
+- Network devices: who is on your home network, with an optional alert when a new device joins
+- Is my PC exposed?: firewall, open ports, Remote Desktop and router port forwards at a glance
+- Redesigned phone page
+
 ## 1.0.0 (2026-10-22)
 
 - Phone transfer: send files between your phone and this PC over your home network, nothing to install on the phone

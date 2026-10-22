@@ -3,6 +3,13 @@
   const FEATURES = [
     ['transfer', 'transfer', 'Phone transfer', 'Send and receive files with your phone over your network'],
     ['share', 'link', 'Share links', 'Send files to anyone with a link, through Tailscale'],
+    ['remote', 'remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
+    ['pdf', 'pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
+    ['trimmer', 'scissors', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
+    ['vault', 'lock', 'Vault', 'Files only your password opens'],
+    ['diskmap', 'disk', 'Disk space', 'See what fills up your drives'],
+    ['netscan', 'wifi', 'Network devices', 'Who is on your home network'],
+    ['exposure', 'radar', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
     ['converter', 'convert', 'File converter', 'Images, video, audio and PDF'],
     ['images', 'image', 'Image editor', 'Crop, resize, straighten, adjust colours, compress'],
     ['downloader', 'download', 'Video downloader', 'YouTube and other sites'],
@@ -34,6 +41,8 @@
 
   function renderTransferSettings() {
     $('transferSettings').hidden = !App.state.features.transfer;
+    $('remotePowerRow').hidden = !App.state.features.remote;
+    $('remotePower').checked = !!App.state.remote_power;
     $('saveDir').textContent = App.state.save_dir;
     $('notify').checked = App.state.notify;
     $('sortFiles').checked = App.state.sort_files;
@@ -79,8 +88,18 @@
       $('settingsSub').textContent = 'Swiftlane ' + App.state.version;
       $('configDir').textContent = App.state.config_dir;
       $('autostart').checked = App.state.autostart;
+      $('ctxMenu').checked = !!App.state.context_menu;
+      $('ctxMenu').onchange = async e => {
+        const r = await App.api.set_context_menu(e.target.checked);
+        if (r.error) { toast(r.error); e.target.checked = !e.target.checked; return; }
+        toast(r.enabled ? 'Added to the right-click menu' : 'Removed from the right-click menu');
+      };
       $('language').value = App.state.language;
       $('chooseFolder').onclick = async () => { const dir = await App.api.choose_folder(); if (dir) { App.state.save_dir = dir; renderTransferSettings(); toast('Save folder changed'); } };
+      $('remotePower').onchange = e => {
+        if (e.target.checked && !confirm(t('Let your paired phone put this PC to sleep or shut it down? Shutting down always gives a 60-second warning you can cancel.'))) { e.target.checked = false; return; }
+        App.api.set_option('remote_power', e.target.checked); App.state.remote_power = e.target.checked;
+      };
       $('notify').onchange = e => { App.api.set_notify(e.target.checked); App.state.notify = e.target.checked; };
       $('sortFiles').onchange = e => { App.api.set_option('sort_files', e.target.checked); App.state.sort_files = e.target.checked; };
       $('autostart').onchange = async e => { if (!await App.api.set_autostart(e.target.checked)) { e.target.checked = !e.target.checked; toast('Couldn’t change the startup setting'); } };

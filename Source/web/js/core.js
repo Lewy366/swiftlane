@@ -59,6 +59,15 @@ App.on('dropped', files => {
   const page = App.pages[App.page];
   if (page && page.drop) page.drop(files); else toast('Open a tool that takes files, then drop them there.');
 });
+// Files from Explorer's right-click menu: open the right tool with them
+function fromExplorer(r) {
+  if (!r) return;
+  const page = { share: 'share', send: 'transfer', convert: 'converter' }[r.cmd];
+  showPage(page);
+  if (r.cmd === 'share') App.pages.share.dropAll({ files: r.files, folders: r.folders });
+  else if (r.files.length) App.pages[page].drop(r.files);
+}
+App.on('explorer', fromExplorer);
 App.on('dropped-all', data => {  // folders were dropped: only the Share page takes those
   const page = App.pages[App.page];
   if (page && page.dropAll) page.dropAll(data);
@@ -107,9 +116,9 @@ document.addEventListener('keydown', e => {
 
 function applyFeatures() {
   const f = App.state.features;
+  if (App.renderSidebar) App.renderSidebar();  // builds the tools (pinned + folders) for the features that are on
   document.querySelectorAll('.nav[data-feature]').forEach(n => n.hidden = !f[n.dataset.feature]);
   numberNav();
-  $('toolsLabel').hidden = !['converter', 'images', 'downloader', 'currency', 'calculator', 'speedtest', 'adblock'].some(k => f[k]);
   const dot = $('statusDot'), text = $('statusText');
   if (!f.transfer) { dot.className = 'dot off'; text.textContent = 'Phone transfer off'; }
   else if (App.state.server_error) { dot.className = 'dot err'; text.textContent = 'Phone transfer unavailable'; }
@@ -334,5 +343,6 @@ async function init() {
   let start = App.state.start_page;
   try { start = start || localStorage.getItem('swiftlane-page'); } catch (e) {}
   showPage(start || firstPage());
+  fromExplorer(App.state.explorer);
 }
 window.addEventListener('pywebviewready', init);

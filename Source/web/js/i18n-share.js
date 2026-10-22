@@ -224,3 +224,18 @@ Object.assign(I18N.it, {
 I18N_PATTERNS.de.unshift([/^downloaded (\d+) times$/, '$1-mal heruntergeladen']);
 I18N_PATTERNS.pl.unshift([/^downloaded (\d+) times$/, 'pobrano $1 razy']);
 I18N_PATTERNS.it.unshift([/^downloaded (\d+) times$/, 'scaricato $1 volte']);
+
+// Request files
+Object.assign(I18N.de, { 'Request files…': 'Dateien anfordern…', 'Request': 'Anfrage', '1 file received': '1 Datei empfangen', 'Open folder': 'Ordner öffnen',
+  'What should people send you? (shown on their page, e.g. “Holiday photos for Lewy”)': 'Was sollen dir die Leute schicken? (steht auf ihrer Seite, z. B. „Urlaubsfotos für Lewy“)',
+  'Most they may send in total (MB):': 'Höchstens insgesamt (MB):', 'Most files they may send:': 'Höchstens so viele Dateien:',
+  'Request link copied · files people send land in “From links”': 'Anfrage-Link kopiert · Dateien landen in „From links“' });
+Object.assign(I18N.pl, { 'Request files…': 'Poproś o pliki…', 'Request': 'Prośba', '1 file received': 'Otrzymano 1 plik', 'Open folder': 'Otwórz folder',
+  'What should people send you? (shown on their page, e.g. “Holiday photos for Lewy”)': 'Co mają ci wysłać? (widać to na ich stronie, np. „Zdjęcia z wakacji dla Lewego”)',
+  'Most they may send in total (MB):': 'Maksymalnie łącznie (MB):', 'Most files they may send:': 'Maksymalna liczba plików:',
+  'Request link copied · files people send land in “From links”': 'Link skopiowany · pliki trafią do „From links”' });
+Object.assign(I18N.it, { 'Request files…': 'Richiedi file…', 'Request': 'Richiesta', '1 file received': '1 file ricevuto', 'Open folder': 'Apri cartella',
+  'What should people send you? (shown on their page, e.g. “Holiday photos for Lewy”)': 'Cosa devono inviarti? (appare sulla loro pagina, es. “Foto delle vacanze per Lewy”)',
+  'Most they may send in total (MB):': 'Massimo in totale (MB):', 'Most files they may send:': 'Numero massimo di file:',
+  'Request link copied · files people send land in “From links”': 'Link copiato · i file arrivano in “From links”' });
+I18N_PATTERNS.de.push([/^(\d+) files received$/, '$1 Dateien empfangen']); I18N_PATTERNS.pl.push([/^(\d+) files received$/, 'Otrzymano plików: $1']); I18N_PATTERNS.it.push([/^(\d+) files received$/, '$1 file ricevuti']);

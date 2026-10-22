@@ -49,6 +49,56 @@ SENSITIVE = re.compile(r"(^id_(rsa|ed25519|ecdsa|dsa)$|\.(pem|key|pfx|p12|kdbx|o
                        r"^(login data|cookies|web data)$|password)", re.I)
 PAGE_CSP = ("default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; "
             "frame-ancestors 'none'; base-uri 'none'")
+REQUEST_CSP = ("default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self'; "
+               "form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+UPLOAD_HEADROOM = 1024 * 1024 * 1024   # keep at least 1 GB free on the receiving drive
+REQUEST_JS = r"""
+// Upload page of a Swiftlane request link: sends each file as-is, one after another.
+const cfg = document.getElementById('cfg').dataset, list = document.getElementById('list');
+let budget = +cfg.max, slots = +cfg.files;
+function fmt(n) { const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return (i ? n.toFixed(1) : n) + ' ' + u[i]; }
+function row(name) {
+  const r = document.createElement('div'); r.className = 'row';
+  const n = document.createElement('span'); n.className = 'name'; n.textContent = name;
+  const s = document.createElement('span'); s.className = 'size';
+  r.append(n, s); list.append(r); list.hidden = false; return s;
+}
+function send(file, status) {
+  return new Promise(done => {
+    const x = new XMLHttpRequest();
+    x.open('POST', cfg.url + '&name=' + encodeURIComponent(file.name));
+    x.upload.onprogress = e => { if (e.lengthComputable) status.textContent = Math.round(100 * e.loaded / e.total) + '%'; };
+    x.onload = () => { let m = ''; try { m = JSON.parse(x.responseText).error || ''; } catch (e) {} status.textContent = x.status === 200 ? 'Sent ✓' : (m || 'Failed'); done(x.status === 200); };
+    x.onerror = () => { status.textContent = 'Failed'; done(false); };
+    x.send(file);
+  });
+}
+async function take(files) {
+  for (const f of files) {
+    const status = row(f.name);
+    if (slots <= 0) { status.textContent = 'Not sent: no more files allowed'; continue; }
+    if (f.size > budget) { status.textContent = 'Not sent: too big (' + fmt(f.size) + ')'; continue; }
+    if (!f.size) { status.textContent = 'Not sent: empty file'; continue; }
+    if (await send(f, status)) { budget -= f.size; slots -= 1; }
+  }
+}
+document.getElementById('pick').onchange = e => take([...e.target.files]);
+const drop = document.getElementById('drop');
+drop.ondragover = e => { e.preventDefault(); };
+drop.ondrop = e => { e.preventDefault(); take([...e.dataTransfer.files]); };
+"""
+
+
+def mark_from_internet(path):
+    """Windows' Mark of the Web: Windows warns before opening it, Office uses Protected View,
+    SmartScreen checks programs, exactly as for a file downloaded from a website."""
+    try:
+        with open(f"{path}:Zone.Identifier", "w", encoding="ascii") as f:
+            f.write("[ZoneTransfer]\r\nZoneId=3\r\nReferrerUrl=about:internet\r\n")
+    except OSError:
+        pass
+
+
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,40}$")
 
 
@@ -223,6 +273,8 @@ class Shares:
         self.lock = threading.RLock()
         self.shares = {}
         self.open_sessions = {}  # session id -> {"share", "link", "created"}: visits that haven't downloaded
+        self.pending = {}        # request share id -> [files, bytes] being uploaded right now
+        self.on_upload = None    # (share, name, size) after a file arrives through a request link
         try:
             data = json.loads(self.path.read_text("utf-8"))
             self.shares = {s["id"]: s for s in data.get("shares", [])}
@@ -252,7 +304,71 @@ class Shares:
         return not share.get("ended") and share["expires"] > self.now()
 
     def link_open(self, share, link):
+        if share.get("kind") == "request":
+            return self.is_active(share) and not link["blocked"] and self.room(share) is None
         return self.is_active(share) and not link["blocked"] and (link["max"] is None or link["uses"] < link["max"])
+
+    # ---- request links: people send files to you
+    def room(self, share, size=0):
+        """None if one more file of `size` bytes fits the request's limits, else why not."""
+        files, bytes_ = self.pending.get(share["id"], [0, 0])
+        if len(share["items"]) + files >= share["max_files"]:
+            return "This request already has all the files it accepts."
+        if share["total"] + bytes_ + size > share["max_bytes"]:
+            return "That's more than this request accepts."
+        return None
+
+    def reserve(self, share, size):
+        with self.lock:
+            if not self.is_active(share):
+                return "This link isn't available any more."
+            problem = self.room(share, size)
+            if problem:
+                return problem
+            p = self.pending.setdefault(share["id"], [0, 0])
+            p[0] += 1
+            p[1] += size
+        return None
+
+    def release(self, share, size):
+        with self.lock:
+            p = self.pending.get(share["id"])
+            if p:
+                p[0] -= 1
+                p[1] -= size
+
+    def received(self, share, link, name, size, ip):
+        self.release(share, size)
+        with self.lock:
+            share["items"].append({"name": name, "size": size, "time": self.now(), "from": ip})
+            share["total"] += size
+            link["uses"] += 1
+            link["last"] = self.now()
+            self.changed()
+        core.log(f"Request {share['title']!r}: received {name} ({core.human(size)}) from {ip}")
+        if self.on_upload:
+            try:
+                self.on_upload(share, name, size)
+            except Exception:
+                pass
+
+    def create_request(self, folder, title, hours=24, max_mb=2048, max_files=50, password=""):
+        hours, max_mb, max_files = float(hours), int(max_mb), int(max_files)
+        if not 0 < hours <= MAX_HOURS:
+            raise ShareError("Choose a time between a few minutes and one year.")
+        if not 1 <= max_mb <= 1024 * 1024 or not 1 <= max_files <= 10000:
+            raise ShareError("Check the size and file limits.")
+        title = re.sub(r"[\x00-\x1f]", "", str(title or "")).strip()[:80] or "Files for me"
+        share = {"id": secrets.token_hex(6), "kind": "request", "title": title, "created": self.now(),
+                 "expires": self.now() + hours * 3600, "ended": None, "items": [], "total": 0, "skipped": {},
+                 "folder": str(folder), "max_bytes": max_mb * 1024 * 1024, "max_files": max_files,
+                 "password": hash_password(password) if password else None,
+                 "links": [_new_link("Anyone with the link", None, "uploads")], "sessions": {}}
+        with self.lock:
+            self.shares[share["id"]] = share
+            self.changed()
+        core.log(f"Request made: {title} (up to {max_files} files, {max_mb} MB) into {folder}")
+        return {"share": share["id"]}
 
     def any_active(self):
         """True while at least one link could still be used, or a used-up link downloaded in the
@@ -401,6 +517,7 @@ class Shares:
                     "skipped": s["skipped"], "password": bool(s["password"]),
                     "preview": [{"name": i["name"], "size": i["size"], "downloads": i.get("downloads", 0)} for i in s["items"][:200]],
                     "downloads": sum(i.get("downloads", 0) for i in s["items"]),
+                    "kind": s.get("kind", "send"), "max_bytes": s.get("max_bytes"), "max_files": s.get("max_files"), "folder": s.get("folder"),
                     "links": [{"id": l["id"], "label": l["label"], "max": l["max"], "uses": l["uses"],
                                "blocked": l["blocked"], "last": l["last"], "open": self.link_open(s, l),
                                "counts": l.get("counts", "visits"),
@@ -565,12 +682,12 @@ class Handler(BaseHTTPRequestHandler):
         host = (self.headers.get("Host") or "").lower()
         return host in self.server.allowed_hosts()
 
-    def send_page(self, status, body, extra=()):
+    def send_page(self, status, body, extra=(), csp=PAGE_CSP):
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.common_headers()
-        self.send_header("Content-Security-Policy", PAGE_CSP)
+        self.send_header("Content-Security-Policy", csp)
         for k, v in extra:
             self.send_header(k, v)
         self.end_headers()
@@ -626,6 +743,18 @@ class Handler(BaseHTTPRequestHandler):
         if rest == "":
             self.show_page(share, link)
             return
+        if share.get("kind") == "request":  # a request link only takes files: nothing can be downloaded from it
+            if rest == "request.js":
+                body = REQUEST_JS.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/javascript; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.common_headers()
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.not_found()
+            return
         with self.server.transfer():
             if rest == "zip":
                 self.send_zip(share, link, query.get("s", [None])[0])
@@ -639,6 +768,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(421)
             return
         found = self.route()
+        if found and found[0].get("kind") == "request" and found[2] == "upload":
+            with self.server.transfer():
+                self.receive_upload(*found)
+            return
         if not found or found[2] != "" or not found[0]["password"]:
             self.not_found()
             return
@@ -678,6 +811,85 @@ class Handler(BaseHTTPRequestHandler):
             core.log(f"Share {share['title']!r}: wrong password from {ip}")
             self.send_page(*self.password_page(share, "Wrong password."))
 
+    # ---- request links: receiving a file
+    def receive_upload(self, share, link, rest, query):
+        def fail(status, msg):
+            self.send_response(status)
+            body = json.dumps({"error": msg}).encode()
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Connection", "close")
+            self.common_headers()
+            self.end_headers()
+            self.wfile.write(body)
+        sid = query.get("s", [None])[0] or self.cookie_session(link)
+        sess = self.shares.session(share, link, sid)
+        if not sess or link["blocked"] or (share["password"] and not sess.get("unlocked")):
+            return fail(403, "Open the link again.")
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            return fail(411, "Unsupported upload.")
+        try:
+            size = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            return fail(411, "Unsupported upload.")
+        if size <= 0:
+            return fail(400, "Empty file.")
+        problem = self.shares.reserve(share, size)
+        if problem:
+            return fail(413, problem)
+        folder = Path(share["folder"])
+        tmp = None
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            if shutil.disk_usage(folder).free < size + UPLOAD_HEADROOM:
+                self.shares.release(share, size)
+                return fail(507, "The receiving PC doesn't have enough free space.")
+            name = core.safe_name(query.get("name", [""])[0])
+            tmp = folder / f".{secrets.token_hex(8)}.part"
+            remaining = size
+            with open(tmp, "xb") as f:
+                while remaining:
+                    chunk = self.rfile.read(min(CHUNK, remaining))
+                    if not chunk:
+                        raise ConnectionError("upload interrupted")
+                    f.write(chunk)
+                    remaining -= len(chunk)
+            final = core.place_file(tmp, folder, name)
+            mark_from_internet(final)
+        except Exception as e:
+            if tmp:
+                tmp.unlink(missing_ok=True)
+            self.shares.release(share, size)
+            core.log(f"Request {share['title']!r}: upload failed ({e.__class__.__name__})")
+            try:
+                fail(400, "The upload didn't finish. Try again.")
+            except OSError:
+                pass
+            return
+        self.shares.received(share, link, final.name, size, self.client_ip())
+        body = json.dumps({"saved": final.name}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.common_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def request_page(self, share, link, sid):
+        files_left = share["max_files"] - len(share["items"])
+        bytes_left = max(0, share["max_bytes"] - share["total"])
+        left = _left(share["expires"] - time.time())
+        body = (f"<h1>{html.escape(share['title'])}</h1>"
+                f"<p>Send files to the person who shared this link. Up to {files_left} more file{'s' if files_left != 1 else ''}, "
+                f"{human(bytes_left)} in total · open for {left}.</p>"
+                f'<div class="box" id="drop" style="padding:28px;text-align:center"><p style="margin:0 0 12px">Choose files or drop them here</p>'
+                f'<input type="file" id="pick" multiple style="max-width:none"></div>'
+                f'<div class="box" id="list" style="margin-top:14px" hidden></div>'
+                f'<p class="foot">Files go straight to the sender’s PC. They can’t be seen by anyone else through this link.</p>'
+                f'<span id="cfg" data-url="/s/{link["token"]}/upload?s={quote(sid)}" data-max="{bytes_left}" data-files="{files_left}" hidden></span>'
+                f'<script src="/s/{link["token"]}/request.js"></script>')
+        return _page(share["title"], body)
+
     # ---- the download page
     def password_page(self, share, error="", status=200):
         err = f'<p class="err">{html.escape(error)}</p>' if error else ""
@@ -700,6 +912,9 @@ class Handler(BaseHTTPRequestHandler):
             extra.append(("Set-Cookie", f"sl_{link['id']}={sid}; Path=/s/{link['token']}; HttpOnly; SameSite=Lax{secure}"))
         if share["password"] and not sess.get("unlocked"):
             self.send_page(*self.password_page(share), extra=extra)
+            return
+        if share.get("kind") == "request":
+            self.send_page(*self.request_page(share, link, sid), extra=extra, csp=REQUEST_CSP)
             return
         q = f"?s={quote(sid)}"
         rows = []

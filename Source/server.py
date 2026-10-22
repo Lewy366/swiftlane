@@ -15,6 +15,7 @@ import re
 import secrets
 import shutil
 import socket
+import ssl
 import subprocess
 import sys
 import threading
@@ -26,7 +27,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 APP = "Swiftlane"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 OLD_APP = "PocketDrop"  # the app's name before 2.2; its settings and files are carried over
 APPDATA = Path(os.environ.get("APPDATA") or Path.home())
 CONFIG_DIR = APPDATA / APP
@@ -54,7 +55,11 @@ DEFAULTS = {
     # Which parts of the app are switched on (Settings > Features).
     "features": {"transfer": True, "converter": True, "images": True,
                  "downloader": True, "currency": True, "calculator": True,
-                 "speedtest": True, "adblock": True, "share": True},
+                 "speedtest": True, "adblock": True, "share": True,
+                 "pdf": True, "trimmer": True, "vault": True, "diskmap": True, "netscan": True, "exposure": True,
+                 "remote": False},       # PC remote: off until you switch it on (Security-first)
+    "remote_power": False,      # PC remote may also sleep / shut down the PC
+    "https_only": False,        # refuse unencrypted phone connections (turn on once phones are set up)
     "sort_files": True,        # received files go into Photos/Videos/... subfolders
     "download_dir": "",        # where the video downloader suggests saving ("" = <save_dir>\Videos or \Audio)
     "calc_angle": "deg",       # calculator's starting angle unit
@@ -471,6 +476,9 @@ class State:
         self.place_lock = threading.Lock()
         self.link_secret = secrets.token_bytes(32)  # download links die with the app
         self.listeners = []
+        self.remote = None                   # set by the app: (action, ip) -> None or a problem to show
+        self.ca = None                       # tls.Authority once encrypted phone transfer is ready
+        self.remote_times = deque(maxlen=10)  # at most 10 remote presses per 2 seconds
         for leftover in self.save_dir.glob(".*.part"):
             leftover.unlink(missing_ok=True)
 
@@ -545,6 +553,40 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self, code, obj):
         self.send_body(code, json.dumps(obj).encode(), "application/json")
 
+    def setup(self):
+        super().setup()
+        self.secure = isinstance(self.connection, ssl.SSLSocket)
+
+    CERT_PATHS = ("/cert", "/swiftlane.mobileconfig", "/swiftlane-ca.cer")
+
+    def plain_refused(self, path):
+        """'Only encrypted connections' is on and this request isn't encrypted: refuse it
+        (pages are sent to the encrypted address instead). The certificate pages stay reachable."""
+        if self.secure or not self.state.cfg.get("https_only") or not self.state.ca or path in self.CERT_PATHS:
+            return False
+        if self.command == "GET" and path in STATIC_FILES:
+            host, port = self.connection.getsockname()[:2]  # our own address, never the Host header
+            self.send_response(301)
+            self.send_header("Location", f"https://{host}:{port}{path}")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        else:
+            self.send_json(403, {"error": "This PC only accepts encrypted connections. Open Swiftlane through its secure link (https://)."})
+        return True
+
+    def send_cert_files(self, path):
+        ca = self.state.ca
+        if not ca:
+            self.send_json(404, {"error": "Encrypted connections aren't available on this PC."})
+        elif path == "/cert":
+            page = (WEB_DIR / "cert.html").read_text("utf-8").replace("{{FINGERPRINT}}", ca.fingerprint)
+            self.send_body(200, page.encode("utf-8"), "text/html; charset=utf-8", [("Content-Security-Policy", PAGE_CSP)])
+        elif path == "/swiftlane.mobileconfig":
+            self.send_body(200, ca.mobileconfig(), "application/x-apple-aspen-config",
+                           [("Content-Disposition", 'attachment; filename="Swiftlane.mobileconfig"')])
+        else:
+            self.send_body(200, ca.der, "application/x-x509-ca-cert", [("Content-Disposition", 'attachment; filename="Swiftlane.cer"')])
+
     def client_ok(self):
         ip = self.client_address[0]
         if not allowed_client(ip):
@@ -573,13 +615,20 @@ class Handler(BaseHTTPRequestHandler):
         if not self.client_ok():
             return
         url = urlsplit(self.path)
-        if url.path in STATIC_FILES:
+        if self.plain_refused(url.path):
+            return
+        if url.path in self.CERT_PATHS:
+            self.send_cert_files(url.path)
+        elif url.path in STATIC_FILES:
             filename, content_type = STATIC_FILES[url.path]
             extra = [("Content-Security-Policy", PAGE_CSP)] if filename.endswith(".html") else []
             self.send_body(200, (WEB_DIR / filename).read_bytes(), content_type, extra)
         elif url.path == "/ping":
             if self.authorized():
-                self.send_json(200, {"ok": True, "app": APP, "pc": socket.gethostname(), "lang": self.state.cfg.get("language", "en")})
+                cfg = self.state.cfg
+                self.send_json(200, {"ok": True, "app": APP, "pc": socket.gethostname(), "lang": cfg.get("language", "en"),
+                                     "remote": bool(cfg["features"].get("remote")), "power": bool(cfg.get("remote_power")),
+                                     "secure": self.secure, "tls": bool(self.state.ca)})
         elif url.path == "/api/outbox":
             if self.authorized():
                 items = [{"id": i["id"], "name": i["name"], "size": i["size"],
@@ -631,6 +680,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self.client_ok():
             return
         url = urlsplit(self.path)
+        if self.plain_refused(url.path):
+            return
+        if url.path == "/api/remote":
+            self.remote_action()
+            return
         if url.path != "/upload":
             self.send_json(404, {"error": "Not found."})
             return
@@ -696,6 +750,33 @@ class Handler(BaseHTTPRequestHandler):
         state.notifier.add(final.name)
         self.send_json(200, {"saved": final.name, "bytes": length})
 
+    def remote_action(self):
+        """PC remote: one action name from the paired phone, from a fixed list (see toolkit/remote.py)."""
+        if not self.authorized():
+            return
+        st = self.state
+        if not st.cfg["features"].get("remote") or not st.remote:
+            self.send_json(403, {"error": "The PC remote is switched off in Swiftlane's settings."})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = -1
+        if not 0 < length <= 256:
+            self.send_json(400, {"error": "Bad request."})
+            return
+        try:
+            action = json.loads(self.rfile.read(length)).get("action")
+        except (ValueError, AttributeError):
+            action = None
+        now = time.monotonic()
+        st.remote_times.append(now)
+        if len(st.remote_times) == st.remote_times.maxlen and now - st.remote_times[0] < 2:
+            self.send_json(429, {"error": "Too many presses. Wait a moment."})
+            return
+        problem = st.remote(action, self.client_address[0])
+        self.send_json(403 if problem else 200, {"error": problem} if problem else {"ok": True})
+
     def place(self, tmp, save_dir, name):
         """Move the finished upload into its type folder (Photos, Videos...), or straight
         into the save folder when sorting is switched off."""
@@ -714,6 +795,20 @@ class Server(ThreadingHTTPServer):
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
+
+    tls = None  # ssl.SSLContext once encrypted connections are ready
+
+    def finish_request(self, request, client_address):
+        """Encrypted and plain connections share the port: a TLS connection starts with byte 0x16."""
+        if self.tls is not None:
+            try:
+                request.settimeout(15)
+                first = request.recv(1, socket.MSG_PEEK)
+                if first == b"\x16":
+                    request = self.tls.wrap_socket(request, server_side=True)
+            except (OSError, ssl.SSLError):
+                return
+        self.RequestHandlerClass(request, client_address, self)
 
 
 class PortInUse(Exception):
