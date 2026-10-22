@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.3 (2026-10-22)
+
+- Fixed: the sidebar couldn't scroll when the tool list was taller than the window
+
 ## 1.1.2 (2026-10-22)
 
 - Fixed: updating from inside Swiftlane failed because the old Swiftlane folder counted as "in use"

@@ -27,7 +27,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 APP = "Swiftlane"
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 OLD_APP = "PocketDrop"  # the app's name before 2.2; its settings and files are carried over
 APPDATA = Path(os.environ.get("APPDATA") or Path.home())
 CONFIG_DIR = APPDATA / APP

@@ -622,7 +622,16 @@ body.light .sidebar::after, body.light .card::after, body.light .drop::after {
 .search-btn svg.i { width: 15px; height: 15px; } .search-btn span { flex: 1; text-align: left; }
 .search-btn kbd { font: 10.5px var(--mono); opacity: .8; }
 .search-btn:hover { color: var(--text); }
-.nav-tools { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; min-height: 0; margin: 0 -4px; padding: 0 4px; }
+.nav-tools { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; min-height: 0; flex: 0 1 auto; margin: 0 -4px; padding: 0 4px; overscroll-behavior: contain; }
+/* Keep the sidebar the height of the window, so a long tool list scrolls instead of running off the bottom. */
+.app { grid-template-rows: minmax(0, 1fr); }
+.sidebar { min-height: 0; overflow: hidden; }
+.sidebar > .brand, .sidebar > .nav, .sidebar > .search-btn { flex-shrink: 0; }
+.nav-tools::-webkit-scrollbar { width: 6px; }
+.nav-tools::-webkit-scrollbar-button { display: none; height: 0; }
+.nav-tools::-webkit-scrollbar-track { background: transparent; }
+.nav-tools::-webkit-scrollbar-thumb { background: transparent; border-radius: 6px; }
+.nav-tools:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 22%, transparent); }
 .nav-pinned { display: flex; flex-direction: column; gap: 1px; min-height: 8px; padding-bottom: 4px; }
 .folder-head { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; cursor: pointer; padding: 10px 10px 4px;
   color: var(--faint); font-size: 12px; font-weight: 600; text-align: left; border-radius: 8px; }
