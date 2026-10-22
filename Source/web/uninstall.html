@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Uninstall Swiftlane</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body { overflow: auto; }
+  main { max-width: 640px; margin: 0 auto; padding: 34px 28px; }
+  h1 { font: 650 26px/1.2 var(--display); margin: 14px 0 6px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .head { display: flex; align-items: center; gap: 14px; }
+  .head img { width: 54px; height: 54px; border-radius: 14px; }
+  ul.gone { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.8; font-size: 13.5px; }
+  ul.gone code { font-size: 12px; }
+  .opt { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .opt input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--err); }
+  .opt b { display: block; }
+  .opt small { color: var(--muted); display: block; font-size: 12.5px; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .result-icon { width: 70px; height: 70px; border-radius: 50%; display: grid; place-items: center; margin: 30px auto 12px; font-size: 34px; background: rgba(61,220,151,.15); color: var(--ok); }
+</style>
+</head>
+<body>
+<main id="ask">
+  <div class="head"><img src="icon-180.png" alt=""><div><h1>Uninstall Swiftlane</h1></div></div>
+  <p class="lead">This removes Swiftlane and everything it set up on this PC.</p>
+  <section class="card">
+    <h2>What will be removed</h2>
+    <ul class="gone" id="goneList"></ul>
+  </section>
+  <section class="card">
+    <label class="opt"><input type="checkbox" id="removeFiles"><div><b>Also delete the files Swiftlane made</b>
+      <small id="filesInfo"></small></div></label>
+  </section>
+  <div class="actions"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="go">Uninstall</button></div>
+</main>
+<main id="done" hidden>
+  <div class="result-icon">✓</div>
+  <h1 style="text-align:center">Swiftlane has been removed</h1>
+  <p class="lead" style="text-align:center" id="doneInfo"></p>
+  <div class="actions" style="justify-content:center"><button class="btn primary" id="close">Close</button></div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="js/i18n.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function fmtSize(n) { const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return (i ? n.toFixed(1) : n) + ' ' + u[i]; }
+Object.assign(I18N.de, { 'Uninstall Swiftlane': 'Swiftlane deinstallieren', 'This removes Swiftlane and everything it set up on this PC.': 'Entfernt Swiftlane und alles, was es auf diesem PC eingerichtet hat.',
+  'What will be removed': 'Was entfernt wird', 'Also delete the files Swiftlane made': 'Auch die von Swiftlane erstellten Dateien löschen', 'Cancel': 'Abbrechen', 'Uninstall': 'Deinstallieren',
+  'Swiftlane has been removed': 'Swiftlane wurde entfernt', 'Close': 'Schließen', 'The program': 'Das Programm', 'Your settings, pairing code, logs and background picture': 'Deine Einstellungen, Kopplungscode, Protokolle und Hintergrundbild',
+  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Firewall-Regel, Startmenü- und Desktop-Verknüpfungen, Eintrag in Einstellungen > Apps, Autostart',
+  'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Reste älterer Versionen (PocketDrop) und der Cache des Video-Downloaders',
+  'Removing…': 'Wird entfernt…', 'Windows didn’t give permission, so nothing was removed.': 'Windows hat keine Erlaubnis gegeben, daher wurde nichts entfernt.',
+  'Swiftlane hasn’t made any files yet.': 'Swiftlane hat noch keine Dateien erstellt.', 'Files you saved elsewhere yourself are never touched.': 'Dateien, die du selbst woanders gespeichert hast, bleiben unberührt.' });
+Object.assign(I18N.pl, { 'Uninstall Swiftlane': 'Odinstaluj Swiftlane', 'This removes Swiftlane and everything it set up on this PC.': 'Usuwa Swiftlane i wszystko, co skonfigurował na tym komputerze.',
+  'What will be removed': 'Co zostanie usunięte', 'Also delete the files Swiftlane made': 'Usuń też pliki utworzone przez Swiftlane', 'Cancel': 'Anuluj', 'Uninstall': 'Odinstaluj',
+  'Swiftlane has been removed': 'Swiftlane został usunięty', 'Close': 'Zamknij', 'The program': 'Program', 'Your settings, pairing code, logs and background picture': 'Twoje ustawienia, kod parowania, dzienniki i obraz tła',
+  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Reguła zapory, skróty w menu Start i na pulpicie, wpis w Ustawienia > Aplikacje, autostart',
+  'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Pozostałości starszych wersji (PocketDrop) i pamięć podręczna pobierania wideo',
+  'Removing…': 'Usuwanie…', 'Windows didn’t give permission, so nothing was removed.': 'Windows nie udzielił zgody, więc nic nie zostało usunięte.',
+  'Swiftlane hasn’t made any files yet.': 'Swiftlane nie utworzył jeszcze żadnych plików.', 'Files you saved elsewhere yourself are never touched.': 'Pliki zapisane przez ciebie gdzie indziej pozostają nietknięte.' });
+Object.assign(I18N.it, { 'Uninstall Swiftlane': 'Disinstalla Swiftlane', 'This removes Swiftlane and everything it set up on this PC.': 'Rimuove Swiftlane e tutto ciò che ha configurato su questo PC.',
+  'What will be removed': 'Cosa verrà rimosso', 'Also delete the files Swiftlane made': 'Elimina anche i file creati da Swiftlane', 'Cancel': 'Annulla', 'Uninstall': 'Disinstalla',
+  'Swiftlane has been removed': 'Swiftlane è stato rimosso', 'Close': 'Chiudi', 'The program': 'Il programma', 'Your settings, pairing code, logs and background picture': 'Impostazioni, codice di associazione, registri e immagine di sfondo',
+  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Regola del firewall, collegamenti nel menu Start e sul desktop, voce in Impostazioni > App, avvio automatico',
+  'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Resti di versioni precedenti (PocketDrop) e cache del download video',
+  'Removing…': 'Rimozione…', 'Windows didn’t give permission, so nothing was removed.': 'Windows non ha dato il permesso, quindi non è stato rimosso nulla.',
+  'Swiftlane hasn’t made any files yet.': 'Swiftlane non ha ancora creato file.', 'Files you saved elsewhere yourself are never touched.': 'I file che hai salvato altrove non vengono toccati.' });
+I18N_PATTERNS.de.push([/^(\d+) files \((.+)\): received, converted, edited and downloaded\. Off by default\.$/, '$1 Dateien ($2): empfangen, konvertiert, bearbeitet und heruntergeladen. Standardmäßig aus.'],
+  [/^(\d+) files were deleted too\.$/, 'Außerdem wurden $1 Dateien gelöscht.'], [/^Your files were kept\.$/, 'Deine Dateien wurden behalten.']);
+I18N_PATTERNS.pl.push([/^(\d+) files \((.+)\): received, converted, edited and downloaded\. Off by default\.$/, 'Plików: $1 ($2): odebrane, przekonwertowane, edytowane i pobrane. Domyślnie wyłączone.'],
+  [/^(\d+) files were deleted too\.$/, 'Usunięto też plików: $1.'], [/^Your files were kept\.$/, 'Twoje pliki zostały zachowane.']);
+I18N_PATTERNS.it.push([/^(\d+) files \((.+)\): received, converted, edited and downloaded\. Off by default\.$/, '$1 file ($2): ricevuti, convertiti, modificati e scaricati. Disattivato di default.'],
+  [/^(\d+) files were deleted too\.$/, 'Sono stati eliminati anche $1 file.'], [/^Your files were kept\.$/, 'I tuoi file sono stati conservati.']);
+
+let api;
+window.addEventListener('pywebviewready', async () => {
+  api = window.pywebview.api;
+  const info = await api.info();
+  setLanguage(info.language);
+  const list = $('goneList');
+  const item = (text, path) => { const li = el('li', null, text); if (path) { li.append(document.createTextNode(' ')); const c = el('code', null, path); c.setAttribute('translate', 'no'); li.append(c); } list.append(li); };
+  item('The program', info.install_dir);
+  item('Your settings, pairing code, logs and background picture', info.config_dir);
+  item('Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows');
+  item('Leftovers from older versions (PocketDrop) and the video downloader’s cache');
+  const fi = $('filesInfo');
+  if (info.files) { fi.textContent = `${info.files} files (${fmtSize(info.files_size)}): received, converted, edited and downloaded. Off by default.`; fi.append(el('br'), document.createTextNode(t('Files you saved elsewhere yourself are never touched.'))); }
+  else { fi.textContent = 'Swiftlane hasn’t made any files yet.'; $('removeFiles').disabled = true; }
+});
+$('cancel').onclick = () => api.close();
+$('close').onclick = () => api.close();
+$('go').onclick = async () => {
+  $('go').disabled = true; $('go').textContent = t('Removing…');
+  const r = await api.run($('removeFiles').checked);
+  if (r.error) { $('go').disabled = false; $('go').textContent = t('Uninstall'); const tt = $('toast'); tt.textContent = r.error; tt.classList.add('show'); setTimeout(() => tt.classList.remove('show'), 4000); return; }
+  $('ask').hidden = true; $('done').hidden = false;
+  $('doneInfo').textContent = r.deleted_files ? `${r.deleted_files} files were deleted too.` : 'Your files were kept.';
+};
+</script>
+</body>
+</html>

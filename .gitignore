@@ -1,0 +1,19 @@
+# built files (Setup.exe goes to GitHub Releases, not into the code)
+*.exe
+dist/
+build/
+__pycache__/
+*.pyc
+*.spec
+# one-time helpers for this PC
+Rename project to Swiftlane.cmd
+Source/rename-project.ps1
+# never publish: signing keys, settings, logs
+*.key
+*.pem
+*.log
+config.json
+shares.json
+# owner-only release tools (stay on this PC)
+Publish update.cmd
+Source/release/

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Swiftlane Setup</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body { overflow: hidden; }
+  .wizard { height: 100%; display: grid; grid-template-columns: 230px 1fr; }
+  .steps-bar { padding: 26px 18px; border-right: 1px solid var(--border); background: rgba(10,10,18,.55); display: flex; flex-direction: column; gap: 4px; }
+  .steps-bar .brand { padding-bottom: 22px; }
+  .step-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 10px; color: var(--faint); font-weight: 550; font-size: 13.5px; }
+  .step-item i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11.5px;
+                 border: 1.5px solid var(--faint); flex-shrink: 0; }
+  .step-item.on { color: var(--text); background: var(--panel-2); }
+  .step-item.on i { border-color: transparent; background: var(--grad); color: #fff; }
+  .step-item.done { color: var(--muted); }
+  .step-item.done i { border-color: var(--ok); color: var(--ok); }
+  .steps-bar .spacer { flex: 1; }
+  .lang { margin-top: 10px; }
+  .content { display: flex; flex-direction: column; min-width: 0; }
+  .pane { flex: 1; overflow-y: auto; padding: 30px 34px 10px; }
+  .pane h1 { font: 650 26px/1.15 var(--display); margin: 0 0 6px; letter-spacing: -.02em; }
+  .pane > p.lead { color: var(--muted); margin: 0 0 22px; }
+  .footer { display: flex; align-items: center; gap: 10px; padding: 14px 34px 20px; border-top: 1px solid var(--border); }
+  .footer .spacer { flex: 1; }
+  .path-row { display: flex; gap: 8px; }
+  .path-row .input { font-family: var(--mono); font-size: 13px; }
+  .opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .opt:first-of-type { border-top: 0; }
+  .opt > div { flex: 1; }
+  .opt b { display: block; font-weight: 550; }
+  .opt small { color: var(--muted); font-size: 12.5px; display: block; }
+  .tree { font: 12.5px/1.7 var(--mono); color: var(--muted); background: rgba(0,0,0,.25); border-radius: 12px; padding: 10px 14px; margin-top: 8px; }
+  .hero { text-align: center; padding-top: 30px; }
+  .hero img { width: 92px; height: 92px; border-radius: 24px; box-shadow: 0 18px 50px -10px color-mix(in srgb, var(--violet) 70%, transparent); }
+  .hero h1 { font-size: 34px; margin-top: 18px; }
+  .summary { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; font-size: 13.5px; }
+  .summary dt { color: var(--muted); } .summary dd { margin: 0; overflow-wrap: anywhere; }
+  .big-progress { height: 10px; border-radius: 10px; background: var(--panel-2); overflow: hidden; margin: 26px 0 12px; }
+  .big-progress i { display: block; height: 100%; width: 0; background: var(--grad); transition: width .3s; }
+  .result-icon { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; margin: 20px auto 16px; font-size: 38px; }
+  .result-icon.ok { background: rgba(61,220,151,.15); color: var(--ok); } .result-icon.bad { background: rgba(255,93,115,.15); color: var(--err); }
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+</svg>
+<div class="wizard">
+  <aside class="steps-bar">
+    <div class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="8" fill="#20201e" stroke="#3a3936"/><path d="M22.5 9.5h-9.25a3.75 3.75 0 0 0 0 7.5h5.5a3.75 3.75 0 0 1 0 7.5H9.5" fill="none" stroke="#ecebe7" stroke-width="2.4" stroke-linecap="round"/><circle cx="22.5" cy="9.5" r="2.7" fill="var(--accent)"/></svg><div><b>Swiftlane</b><small id="ver"></small></div></div>
+    <div id="stepList"></div>
+    <div class="spacer"></div>
+    <select class="input lang" id="language" title="Language"><option value="en">English</option><option value="de">Deutsch</option><option value="pl">Polski</option><option value="it">Italiano</option></select>
+  </aside>
+  <section class="content">
+    <div class="pane" id="pane"></div>
+    <div class="footer" id="footer">
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <span class="spacer"></span>
+      <button class="btn" id="backBtn">Back</button>
+      <button class="btn primary" id="nextBtn">Next</button>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script src="js/i18n.js"></script>
+<script src="setup/i18n-setup.js"></script>
+<script src="setup/setup.js"></script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Swiftlane</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wall" aria-hidden="true">
+  <svg class="night" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <rect width="1440" height="900" fill="#27305a"/><rect width="1440" height="160" fill="#1f2750"/><rect y="160" width="1440" height="120" fill="#2f3866"/>
+    <rect y="280" width="1440" height="90" fill="#3d4a7c"/><rect y="370" width="1440" height="70" fill="#4f6596"/><rect y="440" width="1440" height="60" fill="#5f86ad"/>
+    <circle cx="1040" cy="470" r="120" fill="#7fd3ea"/><circle cx="1040" cy="470" r="86" fill="#b5ecf7"/>
+    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#2f3a66"/>
+    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#232b52"/>
+    <path d="M0 640 H1440 V900 H0Z" fill="#171d3b"/>
+    <g fill="#7fd3ea" opacity=".5"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/><rect x="1025" y="738" width="30" height="2"/></g>
+    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#10142c"/>
+    <g fill="#fff" opacity=".8"><circle cx="120" cy="60" r="1.6"/><circle cx="330" cy="120" r="1.2"/><circle cx="560" cy="40" r="1.4"/><circle cx="760" cy="150" r="1"/><circle cx="1240" cy="80" r="1.6"/><circle cx="1380" cy="190" r="1.2"/><circle cx="900" cy="60" r="1.1"/></g>
+  </svg>
+  <svg class="day" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <rect width="1440" height="900" fill="#cfe6f7"/><rect width="1440" height="200" fill="#bcdcf4"/><rect y="200" width="1440" height="160" fill="#c7e2f6"/><rect y="360" width="1440" height="140" fill="#dcecf8"/>
+    <circle cx="1060" cy="300" r="90" fill="#fff6d8"/><circle cx="1060" cy="300" r="62" fill="#fffbea"/>
+    <g fill="#fff" opacity=".85"><ellipse cx="260" cy="170" rx="120" ry="26"/><ellipse cx="330" cy="150" rx="70" ry="30"/><ellipse cx="760" cy="110" rx="90" ry="20"/></g>
+    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#9fc2dd"/>
+    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#7fa9c9"/>
+    <path d="M0 640 H1440 V900 H0Z" fill="#5fb3cf"/>
+    <g fill="#fff" opacity=".55"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/></g>
+    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#4c9a6e"/>
+  </svg>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="lens" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="4" result="n"/>
+    <feGaussianBlur in="n" stdDeviation="2" result="nb"/>
+    <feDisplacementMap in="SourceGraphic" in2="nb" scale="38" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</defs></svg>
+<div class="bg-image" id="bgImage" hidden><div class="bg-pic" id="bgPic"></div><video class="bg-pic" id="bgVid" muted loop playsinline hidden></video><div class="bg-dim" id="bgDim2"></div></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-transfer" viewBox="0 0 24 24"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M21 16l-4 4-4-4"/></symbol>
+  <symbol id="i-convert" viewBox="0 0 24 24"><path d="M4 7h13l-3-3M20 17H7l3 3"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-currency" viewBox="0 0 24 24"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.3A6 6 0 1 1 9.3 15.5"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M8.5 6.5h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18.5h2"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 16H20M17 13l3 3-3 3M17 8H4M7 5 4 8l3 3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-paste" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-block" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><svg class="wordmark" viewBox="0 0 640 150" role="img" aria-label="Swiftlane">
+      <line x1="36.5" y1="20" x2="596.5" y2="20" class="wm-line" stroke-width="5" stroke-linecap="round"/><line x1="19.2" y1="118" x2="579.2" y2="118" class="wm-line" stroke-width="5" stroke-linecap="round"/>
+      <g class="wm-swift" style="font-family:Bahnschrift;font-weight:700;font-style:italic;font-size:86px"><text x="34" y="98" opacity=".12">SWIFT</text><text x="46" y="98" opacity=".28">SWIFT</text><text x="60" y="98">SWIFT</text></g>
+      <text x="338" y="98" class="wm-ink" style="font-family:Bahnschrift;font-weight:700;font-style:italic;font-size:86px;letter-spacing:2px" translate="no">LANE</text>
+    </svg><small id="version"></small></div>
+    <button class="nav" data-page="transfer" data-feature="transfer"><svg class="i"><use href="#i-transfer"/></svg>Phone transfer<span class="badge" id="navTransferBadge" hidden></span></button>
+    <button class="nav" data-page="share" data-feature="share"><svg class="i"><use href="#i-link"/></svg>Share links<span class="badge" id="navShareBadge" hidden></span></button>
+    <div class="nav-label" id="toolsLabel">Tools</div>
+    <button class="nav" data-page="converter" data-feature="converter"><svg class="i"><use href="#i-convert"/></svg>File converter</button>
+    <button class="nav" data-page="images" data-feature="images"><svg class="i"><use href="#i-image"/></svg>Image editor</button>
+    <button class="nav" data-page="downloader" data-feature="downloader"><svg class="i"><use href="#i-download"/></svg>Video downloader</button>
+    <button class="nav" data-page="currency" data-feature="currency"><svg class="i"><use href="#i-currency"/></svg>Currency</button>
+    <button class="nav" data-page="calculator" data-feature="calculator"><svg class="i"><use href="#i-calc"/></svg>Calculator</button>
+    <button class="nav" data-page="speedtest" data-feature="speedtest"><svg class="i"><use href="#i-gauge"/></svg>Speed test</button>
+    <button class="nav" data-page="adblock" data-feature="adblock"><svg class="i"><use href="#i-shield"/></svg>Ad blocker test</button>
+    <div class="spacer"></div>
+    <button class="nav" data-page="connect" data-feature="transfer"><svg class="i"><use href="#i-phone"/></svg>Connect phone</button>
+    <button class="nav" data-page="settings"><svg class="i"><use href="#i-gear"/></svg>Settings</button>
+    <button class="update-pill" id="updatePill" hidden><svg class="i"><use href="#i-download"/></svg><span id="updatePillText">Update available</span></button>
+    <div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Starting…</span></div>
+  </aside>
+
+  <main class="main" id="main">
+
+    <!-- ============ Phone transfer ============ -->
+    <section class="page" id="page-transfer" hidden>
+      <div class="page-head"><div><h1>Phone transfer</h1><p>Send files to your phone and see what arrives from it.</p></div></div>
+      <div class="notice" id="serverNotice" hidden><svg class="i"><use href="#i-info"/></svg><span></span></div>
+      <div class="grid2">
+        <section class="card">
+          <h2>Send to phone <span class="n" id="outCount"></span><span class="spacer"></span><button class="btn ghost" id="clearOut" hidden>Clear</button></h2>
+          <div class="drop" id="outDrop">
+            <div class="orb"><svg class="i"><use href="#i-up"/></svg></div>
+            <strong>Drop files here</strong>
+            <span>or click to browse · they appear under “From PC” on your phone</span>
+          </div>
+          <div class="list" id="outList"></div>
+        </section>
+        <section class="card">
+          <h2>Received <span class="n" id="inCount"></span><span class="spacer"></span><button class="btn ghost" id="openFolder"><svg class="i"><use href="#i-folder"/></svg>Open folder</button></h2>
+          <div class="list" id="inList"></div>
+          <div class="empty" id="inEmpty"><svg class="i"><use href="#i-inbox"/></svg><b>Nothing yet</b>Open the Swiftlane web app on your phone,<br>or on iPhone tap Share → Send to PC.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ Share links ============ -->
+    <section class="page" id="page-share" hidden>
+      <div class="page-head"><div><h1>Share links</h1><p>Send files to anyone with a link. Files stay on this PC and are sent from here while Swiftlane is open.</p></div></div>
+      <div class="notice" id="shNotice" hidden><svg class="i"><use href="#i-info"/></svg><div class="sh-notice-body"><span id="shNoticeText"></span><div class="sh-notice-acts" id="shNoticeActs"></div></div></div>
+      <div class="grid-side">
+        <section class="card">
+          <h2>Active links <span class="n" id="shCount"></span><span class="spacer"></span><button class="btn ghost" id="shEndAll" hidden>End all</button></h2>
+          <div id="shList"></div>
+          <div class="empty" id="shEmpty"><svg class="i"><use href="#i-link"/></svg><b>No links yet</b>Drop files or a folder on the right. The link is copied straight away.</div>
+        </section>
+        <div>
+          <section class="card">
+            <div class="drop" id="shDrop">
+              <div class="orb"><svg class="i"><use href="#i-link"/></svg></div>
+              <strong>Drop files or folders</strong>
+              <span>or click to choose files · the link is copied right away</span>
+            </div>
+            <button class="btn" id="shPickFolder" style="width:100%; margin-top:10px"><svg class="i"><use href="#i-folder"/></svg>Share a folder…</button>
+          </section>
+          <section class="card">
+            <h2>New links</h2>
+            <div class="field"><span>Available for</span>
+              <select class="input" id="shHours"><option value="1">1 hour</option><option value="6">6 hours</option><option value="24">24 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="720">30 days</option></select></div>
+            <div class="field" style="margin-top:12px"><span>Who can download</span>
+              <div class="seg" id="shMode"><button data-v="open">Anyone with the link</button><button data-v="personal">Personal links</button></div></div>
+            <div class="field" style="margin-top:12px" id="shCountWrap"><span>How many downloads</span><input class="input" id="shLimit" type="number" min="1" placeholder="No limit"><small class="muted small">Each file download counts once, “Download all” counts once. Finishing a broken download doesn’t count again.</small></div>
+            <div class="field" style="margin-top:12px" id="shPeopleWrap" hidden><span>People (each gets their own link and can download once)</span><input class="input" id="shPeople" type="number" min="1" max="100" value="1"></div>
+            <div class="field" style="margin-top:12px"><span>Password (optional)</span><input class="input" id="shPassword" type="password" autocomplete="new-password" placeholder="No password"></div>
+            <label class="check small" style="margin-top:14px"><input type="checkbox" id="shAwake"> Keep this PC awake while links are active</label>
+            <p class="muted small" style="margin:12px 0 0">Hidden files, system files and shortcuts inside folders are left out. Anyone with a link can pass the files on after downloading.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ File converter ============ -->
+    <section class="page" id="page-converter" hidden>
+      <div class="page-head"><div><h1>File converter</h1><p>Images, videos, audio and PDFs. Originals are never changed.</p></div></div>
+      <div class="grid-side">
+        <div>
+          <section class="card">
+            <div class="drop" id="convDrop">
+              <div class="orb"><svg class="i"><use href="#i-convert"/></svg></div>
+              <strong>Drop files to convert</strong>
+              <span>or click to browse · jpg, png, webp, heic, mp4, mov, mkv, mp3, wav, flac, pdf and more</span>
+            </div>
+          </section>
+          <section class="card" id="convFilesCard" hidden>
+            <h2>Files <span class="n" id="convCount"></span><span class="spacer"></span><button class="btn ghost" id="convClear">Clear</button></h2>
+            <div id="convAllWrap"><span class="label">Convert all to</span><div class="chips" id="convAll"></div></div>
+            <div class="list" id="convList"></div>
+            <div class="row-fields" style="margin-top:14px">
+              <div class="field"><span>Quality</span><div class="seg" id="convQuality"><button data-v="high">High</button><button data-v="balanced" class="on">Balanced</button><button data-v="small">Smaller file</button></div></div>
+            </div>
+            <label class="check" id="convCombineWrap" style="margin-top:12px" hidden><input type="checkbox" id="convCombine"> Combine images into one PDF</label>
+            <div style="margin-top:16px; display:flex; justify-content:flex-end"><button class="btn primary big" id="convGo">Convert</button></div>
+          </section>
+        </div>
+        <section class="card">
+          <h2>Conversions<span class="spacer"></span><button class="btn ghost" data-clear-jobs="convert">Clear</button></h2>
+          <div class="list" id="jobs-convert"></div>
+          <div class="empty" data-jobs-empty="convert">Converted files show up here.</div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ Image tools ============ -->
+    <section class="page" id="page-images" hidden>
+      <div class="page-head"><div><h1>Image editor</h1><p>Crop and resize with the mouse, straighten, adjust colours, compress. Saved as “name (edited)”.</p></div></div>
+      <div class="editor">
+        <section class="card editor-main">
+          <div class="ed-toolbar">
+            <div class="seg" id="edTool"><button data-v="crop" class="on" title="Drag to crop">Crop</button><button data-v="resize" title="Drag the corner to resize">Resize</button></div>
+            <button class="btn ghost" id="edRotL" title="Rotate left">↺</button>
+            <button class="btn ghost" id="edRotR" title="Rotate right">↻</button>
+            <button class="btn ghost" id="edFlipH" title="Flip horizontally">⇋</button>
+            <button class="btn ghost" id="edFlipV" title="Flip vertically">⇵</button>
+            <span class="spacer"></span>
+            <button class="btn ghost" id="edCompare" title="Hold to see the original">Hold: original</button>
+            <label class="check small"><input type="checkbox" id="edExactToggle"> Exact preview</label>
+          </div>
+          <div class="stage" id="edStage">
+            <canvas id="edCanvas"></canvas>
+            <img id="edExact" alt="" hidden>
+            <div class="stage-empty" id="edEmpty">
+              <div class="orb"><svg class="i"><use href="#i-image"/></svg></div>
+              <strong>Drop images here</strong>
+              <span>or click to browse · jpg, png, webp, heic, gif, bmp, tiff</span>
+            </div>
+          </div>
+          <div class="ed-info" id="edInfo"></div>
+          <div class="ed-thumbs" id="edThumbs"></div>
+        </section>
+        <aside class="card editor-side" id="edSide">
+          <div class="ed-section"><span class="label">Crop ratio</span><div class="chips" id="edRatios"></div>
+            <button class="btn ghost small" id="edCropReset" style="margin-top:6px">Reset crop</button></div>
+          <div class="ed-section"><span class="label">Straighten</span>
+            <div class="slider-row"><input type="range" id="edStraighten" min="-45" max="45" step="0.5" value="0"><b id="edStraightenVal">0°</b></div></div>
+          <div class="ed-section"><span class="label">Resize</span>
+            <div class="size-row"><input class="input" id="edW" type="number" min="1"><span>×</span><input class="input" id="edH" type="number" min="1"><span class="muted small">px</span></div>
+            <div class="slider-row"><input type="range" id="edScale" min="1" max="200" value="100"><b id="edScaleVal">100%</b></div></div>
+          <div class="ed-section"><span class="label">Adjust<button class="btn ghost small" id="edAdjReset" style="float:right; margin-top:-6px">Reset</button></span>
+            <div class="slider-row"><span>Brightness</span><input type="range" data-adj="brightness" min="0" max="200" value="100"><b>0</b></div>
+            <div class="slider-row"><span>Contrast</span><input type="range" data-adj="contrast" min="0" max="200" value="100"><b>0</b></div>
+            <div class="slider-row"><span>Saturation</span><input type="range" data-adj="saturation" min="0" max="200" value="100"><b>0</b></div>
+            <div class="slider-row"><span>Sharpness</span><input type="range" data-adj="sharpness" min="0" max="300" value="100"><b>0</b></div></div>
+          <div class="ed-section"><span class="label">Save as</span>
+            <div class="seg" id="edFormat"><button data-v="keep" class="on">Same</button><button data-v="jpg">JPG</button><button data-v="png">PNG</button><button data-v="webp">WebP</button></div>
+            <div class="slider-row" style="margin-top:10px"><span>Quality</span><input type="range" id="edQuality" min="10" max="100" value="90"><b id="edQualityVal">90</b></div>
+            <label class="check small" style="margin-top:8px"><input type="checkbox" id="edStrip"> Remove location &amp; camera info</label></div>
+          <button class="btn primary big" id="edSave" style="width:100%" disabled>Save image</button>
+          <button class="btn" id="edSaveAll" style="width:100%; margin-top:8px" hidden>Apply to all</button>
+        </aside>
+      </div>
+      <section class="card">
+        <h2>Saved images<span class="spacer"></span><button class="btn ghost" data-clear-jobs="images">Clear</button></h2>
+        <div class="list" id="jobs-images"></div>
+        <div class="empty" data-jobs-empty="images">Edited images show up here.</div>
+      </section>
+    </section>
+
+    <section class="page" id="page-downloader" hidden>
+      <div class="page-head"><div><h1>Video downloader</h1><p>YouTube and many other sites. You choose where each download is saved.</p></div></div>
+      <section class="card">
+        <div class="url-row">
+          <input class="input" id="dlUrl" placeholder="Paste a video or playlist link" spellcheck="false">
+          <button class="btn" id="dlPaste"><svg class="i"><use href="#i-paste"/></svg>Paste</button>
+          <button class="btn primary" id="dlFetch">Look up</button>
+        </div>
+        <p class="err small" id="dlError" hidden></p>
+        <div id="dlPreview" hidden>
+          <div class="video-card"><img id="dlThumb" alt=""><div class="meta"><div class="t" id="dlTitle"></div><div class="sub" id="dlMeta"></div></div></div>
+          <span class="label" style="margin-top:16px">Download as</span>
+          <div class="chips" id="dlChoices"></div>
+          <label class="check" id="dlPlaylistWrap" style="margin-top:12px" hidden><input type="checkbox" id="dlPlaylist"> Download the whole playlist</label>
+          <div style="margin-top:16px; display:flex; gap:10px; align-items:center"><button class="btn primary big" id="dlGo">Download</button><span class="muted small">Only download videos you have the right to save.</span></div>
+        </div>
+        <div class="notice" id="dlNode" style="margin-top:14px" hidden><svg class="i"><use href="#i-info"/></svg><span>Node.js wasn't found. YouTube may only offer some formats without it.</span></div>
+      </section>
+      <section class="card">
+        <h2>Downloads<span class="spacer"></span><button class="btn ghost" data-open-sub="Videos"><svg class="i"><use href="#i-folder"/></svg>Videos</button><button class="btn ghost" data-open-sub="Audio"><svg class="i"><use href="#i-folder"/></svg>Audio</button><button class="btn ghost" data-clear-jobs="download">Clear</button></h2>
+        <div class="list" id="jobs-download"></div>
+        <div class="empty" data-jobs-empty="download">Downloads show up here.</div>
+      </section>
+    </section>
+
+    <!-- ============ Currency ============ -->
+    <section class="page" id="page-currency" hidden>
+      <div class="page-head"><div><h1>Currency converter</h1><p>European Central Bank reference rates, updated every working day.</p></div></div>
+      <section class="card">
+        <div class="money">
+          <div class="field"><span>Amount</span><input class="input amount" id="curAmount" type="number" value="100" step="any"><select class="input" id="curFrom"></select></div>
+          <button class="btn swap" id="curSwap" title="Swap"><svg class="i"><use href="#i-swap"/></svg></button>
+          <div class="field"><span>Converted</span><div class="result" id="curResult">—</div><select class="input" id="curTo"></select></div>
+        </div>
+        <div class="rate-line"><span id="curRate"></span><span class="spacer"></span><span id="curDate"></span><button class="btn ghost" id="curRefresh"><svg class="i"><use href="#i-refresh"/></svg>Update rates</button></div>
+        <div class="notice" id="curError" style="margin-top:12px" hidden><svg class="i"><use href="#i-info"/></svg><span></span></div>
+      </section>
+      <section class="card"><h2 id="curQuickTitle">Quick view</h2><div class="quick" id="curQuick"></div></section>
+    </section>
+
+    <!-- ============ Calculator ============ -->
+    <section class="page" id="page-calculator" hidden>
+      <div class="page-head"><div><h1>Calculator</h1><p>Scientific, modelled on the Casio fx-87DE X ClassWiz.</p></div></div>
+      <div class="seg calc-modes" id="calcModes"></div>
+      <div id="calcBody"></div>
+    </section>
+
+    <!-- ============ Speed test ============ -->
+    <section class="page" id="page-speedtest" hidden>
+      <div class="page-head"><div><h1>Speed test</h1><p>Download, upload and ping, measured against Cloudflare's nearest server.</p></div></div>
+      <section class="card speed-card">
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 300 200"><path class="gauge-bg" d=""/><path class="gauge-fg" id="gaugeFg" d=""/><g id="gaugeTicks"></g></svg>
+          <div class="gauge-center"><b id="gaugeValue">–</b><span id="gaugeUnit">Mbps</span><small id="gaugePhase">Ready</small></div>
+        </div>
+        <div class="speed-tiles">
+          <div><small>Ping</small><b id="spPing">–</b><span>ms</span></div>
+          <div><small>Jitter</small><b id="spJitter">–</b><span>ms</span></div>
+          <div><small>↓ Download</small><b id="spDown">–</b><span>Mbps</span></div>
+          <div><small>↑ Upload</small><b id="spUp">–</b><span>Mbps</span></div>
+        </div>
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:18px"><button class="btn primary big" id="spStart">Start test</button></div>
+        <p class="muted small" id="spServer" style="text-align:center; margin:12px 0 0"></p>
+        <p class="err small" id="spError" style="text-align:center" hidden></p>
+      </section>
+      <section class="card"><h2>Earlier results</h2><div class="list" id="spHistory"></div><div class="empty" id="spEmpty">Your results show up here.</div></section>
+    </section>
+
+    <!-- ============ Ad blocker test ============ -->
+    <section class="page" id="page-adblock" hidden>
+      <div class="page-head"><div><h1>Ad blocker test</h1><p>Checks whether ad, tracker and analytics domains are blocked on this PC or your network.</p></div></div>
+      <section class="card">
+        <div class="ab-top">
+          <div class="score-ring" id="abRing"><b id="abScore">–</b><small>blocked</small></div>
+          <div class="ab-summary">
+            <h2 id="abHeadline" style="margin-bottom:6px">Not tested yet</h2>
+            <p class="muted" id="abDetail" style="margin:0 0 12px">Takes a couple of seconds.</p>
+            <button class="btn primary" id="abRun">Run test</button>
+          </div>
+        </div>
+        <div class="notice" style="margin-top:16px"><svg class="i"><use href="#i-info"/></svg><span>This tests blocking for the whole PC or network: DNS services like AdGuard DNS or NextDNS, a Pi-hole, your router or the hosts file. Browser extensions such as uBlock Origin only work inside your browser, so no app can see them.</span></div>
+        <div class="ab-dns" id="abDns" hidden></div>
+      </section>
+      <div class="ab-grid" id="abCats"></div>
+    </section>
+
+    <!-- ============ Connect ============ -->    <section class="page" id="page-connect" hidden>
+      <div class="page-head"><div><h1>Connect phone</h1><p>Pair your phone once; it stays paired.</p></div></div>
+      <div class="grid2">
+        <section class="card">
+          <h2>Pair your phone</h2>
+          <div class="qr-wrap" id="qrWrap" title="Click to reveal"><div class="qr blur" id="qr"></div></div>
+          <p class="muted small" id="qrNote" style="text-align:center; margin:0 0 16px">Click the code to reveal it, then scan it with your phone's camera.</p>
+          <span class="label">Pairing code</span>
+          <div class="code"><span id="code">••••-••••-••••-••••</span>
+            <button class="mini" id="toggleCode" title="Show / hide"><svg class="i"><use href="#i-eye"/></svg></button>
+            <button class="mini" id="copyCode" title="Copy"><svg class="i"><use href="#i-copy"/></svg></button></div>
+          <span class="label" style="margin-top:16px">Shortcut address</span>
+          <div id="addrs"></div>
+        </section>
+        <section class="card">
+          <h2>iPhone: “Send to PC” Shortcut</h2>
+          <p class="muted" style="margin-top:0">Adds Swiftlane to the iPhone share sheet, like AirDrop. On Android (or any phone), just use the web app from the QR code; add it to your home screen from the browser menu.</p>
+          <ol class="steps">
+            <li>Open <b>Shortcuts</b> → <b>+</b>, name it <b>Send to PC</b>, turn on <b>Show in Share Sheet</b>.</li>
+            <li>Add <b>Repeat with Each</b> → <b>Shortcut Input</b>.</li>
+            <li>Inside: <b>URL Encode</b> → <b>Repeat Item</b> → pick its <b>Name</b>.</li>
+            <li>Then <b>Get Contents of URL</b>: the Shortcut address (copy button) + <b>URL Encoded Text</b>. Method <b>POST</b>, header <code>X-Token</code> = pairing code, body <b>File</b> → <b>Repeat Item</b>.</li>
+          </ol>
+          <p class="muted small">The full step-by-step guide is in README.md in the project folder.</p>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ Settings ============ -->
+    <section class="page" id="page-settings" hidden>
+      <div class="page-head"><div><h1>Settings</h1><p id="settingsSub"></p></div></div>
+      <div class="grid2">
+        <div>
+          <section class="card">
+            <h2>Appearance</h2>
+            <div class="setting"><div><b>Accent colour</b><small>Buttons, highlights and the open page</small></div></div>
+            <div class="swatches" id="swatches"></div>
+            <div class="setting"><div><b>Appearance</b><small>Light, dark, or follow Windows</small></div>
+              <div class="seg" id="modeSeg"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="auto">Auto</button></div></div>
+            <div class="setting"><div><b>Background</b><small id="bgInfo">Swiftlane wallpaper</small></div>
+              <button class="btn" id="bgChoose">Choose…</button><button class="btn ghost" id="bgClear" hidden>Remove</button></div>
+            <div id="bgControls" hidden>
+              <div class="setting"><div><b>Blur the background</b><small>The glass always blurs what's behind it; this blurs the whole background too</small></div><label class="switch"><input type="checkbox" id="bgBlurOn"><span></span></label></div>
+              <div class="slider-row" id="bgBlurRow"><span>Blur</span><input type="range" id="bgBlur" min="2" max="40" value="14"><b id="bgBlurVal">14</b></div>
+              <div class="slider-row"><span>Darken</span><input type="range" id="bgDim" min="0" max="90" value="30"><b id="bgDimVal">30%</b></div>
+              <p class="small" id="bgReadable" style="margin:10px 0 0" hidden></p>
+            </div>
+            <div class="setting"><div><b>Language</b><small>The language Swiftlane is shown in</small></div>
+              <select class="input" id="language" style="width:auto"><option value="en">English</option><option value="de">Deutsch</option><option value="pl">Polski</option><option value="it">Italiano</option></select></div>
+          </section>
+          <section class="card">
+            <h2>Features</h2>
+            <p class="muted small" style="margin-top:-6px">Switched-off features disappear from the sidebar. Switching off phone transfer also stops Swiftlane listening on your network.</p>
+            <div id="featureList"></div>
+          </section>
+        </div>
+        <div>
+          <section class="card" id="transferSettings">
+            <h2>Phone transfer</h2>
+            <div class="setting"><div><b>Save received files to</b><small id="saveDir"></small></div><button class="btn" id="chooseFolder">Change</button></div>
+            <div class="setting"><div><b>Sort into folders</b><small>Photos, Videos, Audio, Documents, Archives, Other</small></div><label class="switch"><input type="checkbox" id="sortFiles"><span></span></label></div>
+            <div class="setting"><div><b>Notifications</b><small>Windows notification when files arrive or a job finishes</small></div><label class="switch"><input type="checkbox" id="notify"><span></span></label></div>
+            <div class="setting"><div><b>New pairing code</b><small>Disconnects every paired phone and Shortcut</small></div><button class="btn danger" id="newCode">Reset</button></div>
+          </section>
+          <section class="card">
+            <h2>Defaults</h2>
+            <div class="setting"><div><b>Downloads are suggested in</b><small id="dlDir"></small></div><button class="btn" id="dlDirChoose">Change</button><button class="btn ghost" id="dlDirReset" hidden>Reset</button></div>
+            <div class="setting"><div><b>Calculator starts in</b><small>Angle unit for sin, cos, tan</small></div><div class="seg" id="calcAngleDefault"><button data-v="deg">Deg</button><button data-v="rad">Rad</button><button data-v="gra">Gra</button></div></div>
+          </section>
+          <section class="card" id="updatesCard">
+            <h2>Updates</h2>
+            <div class="setting"><div><b id="updVersion">Swiftlane</b><small id="updStatus">Not checked yet</small></div><button class="btn" id="updCheck">Check now</button></div>
+            <div class="upd-box" id="updBox" hidden>
+              <b id="updTitle"></b><small class="muted" id="updMeta"></small>
+              <div class="notes" id="updNotes" translate="no"></div>
+              <div class="bar" id="updBar" hidden><i id="updFill"></i></div>
+              <button class="btn primary" id="updGo">Update now</button>
+            </div>
+            <div class="setting"><div><b>Check for updates automatically</b><small>Once a day. Nothing is installed until you click Update.</small></div><label class="switch"><input type="checkbox" id="updAuto"><span></span></label></div>
+            <p class="small muted" style="margin:8px 0 0">Updates come from github.com/Lewy366/swiftlane and are only installed if they carry the owner's signature.</p>
+          </section>
+          <section class="card">
+            <h2>General</h2>
+            <div class="setting"><div><b>Start with Windows</b><small>Open Swiftlane minimized when you sign in</small></div><label class="switch"><input type="checkbox" id="autostart"><span></span></label></div>
+            <div class="setting"><div><b>Settings folder</b><small id="configDir"></small></div></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<div class="whatsnew" id="whatsNew" hidden><div class="card wn-card"><h2 id="wnTitle">What's new</h2><div class="notes" id="wnNotes" translate="no"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn primary" id="wnOk">Got it</button></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/i18n-tools.js"></script>
+<script src="js/i18n-share.js"></script>
+<script src="js/core.js"></script>
+<script src="js/transfer.js"></script>
+<script src="js/share.js"></script>
+<script src="js/converter.js"></script>
+<script src="js/images.js"></script>
+<script src="js/downloader.js"></script>
+<script src="js/currency.js"></script>
+<script src="js/calculator.js"></script>
+<script src="js/speedtest.js"></script>
+<script src="js/adblock.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/updates.js"></script>
+</body>
+</html>
