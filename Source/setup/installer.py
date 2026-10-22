@@ -81,14 +81,78 @@ def programs_using(paths):
         rm.RmEndSession(session)
 
 
+def process_table():
+    """{pid: (parent pid, exe name)} for every running process (Toolhelp snapshot)."""
+    import ctypes
+    from ctypes import wintypes
+
+    class PROCESSENTRY32W(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ProcessID", wintypes.DWORD),
+                    ("th32DefaultHeapID", ctypes.c_size_t), ("th32ModuleID", wintypes.DWORD), ("cntThreads", wintypes.DWORD),
+                    ("th32ParentProcessID", wintypes.DWORD), ("pcPriClassBase", ctypes.c_long), ("dwFlags", wintypes.DWORD),
+                    ("szExeFile", wintypes.WCHAR * 260)]
+    k32 = ctypes.windll.kernel32
+    k32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    snap = k32.CreateToolhelp32Snapshot(0x2, 0)  # TH32CS_SNAPPROCESS
+    table = {}
+    try:
+        entry = PROCESSENTRY32W(dwSize=ctypes.sizeof(PROCESSENTRY32W))
+        ok = k32.Process32FirstW(snap, ctypes.byref(entry))
+        while ok:
+            table[entry.th32ProcessID] = (entry.th32ParentProcessID, entry.szExeFile)
+            ok = k32.Process32NextW(snap, ctypes.byref(entry))
+    finally:
+        k32.CloseHandle(snap)
+    return table
+
+
+def processes_to_stop(table, me, names):
+    """PIDs to close: every process called one of `names`, plus everything it started (WebView2 can hold
+    the folder), but never Setup itself. When you update from inside Swiftlane, Windows counts Setup
+    as Swiftlane's child, so closing Swiftlane's whole tree would also close Setup."""
+    names = {n.lower() for n in names}
+    children = {}
+    for pid, (parent, _) in table.items():
+        if pid != parent:
+            children.setdefault(parent, []).append(pid)
+
+    def tree(pid):
+        out, todo = set(), [pid]
+        while todo:
+            p = todo.pop()
+            if p not in out:
+                out.add(p)
+                todo.extend(children.get(p, []))
+        return out
+
+    keep, p, seen = set(), me, set()
+    while p in table and p not in seen:  # Setup, the chain that started it, and everything Setup started
+        seen.add(p)
+        keep |= tree(p) if p == me else {p}
+        p = table[p][0]
+    stop = set()
+    for pid, (_, exe) in table.items():
+        if exe.lower() in names:
+            stop |= tree(pid)
+    # Never stop Setup or anything Setup started; Swiftlane above it in the chain is still stopped.
+    return sorted(pid for pid in stop if pid not in tree(me) and pid != me and (pid not in keep or table[pid][1].lower() in names))
+
+
 OUR_RULES = "'Swiftlane','PocketDrop'"  # firewall rules by this app's name and its old name
 
 
 class WindowsSystem:
     def stop_app(self):
-        # /T also closes Swiftlane's embedded browser (WebView2) processes, which can hold its folder.
-        for name in (f"{APP}.exe", f"{OLD_APP}.exe"):
-            subprocess.run(["taskkill", "/F", "/T", "/IM", name], capture_output=True, **NO_WINDOW)
+        names = (f"{APP}.exe", f"{OLD_APP}.exe")
+        # Swiftlane is usually closing by itself already (after starting the update); give it a moment.
+        for _ in range(10):
+            if not processes_to_stop(process_table(), os.getpid(), names):
+                return
+            time.sleep(0.3)
+        pids = processes_to_stop(process_table(), os.getpid(), names)
+        for pid in pids:  # one by one, never /T: Setup itself may count as part of Swiftlane's tree
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, **NO_WINDOW)
+        write_log(f"Closed {len(pids)} Swiftlane process(es)")
         time.sleep(1.0)
 
     # firewall

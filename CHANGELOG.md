@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.1 (2026-10-22)
+
+- Fixed: updating from inside Swiftlane stopped right after the permission prompt and nothing was installed
+
 ## 1.1.0 (2026-10-22)
 
 - Folders in the sidebar: arrange tools your way, plus an All tools page and Ctrl+K search
