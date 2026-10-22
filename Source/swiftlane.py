@@ -615,7 +615,7 @@ class Api:
             if not updater.still_matches(path, self._update):
                 raise updater.UpdateError("The download changed after it was checked, so it was rejected.")
             self.WHATS_NEW.write_text(json.dumps({"version": self._update["version"], "notes": self._update["notes"]}), "utf-8")
-            if not run_elevated(str(path), "--update"):
+            if not run_elevated(str(path), "--update", show=True, directory=path.parent):
                 self.WHATS_NEW.unlink(missing_ok=True)
                 return {"error": "Windows didn't give permission, so nothing was changed."}
         except updater.UpdateError as e:
@@ -1474,8 +1474,10 @@ def run_window(state, api, minimized):
     webview.start(icon=str(core.WEB_DIR / "icon.ico"), private_mode=True)
 
 
-def run_elevated(exe, params):
-    """Start a program as administrator (Windows asks). Returns False if the user said no."""
+def run_elevated(exe, params, show=False, directory=None):
+    """Start a program as administrator (Windows asks). Returns False if the user said no.
+    show: give it a visible window. directory: its current folder (never leave it in ours, or that
+    folder counts as in use and Setup can't replace it)."""
     from ctypes import wintypes
 
     class SHELLEXECUTEINFO(ctypes.Structure):
@@ -1485,7 +1487,8 @@ def run_elevated(exe, params):
                     ("lpIDList", ctypes.c_void_p), ("lpClass", wintypes.LPCWSTR), ("hkeyClass", wintypes.HKEY),
                     ("dwHotKey", wintypes.DWORD), ("hIcon", wintypes.HANDLE), ("hProcess", wintypes.HANDLE)]
     info = SHELLEXECUTEINFO(cbSize=ctypes.sizeof(SHELLEXECUTEINFO), fMask=0x40, lpVerb="runas",
-                            lpFile=exe, lpParameters=params, nShow=0)
+                            lpFile=exe, lpParameters=params, lpDirectory=str(directory or os.environ.get("TEMP") or Path.home()),
+                            nShow=1 if show else 0)
     return bool(ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)))
 
 

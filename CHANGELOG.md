@@ -2,6 +2,12 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.2 (2026-10-22)
+
+- Fixed: updating from inside Swiftlane failed because the old Swiftlane folder counted as "in use"
+- Fixed: the update window was invisible when started from Swiftlane, so errors never showed
+- Setup now closes leftover update windows from earlier failed tries
+
 ## 1.1.1 (2026-10-22)
 
 - Fixed: updating from inside Swiftlane stopped right after the permission prompt and nothing was installed

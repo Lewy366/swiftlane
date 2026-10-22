@@ -143,8 +143,34 @@ class SetupApi:
         self._window.evaluate_js(f"window.onSetup && window.onSetup({json.dumps(event)}, {json.dumps(data)})")
 
 
+RESTARTED = "SWIFTLANE_SETUP_RESTARTED"
+
+
+def restart_for_update():
+    """Started by Swiftlane's Update button, Setup inherits two things that break the update: Swiftlane's
+    folder as its current folder (Windows then won't move that folder: "in use") and, from older versions,
+    a hidden window. Starting a fresh copy of Setup from the Temp folder drops both. Returns True if the
+    fresh copy is running and this one should just exit."""
+    if not getattr(sys, "frozen", False) or "--update" not in sys.argv or os.environ.get(RESTARTED):
+        return False
+    env = {**os.environ, RESTARTED: "1", "PYINSTALLER_RESET_ENVIRONMENT": "1"}  # a new, independent Setup
+    try:
+        subprocess.Popen([sys.executable, *sys.argv[1:]], cwd=os.environ.get("TEMP") or os.path.dirname(sys.executable),
+                         env=env, close_fds=True)
+    except OSError as e:
+        installer.write_log(f"Couldn't restart Setup ({e}); carrying on")
+        return False
+    return True
+
+
 def main():
     import webview
+    if restart_for_update():
+        return
+    try:  # never stand in a folder Setup may have to move
+        os.chdir(os.environ.get("TEMP") or os.path.dirname(sys.executable))
+    except OSError:
+        pass
     try:  # each run of Setup starts its own log
         installer.LOG_FILE.unlink(missing_ok=True)
     except OSError:

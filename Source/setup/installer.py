@@ -138,12 +138,35 @@ def processes_to_stop(table, me, names):
     return sorted(pid for pid in stop if pid not in tree(me) and pid != me and (pid not in keep or table[pid][1].lower() in names))
 
 
+def stale_setups(table, me, name="Swiftlane Setup.exe"):
+    """Other copies of Setup still running (e.g. a hidden one left from a failed update; it can keep
+    Swiftlane's folder busy). Never this Setup, the chain that started it, or what it started."""
+    mine, p, seen = set(), me, set()
+    while p in table and p not in seen:
+        seen.add(p)
+        mine.add(p)
+        p = table[p][0]
+    todo = [me]
+    while todo:
+        q = todo.pop()
+        for pid, (parent, _) in table.items():
+            if parent == q and pid not in mine and pid != parent:
+                mine.add(pid)
+                todo.append(pid)
+    return sorted(pid for pid, (_, exe) in table.items() if exe.lower() == name.lower() and pid not in mine)
+
+
 OUR_RULES = "'Swiftlane','PocketDrop'"  # firewall rules by this app's name and its old name
 
 
 class WindowsSystem:
     def stop_app(self):
         names = (f"{APP}.exe", f"{OLD_APP}.exe")
+        stale = stale_setups(process_table(), os.getpid())
+        for pid in stale:
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, **NO_WINDOW)
+        if stale:
+            write_log(f"Closed {len(stale)} leftover Setup process(es)")
         # Swiftlane is usually closing by itself already (after starting the update); give it a moment.
         for _ in range(10):
             if not processes_to_stop(process_table(), os.getpid(), names):
