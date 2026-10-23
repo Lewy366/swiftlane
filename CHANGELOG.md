@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.4 (2026-10-23)
+
+- Fixed: in Setup, the Features step couldn't scroll, so you couldn't reach the Next button and finish installing
+
 ## 1.1.3 (2026-10-22)
 
 - Fixed: the sidebar couldn't scroll when the tool list was taller than the window
