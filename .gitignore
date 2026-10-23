@@ -17,3 +17,6 @@ shares.json
 # owner-only release tools (stay on this PC)
 Publish update.cmd
 Source/release/
+
+# Claude Code settings (local only)
+.claude/
