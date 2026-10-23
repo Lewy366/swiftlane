@@ -6,6 +6,8 @@ cd /d "%~dp0"
 echo Checking libraries (and updating yt-dlp, since video sites change often)...
 python -m pip install --user --disable-pip-version-check -q pyinstaller pywebview qrcode pillow pillow-heif ^
   sympy imageio-ffmpeg pypdfium2 cryptography
+rem Send to contacts: pinned to an exact version (it handles the network connection between PCs).
+python -m pip install --user --disable-pip-version-check -q --only-binary=:all: "iroh==1.2.0"
 python -m pip install --user --disable-pip-version-check -q -U "yt-dlp[default]"
 set "WORK=%TEMP%\Swiftlane-build"
 set "PACK=%TEMP%\Swiftlane-payload"
@@ -21,7 +23,7 @@ where node >nul 2>nul && (
 echo [1/3] Building the app...
 python -m PyInstaller --onedir --windowed --noconfirm --log-level WARN --name Swiftlane ^
   --icon "%~dp0web\icon.ico" --add-data "%~dp0web;web" ^
-  --collect-all yt_dlp_ejs --collect-data imageio_ffmpeg --collect-binaries imageio_ffmpeg ^
+  --collect-all yt_dlp_ejs --collect-data imageio_ffmpeg --collect-binaries imageio_ffmpeg --collect-binaries iroh --hidden-import iroh ^
   --distpath "%~dp0dist" --workpath "%WORK%" --specpath "%WORK%" "%~dp0swiftlane.py"
 if errorlevel 1 goto failed
 

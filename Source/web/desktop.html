@@ -68,6 +68,7 @@
   <symbol id="i-pc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
   <symbol id="i-device" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2.5"/><path d="M8 10h.01M8 14h8"/></symbol>
   <symbol id="i-radar" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="M12 8v4.5M12 15.8h.01"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.6 14.2A4.5 4.5 0 0 1 21 18.5"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M10 13h.01M14 13h.01M10 16h.01M14 16h.01"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></symbol>
@@ -247,6 +248,35 @@
           <p class="muted small" style="margin-top:-6px">The number is the port. "Reachable from the network" means devices on your network could try to connect; the firewall decides who actually gets in.</p>
           <div class="list" id="xpPorts"></div></section>
       </div>
+    </section>
+
+    <!-- ============ Send to contacts ============ -->
+    <section class="page" id="page-contacts" hidden>
+      <div class="page-head"><div><h1>Send to contacts</h1><p>Straight from this PC to another Swiftlane: no link, no upload, no ports to open. For people without Swiftlane, make a link instead.</p></div></div>
+      <p class="rm-status" id="pcStatus" style="margin:0 0 16px"></p>
+      <div class="grid2">
+        <section class="card"><h2>Send</h2>
+          <div class="drop" id="pcDrop"><div class="orb"><svg class="i"><use href="#i-up"/></svg></div><strong>Drop files here</strong><span>or click to choose</span></div>
+          <div id="pcFilesWrap" hidden><div class="pdf-bar" style="margin:12px 0 6px"><b id="pcFilesInfo"></b><span class="spacer"></span><button class="btn small ghost" id="pcClear">Clear</button></div><div class="list" id="pcFiles"></div></div>
+          <div class="field" style="margin-top:14px"><span>To</span><div class="chips" id="pcPick"></div><small class="muted" id="pcPickEmpty">Add a contact below first.</small></div>
+          <div class="pdf-bar" style="margin-top:14px"><button class="btn primary" id="pcSend" disabled>Send</button><span class="spacer"></span><button class="btn ghost" id="pcLink"><svg class="i"><use href="#i-link"/></svg> Make a link instead</button></div>
+        </section>
+        <section class="card"><h2>Transfers</h2><div class="list" id="pcTransfers"></div><div class="empty" id="pcTransfersEmpty">Sending and receiving shows up here. Received files also go to your Received list.</div></section>
+      </div>
+      <div class="grid2">
+        <section class="card"><h2>Your contact code</h2>
+          <p class="muted small" style="margin-top:-6px">Give this to a friend (any chat is fine: it contains nothing secret). They add it, you add theirs.</p>
+          <div class="pc-code" id="pcCode" translate="no"></div>
+          <div class="pdf-bar" style="margin-top:10px"><button class="btn" id="pcCopy"><svg class="i"><use href="#i-copy"/></svg> Copy</button><span class="spacer"></span><span class="muted small">Check: <b id="pcSafety" translate="no"></b></span></div>
+          <label class="field" style="margin-top:12px"><span>Your name, as contacts see it</span><input class="input" id="pcMyName" maxlength="40"></label>
+        </section>
+        <section class="card"><h2>Contacts</h2>
+          <div class="pc-add"><input class="input" id="pcAddCode" placeholder="Paste a contact code (SL1.…)" spellcheck="false" autocomplete="off"><input class="input" id="pcAddName" placeholder="Name (optional)" maxlength="40"><button class="btn primary" id="pcAdd">Add</button></div>
+          <p class="muted small" style="margin:8px 0 10px">To be sure it's really them, compare the <b>Check</b> code with what they see under their own code (read it out on a call, for example).</p>
+          <div class="list" id="pcList"></div><div class="empty" id="pcListEmpty">No contacts yet.</div>
+        </section>
+      </div>
+      <p class="muted small" style="margin:4px 4px 0">How it works: both PCs find each other by their contact keys and connect directly, end-to-end encrypted. If a direct connection isn't possible, the encrypted data passes through a relay of iroh (the networking project this uses), which can't read it. Files are never stored anywhere else, and only your contacts can reach you.</p>
     </section>
 
     <!-- ============ PC remote ============ -->
@@ -592,6 +622,12 @@
     <div class="slider-row"><span>Size</span><input type="range" id="sigSize" min="8" max="60" value="28"><b></b></div>
     <div class="pdf-bar" style="margin-top:12px"><span class="spacer"></span><button class="btn ghost" id="sigCancel2">Cancel</button><button class="btn primary" id="sigAdd">Add signature</button></div></div>
 </div></div>
+<div class="whatsnew" id="offerModal" hidden><div class="card offer-card">
+  <h2 id="offerTitle" translate="no"></h2><p class="muted small" id="offerSize" style="margin-top:-6px"></p>
+  <div class="list offer-files" id="offerFiles"></div>
+  <p class="muted small">Only accept files you're expecting. Accepted files go to your Received folder and are marked as coming from the internet.</p>
+  <div class="pdf-bar"><span class="spacer"></span><button class="btn ghost" id="offerDecline">Decline</button><button class="btn primary" id="offerAccept">Accept</button></div>
+</div></div>
 <div class="palette" id="palette" hidden><div class="card pal-card"><div class="pal-search"><svg class="i"><use href="#i-search"/></svg><input id="palInput" placeholder="Search tools and actions" spellcheck="false" autocomplete="off"></div><div class="pal-list" id="palList"></div><div class="empty" id="palEmpty" hidden>No matches</div><div class="pal-hint">↑ ↓ to choose · Enter to open · Esc to close</div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -617,6 +653,7 @@
 <script src="js/netscan.js"></script>
 <script src="js/exposure.js"></script>
 <script src="js/remote.js"></script>
+<script src="js/contacts.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/updates.js"></script>
 </body>

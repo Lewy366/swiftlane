@@ -14,6 +14,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 
 - **Phone transfer:** send files between your phone and this PC over your own network. You don't need to install anything on the phone.
 - **Share links:** send files or folders to anyone with a link, straight from this PC (via [Tailscale](https://tailscale.com), a free-to-use app that connects your devices securely, more on that under *Share links*). You can set a time limit, download or per-person limits and an optional password.
+- **Send to contacts:** if the other person has Swiftlane too, send files straight from your PC to theirs. No link, no account, no ports to open, and they always accept first.
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
 - **PC remote:** media keys, volume and arrow keys from your phone. It's off until you switch it on.
 - **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network) and **Is my PC exposed?**
@@ -95,6 +96,11 @@ Ping, jitter, download and upload against Cloudflare's nearest server, with a li
 ### Ad blocker test
 Checks about 45 well-known ad, tracker and analytics domains in six groups and shows which ones are blocked, along with your DNS servers. It tests blocking for the whole PC or network (AdGuard DNS, NextDNS, Pi-hole, your router, a hosts file). Browser extensions like uBlock Origin only work inside the browser, so no app can detect them.
 
+### Send to contacts
+For sending to people who also have Swiftlane. Each of you copies your **contact code** from *Send to contacts* and adds the other's (any chat is fine, the code contains nothing secret). To be sure you added the right person, compare the short **Check** code you see next to their name with the one under their own code. After that, drop files, pick the contact and press **Send**. Their Swiftlane shows who's sending what and how big, and nothing arrives until they click **Accept**. Files go to their Received folder, sorted like phone transfers. Both PCs need to be on with Swiftlane open. For people without Swiftlane, *Make a link instead* hands the files to **Share links**.
+
+**How it connects:** each PC has its own identity key (locked to your Windows account), and the contact code is its public half. Swiftlane uses [iroh](https://iroh.computer) to find the other PC by that key and connect straight through both routers, so nobody has to open ports. If a direct path isn't possible, the data goes through an iroh relay server, still end-to-end encrypted so the relay can't read it. iroh's servers do see which IP addresses connect, and when. The connection only runs while you have at least one contact, and anyone who isn't one of your contacts is turned away without an answer.
+
 ### Request files
 On **Share links**, *Request files* makes a link that other people can use to upload files into a folder you pick. You set how long it works, the maximum number of files and the biggest total size, and you can add a password. The link only accepts uploads. It never shows or offers anything already in the folder or anything others have sent. Received files are marked as coming from the internet (so Windows warns before running them) and they never overwrite anything.
 
@@ -138,6 +144,7 @@ The first time you run it, iOS asks whether to let Shortcuts find devices on you
 - Download links for PC to phone files are signed and expire after 10 minutes.
 - Received file names are cleaned up, nothing gets overwritten and partial uploads are deleted.
 - Phone transfer can be encrypted (HTTPS). Swiftlane makes its own certificate authority, limited by name constraints to private and Tailscale addresses (so it can't vouch for any website), and its key is protected by Windows (DPAPI). Install it on your phone once from *Connect phone*, and then *Only allow encrypted connections* refuses plain HTTP.
+- Send to contacts: end-to-end encrypted (QUIC with each PC's own key). Only keys in your contacts get in, the receiver always accepts first, every file is checked with SHA-256 and broken or cancelled files are deleted. Received files get the "from the internet" mark and never overwrite anything. iroh's discovery and relay servers see connection metadata (IP addresses, timing), never file contents.
 - Request links only accept uploads, within the limits you set. Uploads are written to a temporary file and only kept once complete, and received files get Windows' "from the internet" mark.
 - PC remote is off by default, needs the pairing code, only accepts a fixed list of keys and is rate-limited.
 - The vault never stores or sends your password. See *Vault* above for how files are encrypted.

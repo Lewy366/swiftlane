@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -26,7 +27,7 @@ from toolkit import adblock, calc, convert, currency, downloader, images, pdftoo
 from toolkit.common import Cancelled, clipboard_text
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 TAILSCALE_PAGES = ("https://login.tailscale.com/",)  # the only outside pages the Share page may open
 CALC_METHODS = {  # what the calculator page may call, nothing else
     "evaluate", "solve", "set_mode", "memory", "memory_add", "clear_memory", "base_n", "statistics",
@@ -175,6 +176,14 @@ class Api:
         self._exposure = None       # last 'Is my PC exposed?' result
         self._remote_log = collections.deque(maxlen=12)  # recent PC-remote presses, shown on the PC remote page
         self._phone_names = {}      # ip -> name the router knows (e.g. "Lewys-iPhone")
+        # Send to contacts: the connection only runs while you have at least one contact
+        self._peer = None
+        self._peer_lock = threading.Lock()
+        self._peer_error = None
+        self._peer_offers = {}      # incoming offer id -> peers.Decision the window answers
+        self._peer_log = collections.deque(maxlen=20)  # recent transfers, newest first
+        import peers
+        self._contacts = peers.Contacts(core.CONFIG_DIR / "contacts.json")
         # Sharing: the share server and Tailscale Funnel run only while a link can still be used.
         self._shares = share.Shares(core.CONFIG_DIR / "shares.json", on_change=self._shares_changed)
         self._shares.on_download = self._share_downloaded
@@ -248,6 +257,8 @@ class Api:
         if name == "share" and not enabled:
             self._shares.end_all()  # switching sharing off ends every link and closes Funnel
             threading.Thread(target=self._sync_sharing, daemon=True).start()
+        if name == "contacts":
+            threading.Thread(target=self._peer_sync, daemon=True).start()
         return self.get_state()
 
     def _start_server(self):
@@ -1399,6 +1410,147 @@ class Api:
         upnp["forwards"].remove(match)
         return self._exposure_view()
 
+    # ---------------------------------------------------------------- send to contacts
+    PEER_KEY = core.CONFIG_DIR / "contact-key.dpapi"
+
+    def _peer_key(self):
+        import peers, tls
+        return peers.load_or_create_key(self.PEER_KEY, lambda b: tls._dpapi(b, True), lambda b: tls._dpapi(b, False))
+
+    def _my_contact_name(self):
+        import peers
+        return peers.clean_name(self._state.cfg.get("contact_name") or os.environ.get("USERNAME") or socket.gethostname()) or "Swiftlane"
+
+    def _peer_wanted(self):
+        return bool(self._state.cfg["features"].get("contacts")) and bool(self._contacts.list())
+
+    def _peer_sync(self):
+        """Start the connection when it's wanted (feature on + at least one contact), stop it when it isn't."""
+        import peers
+        with self._peer_lock:
+            if self._peer_wanted() and not (self._peer and self._peer.running):
+                try:
+                    self._peer = peers.Peer(self._peer_key(), self._contacts, self._my_contact_name, self._peer_ask,
+                                            lambda: self._state.save_dir, self._peer_place, received=self._peer_received,
+                                            progress=self._peer_progress).start()
+                    self._peer_error = None
+                    core.log("Send to contacts: ready")
+                except Exception as e:
+                    self._peer, self._peer_error = None, str(e) if isinstance(e, peers.PeerError) else f"Couldn't start ({e.__class__.__name__})."
+                    core.log(f"Send to contacts: {self._peer_error}")
+            elif not self._peer_wanted() and self._peer:
+                self._peer.stop()
+                self._peer = None
+                core.log("Send to contacts: stopped (no contacts, or switched off)")
+        if self._jobs:
+            self._jobs.push("contacts", self.contacts_state())
+
+    def _peer_place(self, tmp, name):
+        folder = self._state.save_dir / core.category_for(name) if self._state.cfg.get("sort_files", True) else self._state.save_dir
+        with self._state.place_lock:
+            return core.place_file(tmp, folder, name)
+
+    def _peer_received(self, path, size, contact):
+        entry = self._state.add_received(path, size, contact["name"])
+        self._state.emit("received", {"transfer": None, "entry": entry})
+
+    def _peer_ask(self, offer):
+        """A contact wants to send files: ask in the window (and with a notification), wait for the answer."""
+        import peers
+        decision = peers.Decision()
+        self._peer_offers[offer["id"]] = decision
+        n = len(offer["files"])
+        core.log(f"Send to contacts: {offer['contact']} offers {n} file(s), {offer['total']} bytes")
+        self._state.notifier.show_soon(f"{offer['contact']} wants to send you {n} file{'s' if n != 1 else ''}",
+                                       "Open Swiftlane to accept or decline.")
+        if self._jobs:
+            self._jobs.push("peer-offer", offer)
+        return decision
+
+    def _peer_progress(self, info):
+        for i, t in enumerate(self._peer_log):
+            if t["id"] == info["id"]:
+                self._peer_log[i] = info
+                break
+        else:
+            self._peer_log.appendleft(info)
+        if info["status"] in ("done", "declined", "failed"):
+            self._peer_offers.pop(info["id"], None)
+        if self._jobs:
+            self._jobs.push("peer-transfer", info)
+
+    def contacts_state(self):
+        import peers
+        try:
+            my_id = self._peer.id if self._peer else str(__import__("iroh").SecretKey.from_bytes(self._peer_key()).public())
+            code, safety = peers.make_code(my_id, self._my_contact_name()), peers.safety_words(my_id)
+        except Exception as e:
+            code, safety = None, None
+            self._peer_error = self._peer_error or f"Couldn't load your contact key ({e.__class__.__name__})."
+        return {"code": code, "safety": safety, "name": self._my_contact_name(), "contacts": self._contacts.list(),
+                "running": bool(self._peer and self._peer.running), "error": self._peer_error,
+                "on": bool(self._state.cfg["features"].get("contacts")), "transfers": list(self._peer_log),
+                "offers": [t for t in self._peer_log if t["status"] == "asking" and t["id"] in self._peer_offers]}
+
+    def contact_add(self, code, name=""):
+        import peers
+        try:
+            my_id = str(__import__("iroh").SecretKey.from_bytes(self._peer_key()).public())
+            c = self._contacts.add(code, name, own_id=my_id)
+        except peers.PeerError as e:
+            return {"error": str(e)}
+        core.log(f"Send to contacts: added {c['name']} ({peers.safety_words(c['id'])})")
+        threading.Thread(target=self._peer_sync, daemon=True).start()
+        return self.contacts_state()
+
+    def contact_remove(self, cid):
+        self._contacts.remove(str(cid))
+        threading.Thread(target=self._peer_sync, daemon=True).start()
+        return self.contacts_state()
+
+    def contact_rename(self, cid, name):
+        self._contacts.rename(str(cid), str(name))
+        return self.contacts_state()
+
+    def set_contact_name(self, name):
+        import peers
+        self._state.cfg["contact_name"] = peers.clean_name(name)
+        core.save_config(self._state.cfg)
+        return self.contacts_state()
+
+    def peer_answer(self, offer_id, accept):
+        d = self._peer_offers.get(str(offer_id))
+        if not d:
+            return {"error": "That request has already ended."}
+        d.answer(bool(accept))
+        return True
+
+    def peer_send(self, contact_ids, paths):
+        """One job per contact. Each one waits for that person to accept."""
+        import peers
+        paths = [p for p in (paths or []) if Path(p).is_file()]
+        if not paths:
+            return {"error": "Add some files first (folders can't be sent to contacts yet)."}
+        if not (self._peer and self._peer.running):
+            self._peer_sync()
+            if not (self._peer and self._peer.running):
+                return {"error": self._peer_error or "Sending to contacts isn't running."}
+        jobs = []
+        for cid in contact_ids or []:
+            c = self._contacts.get(str(cid))
+            if not c:
+                continue
+
+            def work(report, cancelled, cid=c["id"]):
+                def progress(info):
+                    text = {"connecting": "Connecting…", "waiting": "Waiting for them to accept…"}.get(info["status"])
+                    report(info["done"] / info["total"] if info["total"] and info["status"] == "sending" else None, text)
+                self._peer.send(cid, paths, cancelled, progress)
+                return []
+            n = len(paths)
+            jobs.append(self._jobs.start("peer", f"{n} file{'s' if n != 1 else ''} to {c['name']}", work, notify=False))
+        return {"jobs": jobs} if jobs else {"error": "Pick who to send to."}
+
     # ---------------------------------------------------------------- downloader
     def video_info(self, url):
         try:
@@ -1732,9 +1884,12 @@ def main():
     threading.Thread(target=api._update_loop, daemon=True).start()
     threading.Thread(target=api._vault_loop, daemon=True).start()
     threading.Thread(target=api._net_loop, daemon=True).start()
+    threading.Thread(target=api._peer_sync, daemon=True).start()
     run_window(state, api, args.minimized)
     if api._vault:
         api._vault.lock()  # also wipes files opened from it
+    if api._peer:
+        api._peer.stop()  # contacts can no longer reach this PC
     api._shutdown_sharing()
 
 

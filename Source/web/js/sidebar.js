@@ -3,6 +3,7 @@
 const TOOLS = [
   { id: 'transfer', name: 'Phone transfer', icon: 'transfer', feature: 'transfer', desc: 'Send and receive files with your phone over your network', keys: 'phone iphone android send receive' },
   { id: 'share', name: 'Share links', icon: 'link', feature: 'share', desc: 'Send files to anyone with a link, through Tailscale', keys: 'link send upload friend' },
+  { id: 'contacts', name: 'Send to contacts', icon: 'people', feature: 'contacts', desc: 'Straight to another Swiftlane, no link needed', keys: 'send friend contact p2p peer computer pc another swiftlane', pin: true },
   { id: 'converter', name: 'File converter', icon: 'convert', feature: 'converter', desc: 'Images, video, audio and PDF', keys: 'convert jpg png mp4 mp3 heic' },
   { id: 'pdf', name: 'PDF tools', icon: 'pdf', feature: 'pdf', desc: 'Merge, split, reorder, rotate, sign, make smaller', keys: 'pdf merge split sign compress pages', home: 'Files & media' },
   { id: 'trimmer', name: 'Video trimmer', icon: 'scissors', feature: 'trimmer', desc: 'Cut clips, shrink them to send, keep the sound', keys: 'video cut trim clip discord whatsapp mp3', home: 'Files & media' },
@@ -19,7 +20,7 @@ const TOOLS = [
   { id: 'adblock', name: 'Ad blocker test', icon: 'shield', feature: 'adblock', desc: 'Are ads and trackers blocked?', keys: 'ads tracker dns' },
 ];
 const DEFAULT_LAYOUT = {
-  pinned: ['transfer', 'share'],
+  pinned: ['transfer', 'share', 'contacts'],
   folders: [
     { name: 'Files & media', items: ['converter', 'images', 'pdf', 'trimmer', 'diskmap', 'downloader'], open: true },
     { name: 'Everyday', items: ['remote', 'currency', 'calculator'], open: true },
@@ -40,6 +41,7 @@ const DEFAULT_LAYOUT = {
     for (const f of (raw && Array.isArray(raw.folders) ? raw.folders : []).slice(0, 20))
       l.folders.push({ name: String(f.name || 'Folder').slice(0, 40), items: take(f.items), open: f.open !== false });
     let rest = TOOLS.map(t => t.id).filter(id => !seen.has(id));
+    for (const id of [...rest]) if (tool(id).pin) { l.pinned.push(id); rest = rest.filter(x => x !== id); }  // new main tools join the pinned ones
     for (const id of [...rest]) {  // new tools go to their usual folder if you still have it
       let home = l.folders.find(f => f.name === tool(id).home);
       if (!home && DEFAULT_LAYOUT.folders.some(f => f.name === tool(id).home)) { home = { name: tool(id).home, items: [], open: true }; l.folders.push(home); }

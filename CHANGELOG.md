@@ -2,6 +2,14 @@
 
 What's new in each version of Swiftlane.
 
+## 1.2.0 (2026-10-24)
+
+- New: Send to contacts. If the other person has Swiftlane too, send files straight from your PC to theirs: no link, no account, no ports to open
+- Add each other once with your contact codes; a short Check code lets you confirm it's really them
+- The receiver always sees who's sending what and decides: nothing arrives until they click Accept
+- End-to-end encrypted; only your contacts can reach you, and only while you have at least one contact
+- For people without Swiftlane, "Make a link instead" hands the files to Share links as before
+
 ## 1.1.5 (2026-10-24)
 
 - New PC remote page: switch it on, see how to use it on your phone, try the keys on the PC, and watch presses from your phone arrive

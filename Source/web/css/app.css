@@ -799,3 +799,19 @@ input.trim-range::-webkit-slider-thumb { pointer-events: auto; width: 12px; heig
 .toast { position: fixed; top: auto; bottom: 22px; left: calc(50% + 118px); width: max-content; max-width: min(560px, calc(100vw - 300px));
          transform: translate(-50%, 12px); transition: opacity .2s, transform .2s; text-align: center; }
 .toast.show { transform: translate(-50%, 0); }
+
+/* ---------- send to contacts */
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; align-items: start; }
+.pc-code { font: 12.5px/1.55 var(--mono); word-break: break-all; padding: 10px 12px; border-radius: 12px; background: var(--sunken); user-select: all; }
+.pc-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.pc-add #pcAddCode { grid-column: 1 / -1; }
+.pc-kind { display: grid; place-items: center; background: var(--surface-3); }
+.pc-kind svg.i { width: 17px; height: 17px; stroke: var(--accent); }
+#pcList .acts { display: flex; margin-left: auto; } #pcFiles .acts { margin-left: auto; }
+#pcTransfers .row.pc-bad .pc-kind svg.i { stroke: #e5484d; }
+#pcTransfers .bar { height: 4px; border-radius: 4px; background: var(--surface-3); margin-top: 6px; overflow: hidden; }
+#pcTransfers .bar i { display: block; height: 100%; background: var(--accent); }
+#pcPick .chip { cursor: pointer; font: inherit; }
+#pcPick .chip.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.offer-card { width: min(560px, calc(100% - 40px)); }
+.offer-files { max-height: 40vh; overflow: auto; margin: 6px 0 10px; }

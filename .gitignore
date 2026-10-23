@@ -20,3 +20,6 @@ Source/release/
 
 # Claude Code settings (local only)
 .claude/
+
+# local test helpers (not part of the app)
+Dev tools/

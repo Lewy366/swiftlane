@@ -3,6 +3,7 @@
   const FEATURES = [
     ['transfer', 'transfer', 'Phone transfer', 'Send and receive files with your phone over your network'],
     ['share', 'link', 'Share links', 'Send files to anyone with a link, through Tailscale'],
+    ['contacts', 'people', 'Send to contacts', 'Straight to another Swiftlane, no link needed'],
     ['remote', 'remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
     ['pdf', 'pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
     ['trimmer', 'scissors', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
