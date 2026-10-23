@@ -1,5 +1,9 @@
 # Swiftlane
 
+**Download videos, cut clips and edit photos in one app. No sketchy sites, no accounts.**
+
+Ever wanted to download a YouTube video, cut a clip or edit a photo, but didn't want to install a bunch of separate programs, make accounts on online editors or click through sketchy websites? Swiftlane has all of that in one app on your PC, so you don't have to go looking anywhere else. Your files stay on your computer the whole time.
+
 > **About this project:** Swiftlane is a personal test project of mine. I directed the work, but the code itself was written by an AI (Anthropic's Claude). The source is public so anyone can check exactly what the app does. It comes as-is, with no warranty.
 >
 > **Ideas and feedback are welcome.** If you have a suggestion for a new feature, found something that doesn't work, or just want to comment on the project, open an issue on this repo's Issues tab. I read them all and I'm happy to hear new ideas.
