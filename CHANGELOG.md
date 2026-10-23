@@ -2,6 +2,13 @@
 
 What's new in each version of Swiftlane.
 
+## 1.1.5 (2026-10-24)
+
+- New PC remote page: switch it on, see how to use it on your phone, try the keys on the PC, and watch presses from your phone arrive
+- The phone now shows or hides the Remote tab within a few seconds when you switch it on or off, no reload needed
+- Fixed: the sidebar squashed some tools on top of each other when the list was long; it now scrolls and fades at the edge
+- Fixed: messages like "Swiftlane is up to date" were cut off at the bottom of the window
+
 ## 1.1.4 (2026-10-23)
 
 - Fixed: in Setup, the Features step couldn't scroll, so you couldn't reach the Next button and finish installing

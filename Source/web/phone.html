@@ -289,7 +289,9 @@ function showTab(name) {
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
 // ---------- PC remote (only if it's switched on in Swiftlane on the PC)
+let remoteOn = false, powerOn = false;
 function setRemote(on, power) {
+  remoteOn = !!on; powerOn = !!power;
   $('remoteTab').hidden = !on;
   document.querySelectorAll('.rbtn.power').forEach(b => b.hidden = !power);
   showTab(!on && tab === 'remote' ? 'send' : tab);
@@ -351,9 +353,10 @@ async function poll() {
   try {
     const r = await fetch('/api/outbox', { headers: { 'X-Token': code }, cache: 'no-store' });
     if (r.status === 401) return connect('');
-    const { items } = await r.json();
+    const body = await r.json();
     $('dot').classList.remove('off');
-    render(items);
+    render(body.items);
+    if ('remote' in body && (body.remote !== remoteOn || body.power !== powerOn)) setRemote(body.remote, body.power);
   } catch (e) { $('dot').classList.add('off'); }
 }
 function render(items) {

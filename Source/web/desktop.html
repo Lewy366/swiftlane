@@ -249,6 +249,27 @@
       </div>
     </section>
 
+    <!-- ============ PC remote ============ -->
+    <section class="page" id="page-remote" hidden>
+      <div class="page-head"><div><h1>PC remote</h1><p>Control music, volume and slides on this PC from your phone.</p></div></div>
+      <section class="card">
+        <div class="setting" style="border:0;padding-top:0"><div><b>Let paired phones use the remote</b><small>Only phones with your pairing code. Off until you switch it on.</small></div><label class="switch"><input type="checkbox" id="rmOn"><span></span></label></div>
+        <div class="setting" id="rmPowerRow" hidden><div><b>Also allow sleep and shut down</b><small>Shutting down always gives a 60-second warning you can cancel. Locking the PC works without this.</small></div><label class="switch"><input type="checkbox" id="rmPower"><span></span></label></div>
+        <p class="rm-status" id="rmStatus"></p>
+      </section>
+      <section class="card"><h2>How to use it</h2>
+        <ol class="rm-steps">
+          <li>On your phone, open the Swiftlane web app. Not paired yet? <button class="linkish" id="rmConnect">Connect phone</button> shows the QR code.</li>
+          <li>Tap the <b>Remote</b> tab at the top. It appears a few seconds after you switch the remote on.</li>
+          <li>Press a button. It shows up under <i>From your phone</i> below, so you can see it arrived.</li>
+        </ol>
+      </section>
+      <section class="card"><h2>Try it on this PC</h2><p class="muted small" style="margin-top:-6px">These press the same keys a phone would, so you can check the PC side without a phone.</p>
+        <div class="rm-try" id="rmTry"><button class="btn" data-act="previous">Previous</button><button class="btn" data-act="play_pause">Play / pause</button><button class="btn" data-act="next">Next</button><span class="rm-gap"></span><button class="btn" data-act="volume_down">Quieter</button><button class="btn" data-act="mute">Mute</button><button class="btn" data-act="volume_up">Louder</button></div>
+      </section>
+      <section class="card"><h2>From your phone</h2><div class="list" id="rmLog"></div><div class="empty" id="rmEmpty">Nothing yet. Presses from your phone show up here.</div></section>
+    </section>
+
     <!-- ============ Share links ============ -->
     <section class="page" id="page-share" hidden>
       <div class="page-head"><div><h1>Share links</h1><p>Send files to anyone with a link. Files stay on this PC and are sent from here while Swiftlane is open.</p></div></div>
@@ -595,6 +616,7 @@
 <script src="js/diskmap.js"></script>
 <script src="js/netscan.js"></script>
 <script src="js/exposure.js"></script>
+<script src="js/remote.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/updates.js"></script>
 </body>

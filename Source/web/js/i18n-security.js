@@ -158,3 +158,38 @@ Object.assign(I18N.it, {
   'Ask the router to close this port? The program that opened it may stop working from outside.': 'Chiedere al router di chiudere questa porta? Il programma che l\'ha aperta potrebbe non funzionare più dall\'esterno.',
   'Firewall is on': 'Il firewall è attivo', 'Remote Desktop is off': 'Desktop remoto disattivato', 'Remote Desktop is on': 'Desktop remoto attivo', 'Turn Remote Desktop off': 'Disattiva Desktop remoto', 'Turn the firewall on': 'Attiva il firewall',
 });
+
+// PC remote page
+Object.assign(I18N.de, {
+  'PC remote': 'PC-Fernbedienung', 'Music, volume and slides from your phone': 'Musik, Lautstärke und Folien vom Handy', 'Control music, volume and slides on this PC from your phone.': 'Steuere Musik, Lautstärke und Folien auf diesem PC vom Handy aus.',
+  'Let paired phones use the remote': 'Gekoppelte Handys dürfen fernsteuern', 'Only phones with your pairing code. Off until you switch it on.': 'Nur Handys mit deinem Kopplungscode. Aus, bis du es einschaltest.',
+  'Also allow sleep and shut down': 'Auch Energiesparen und Herunterfahren erlauben', 'Shutting down always gives a 60-second warning you can cancel. Locking the PC works without this.': 'Vor dem Herunterfahren gibt es immer eine 60-Sekunden-Warnung zum Abbrechen. Sperren geht auch ohne das.',
+  'How to use it': 'So geht\'s', 'Try it on this PC': 'Auf diesem PC ausprobieren', 'These press the same keys a phone would, so you can check the PC side without a phone.': 'Drückt dieselben Tasten wie ein Handy, damit du den PC ohne Handy prüfen kannst.',
+  'From your phone': 'Vom Handy', 'Nothing yet. Presses from your phone show up here.': 'Noch nichts. Tastendrücke vom Handy erscheinen hier.', 'from': 'von', 'your phone': 'deinem Handy',
+  'On. Paired phones show a Remote tab within a few seconds.': 'An. Gekoppelte Handys zeigen in wenigen Sekunden einen Fernbedienungs-Tab.', 'Off. Phones don\'t get the Remote tab, and presses are refused.': 'Aus. Handys bekommen keinen Fernbedienungs-Tab, Tastendrücke werden abgelehnt.',
+  'Phone transfer is off, so phones can\'t connect to this PC at all. Switch it on in Settings first.': 'Die Handy-Übertragung ist aus, deshalb kann sich kein Handy verbinden. Schalte sie zuerst in den Einstellungen ein.',
+  'PC remote on': 'PC-Fernbedienung an', 'PC remote off': 'PC-Fernbedienung aus', 'Quieter': 'Leiser', 'Louder': 'Lauter', 'Mute': 'Stumm', 'Play / pause': 'Wiedergabe / Pause', 'Previous': 'Zurück',
+  'Next slide': 'Nächste Folie', 'Previous slide': 'Vorherige Folie', 'Lock': 'Sperren', 'Sleep': 'Energie sparen', 'Shut down': 'Herunterfahren', 'Cancel shut down': 'Herunterfahren abbrechen',
+});
+Object.assign(I18N.pl, {
+  'PC remote': 'Pilot do PC', 'Music, volume and slides from your phone': 'Muzyka, głośność i slajdy z telefonu', 'Control music, volume and slides on this PC from your phone.': 'Steruj muzyką, głośnością i slajdami na tym komputerze z telefonu.',
+  'Let paired phones use the remote': 'Pozwól sparowanym telefonom sterować', 'Only phones with your pairing code. Off until you switch it on.': 'Tylko telefony z twoim kodem parowania. Wyłączone, dopóki tego nie włączysz.',
+  'Also allow sleep and shut down': 'Pozwól też uśpić i wyłączyć', 'Shutting down always gives a 60-second warning you can cancel. Locking the PC works without this.': 'Przed wyłączeniem zawsze jest 60 sekund na anulowanie. Blokowanie działa i bez tego.',
+  'How to use it': 'Jak używać', 'Try it on this PC': 'Wypróbuj na tym komputerze', 'These press the same keys a phone would, so you can check the PC side without a phone.': 'Naciskają te same klawisze co telefon, więc sprawdzisz komputer bez telefonu.',
+  'From your phone': 'Z telefonu', 'Nothing yet. Presses from your phone show up here.': 'Na razie nic. Naciśnięcia z telefonu pojawią się tutaj.', 'from': 'z', 'your phone': 'twojego telefonu',
+  'On. Paired phones show a Remote tab within a few seconds.': 'Włączone. Sparowane telefony pokażą kartę Pilot w ciągu kilku sekund.', 'Off. Phones don\'t get the Remote tab, and presses are refused.': 'Wyłączone. Telefony nie dostają karty Pilot, a naciśnięcia są odrzucane.',
+  'Phone transfer is off, so phones can\'t connect to this PC at all. Switch it on in Settings first.': 'Przesyłanie z telefonu jest wyłączone, więc telefony w ogóle nie połączą się z tym komputerem. Najpierw włącz je w Ustawieniach.',
+  'PC remote on': 'Pilot włączony', 'PC remote off': 'Pilot wyłączony', 'Quieter': 'Ciszej', 'Louder': 'Głośniej', 'Mute': 'Wycisz', 'Play / pause': 'Odtwórz / pauza', 'Previous': 'Poprzedni',
+  'Next slide': 'Następny slajd', 'Previous slide': 'Poprzedni slajd', 'Lock': 'Zablokuj', 'Sleep': 'Uśpij', 'Shut down': 'Wyłącz', 'Cancel shut down': 'Anuluj wyłączanie',
+});
+Object.assign(I18N.it, {
+  'PC remote': 'Telecomando PC', 'Music, volume and slides from your phone': 'Musica, volume e slide dal telefono', 'Control music, volume and slides on this PC from your phone.': 'Controlla musica, volume e slide di questo PC dal telefono.',
+  'Let paired phones use the remote': 'Consenti il telecomando ai telefoni associati', 'Only phones with your pairing code. Off until you switch it on.': 'Solo i telefoni con il tuo codice di associazione. Spento finché non lo accendi.',
+  'Also allow sleep and shut down': 'Consenti anche sospensione e spegnimento', 'Shutting down always gives a 60-second warning you can cancel. Locking the PC works without this.': 'Lo spegnimento dà sempre 60 secondi per annullare. Il blocco del PC funziona anche senza.',
+  'How to use it': 'Come si usa', 'Try it on this PC': 'Provalo su questo PC', 'These press the same keys a phone would, so you can check the PC side without a phone.': 'Premono gli stessi tasti del telefono, così puoi verificare il PC senza telefono.',
+  'From your phone': 'Dal telefono', 'Nothing yet. Presses from your phone show up here.': 'Ancora niente. I tasti premuti dal telefono appaiono qui.', 'from': 'da', 'your phone': 'il tuo telefono',
+  'On. Paired phones show a Remote tab within a few seconds.': 'Acceso. I telefoni associati mostrano la scheda Telecomando entro pochi secondi.', 'Off. Phones don\'t get the Remote tab, and presses are refused.': 'Spento. I telefoni non hanno la scheda Telecomando e i comandi vengono rifiutati.',
+  'Phone transfer is off, so phones can\'t connect to this PC at all. Switch it on in Settings first.': 'Il trasferimento dal telefono è spento, quindi nessun telefono può collegarsi. Prima accendilo nelle Impostazioni.',
+  'PC remote on': 'Telecomando acceso', 'PC remote off': 'Telecomando spento', 'Quieter': 'Più basso', 'Louder': 'Più alto', 'Mute': 'Muto', 'Play / pause': 'Play / pausa', 'Previous': 'Precedente',
+  'Next slide': 'Slide successiva', 'Previous slide': 'Slide precedente', 'Lock': 'Blocca', 'Sleep': 'Sospendi', 'Shut down': 'Spegni', 'Cancel shut down': 'Annulla spegnimento',
+});

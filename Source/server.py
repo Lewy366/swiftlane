@@ -27,7 +27,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 APP = "Swiftlane"
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 OLD_APP = "PocketDrop"  # the app's name before 2.2; its settings and files are carried over
 APPDATA = Path(os.environ.get("APPDATA") or Path.home())
 CONFIG_DIR = APPDATA / APP
@@ -633,7 +633,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.authorized():
                 items = [{"id": i["id"], "name": i["name"], "size": i["size"],
                           "url": self.state.download_url(i)} for i in self.state.outbox.list()]
-                self.send_json(200, {"items": items})
+                cfg = self.state.cfg  # the phone checks every few seconds, so switching the remote on/off shows up without a reload
+                self.send_json(200, {"items": items, "remote": bool(cfg["features"].get("remote")), "power": bool(cfg.get("remote_power"))})
         elif url.path.startswith("/dl/"):
             self.send_download(url)
         else:

@@ -10,6 +10,7 @@ const TOOLS = [
   { id: 'diskmap', name: 'Disk space', icon: 'disk', feature: 'diskmap', desc: 'See what fills up your drives', keys: 'disk space storage full drive clean big files treemap', home: 'Files & media' },
   { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
   { id: 'exposure', name: 'Is my PC exposed?', icon: 'radar', feature: 'exposure', desc: 'Firewall, open ports, remote access, router', keys: 'security exposed firewall ports upnp remote desktop safe check hacker', home: 'Security' },
+  { id: 'remote', name: 'PC remote', icon: 'remote', desc: 'Music, volume and slides from your phone', keys: 'remote control phone volume music play pause slides presentation', home: 'Everyday' },
   { id: 'images', name: 'Image editor', icon: 'image', feature: 'images', desc: 'Crop, resize, straighten, adjust colours, compress', keys: 'photo crop resize edit picture' },
   { id: 'downloader', name: 'Video downloader', icon: 'download', feature: 'downloader', desc: 'YouTube and other sites', keys: 'youtube video mp3 download' },
   { id: 'currency', name: 'Currency', icon: 'currency', feature: 'currency', desc: 'Live exchange rates', keys: 'money euro dollar zloty exchange' },
@@ -21,7 +22,7 @@ const DEFAULT_LAYOUT = {
   pinned: ['transfer', 'share'],
   folders: [
     { name: 'Files & media', items: ['converter', 'images', 'pdf', 'trimmer', 'diskmap', 'downloader'], open: true },
-    { name: 'Everyday', items: ['currency', 'calculator'], open: true },
+    { name: 'Everyday', items: ['remote', 'currency', 'calculator'], open: true },
     { name: 'Network', items: ['speedtest', 'adblock'], open: true },
     { name: 'Security', items: ['vault', 'netscan', 'exposure'], open: true },
   ],
@@ -53,6 +54,21 @@ const DEFAULT_LAYOUT = {
   }
   function save() { App.api.set_sidebar(layout); }
   const enabled = t => !t.feature || App.state.features[t.feature] !== false;
+
+  // Fade the list's edge where more tools are hidden above or below.
+  function fadeEdges() {
+    const n = $('navTools'); if (!n) return;
+    const more = n.scrollHeight > n.clientHeight + 1;
+    n.classList.toggle('can-scroll', more);
+    n.style.setProperty('--fade-top', more && n.scrollTop > 2 ? '18px' : '0px');
+    n.style.setProperty('--fade-bottom', more && n.scrollTop + n.clientHeight < n.scrollHeight - 2 ? '22px' : '0px');
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const n = $('navTools'); if (!n) return;
+    n.addEventListener('scroll', fadeEdges, { passive: true });
+    new ResizeObserver(fadeEdges).observe(n);
+    new MutationObserver(fadeEdges).observe(n, { childList: true, subtree: true });
+  });
 
   function navButton(t) {
     const b = el('button', 'nav'); b.dataset.page = t.id; b.dataset.tool = t.id; b.draggable = true;

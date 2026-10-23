@@ -5,6 +5,7 @@ Opens the Swiftlane window; the iPhone server runs in the background while the
 "Phone transfer" feature is on. `--headless` runs just the server in a console.
 """
 import argparse
+import collections
 import ctypes
 import itertools
 import json
@@ -172,6 +173,8 @@ class Api:
         self._net = None            # last network scan
         self._net_lock = threading.Lock()
         self._exposure = None       # last 'Is my PC exposed?' result
+        self._remote_log = collections.deque(maxlen=12)  # recent PC-remote presses, shown on the PC remote page
+        self._phone_names = {}      # ip -> name the router knows (e.g. "Lewys-iPhone")
         # Sharing: the share server and Tailscale Funnel run only while a link can still be used.
         self._shares = share.Shares(core.CONFIG_DIR / "shares.json", on_change=self._shares_changed)
         self._shares.on_download = self._share_downloaded
@@ -709,12 +712,47 @@ class Api:
             core.log(f"PC remote from {ip}: {action}")
         if action == "shutdown":
             self._state.notifier.show_soon("Shutting down in 60 seconds", "Your phone asked to shut down this PC. Cancel it on the phone, or run: shutdown /a")
+        problem = None
         try:
             remote.perform(action)
         except Exception as e:
             core.log(f"PC remote {action} failed: {e}")
-            return "That didn't work on the PC."
-        return None
+            problem = "That didn't work on the PC."
+        self._remote_seen(action, ip, problem)
+        return problem
+
+    def _remote_seen(self, action, ip, problem=None):
+        """Remember a press for the PC remote page (so you can see it arrive), with the phone's name if the router knows it."""
+        entry = {"action": action, "ip": ip, "name": self._phone_names.get(ip), "time": time.time(), "error": problem}
+        self._remote_log.appendleft(entry)
+        if self._jobs:
+            self._jobs.push("remote-press", self.remote_state())
+        if ip not in self._phone_names:
+            def look_up():
+                from toolkit import netscan
+                self._phone_names[ip] = netscan.reverse_name(ip) if ip not in ("127.0.0.1", "::1") else None
+                for e in self._remote_log:
+                    if e["ip"] == ip:
+                        e["name"] = self._phone_names[ip]
+                if self._jobs and self._phone_names[ip]:
+                    self._jobs.push("remote-press", self.remote_state())
+            threading.Thread(target=look_up, daemon=True).start()
+
+    def remote_state(self):
+        cfg = self._state.cfg
+        return {"on": bool(cfg["features"].get("remote")), "power": bool(cfg.get("remote_power")),
+                "transfer": bool(cfg["features"].get("transfer")) and self._server is not None, "log": list(self._remote_log)}
+
+    def remote_try(self, action):
+        """'Try it on this PC': the same key a phone would press, from the PC remote page (sound and music keys only)."""
+        from toolkit import remote
+        if action not in ("play_pause", "previous", "next", "volume_down", "volume_up", "mute"):
+            return {"error": "Unknown action."}
+        try:
+            remote.perform(action)
+        except Exception as e:
+            return {"error": f"That didn't work on this PC ({e.__class__.__name__})."}
+        return True
 
     def set_sidebar(self, layout):
         """Pinned tools and folders. Only plain names and tool ids are stored; the page checks ids itself."""

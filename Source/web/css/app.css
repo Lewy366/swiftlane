@@ -602,7 +602,7 @@ body.light .sidebar::after, body.light .card::after, body.light .drop::after {
 .nav.on { box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--accent) 75%, transparent); }
 .seg button.on { box-shadow: 0 2px 8px rgba(0,0,0,.28); }
 .drop .orb { box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--accent) 80%, transparent); }
-@media (prefers-reduced-motion: reduce) { .sidebar, .card, .drop, .toast, .device { transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sidebar, .card, .drop, .device { transform: none !important; } }
 
 /* ---------- updates */
 .update-pill { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; padding: 8px 12px; border: 0; border-radius: 12px; cursor: pointer;
@@ -627,6 +627,8 @@ body.light .sidebar::after, body.light .card::after, body.light .drop::after {
 .app { grid-template-rows: minmax(0, 1fr); }
 .sidebar { min-height: 0; overflow: hidden; }
 .sidebar > .brand, .sidebar > .nav, .sidebar > .search-btn { flex-shrink: 0; }
+.nav-tools > * { flex-shrink: 0; }  /* the list scrolls; its groups never get squashed */
+.nav-tools.can-scroll { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top, 0px), #000 calc(100% - var(--fade-bottom, 0px)), transparent 100%); }
 .nav-tools::-webkit-scrollbar { width: 6px; }
 .nav-tools::-webkit-scrollbar-button { display: none; height: 0; }
 .nav-tools::-webkit-scrollbar-track { background: transparent; }
@@ -779,3 +781,21 @@ input.trim-range::-webkit-slider-thumb { pointer-events: auto; width: 12px; heig
 #xpPorts .row.xp-local { opacity: .6; }
 #xpPorts .sub { white-space: normal; }
 #xpUpnp .acts { margin-left: auto; }
+
+/* ---------- PC remote page */
+.rm-status { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--sunken); font-size: 13px; color: var(--muted); }
+.rm-status.ok { color: var(--text); box-shadow: inset 3px 0 0 #30a46c; }
+.rm-status.warn { color: var(--text); box-shadow: inset 3px 0 0 #f5a524; }
+.rm-steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.rm-try { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rm-gap { width: 12px; }
+.rm-kind { display: grid; place-items: center; background: var(--surface-3); }
+.rm-kind svg.i { width: 17px; height: 17px; stroke: var(--accent); }
+#rmLog .row.rm-err .rm-kind svg.i { stroke: #e5484d; }
+
+/* ---------- messages (toast): the glass rules above make glass `position: relative` and tilt it, which would
+   drop the message below the window. It floats, centred over the page, and never tilts. */
+.toast { position: fixed; top: auto; bottom: 22px; left: calc(50% + 118px); width: max-content; max-width: min(560px, calc(100vw - 300px));
+         transform: translate(-50%, 12px); transition: opacity .2s, transform .2s; text-align: center; }
+.toast.show { transform: translate(-50%, 0); }
