@@ -2,12 +2,14 @@
 
 > **About this project:** Swiftlane is a personal test project of mine. I directed the work, but the code itself was written by an AI (Anthropic's Claude). The source is public so anyone can check exactly what the app does. It comes as-is, with no warranty.
 >
-> **All rights reserved.** There's no licence, so you're free to read the code but not to copy, modify or redistribute it without my written permission. I'm not accepting contributions.
+> **Ideas and feedback are welcome.** If you have a suggestion for a new feature, found something that doesn't work, or just want to comment on the project, open an issue on this repo's Issues tab. I read them all and I'm happy to hear new ideas.
+>
+> **All rights reserved.** There's no licence, so you're free to read the code but not to copy, modify or redistribute it without my written permission. Because of that I can't accept code contributions or pull requests, but suggestions and comments are always welcome.
 
 Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer between your phone and your PC, and around that sits a bunch of everyday tools. Everything runs on your own PC. The only things that touch an outside service are the currency rates, the speed test and video downloads, and those need the internet anyway.
 
 - **Phone transfer:** send files between your phone and this PC over your own network. You don't need to install anything on the phone.
-- **Share links:** send files or folders to anyone with a link, straight from this PC (via Tailscale). You can set a time limit, download or per-person limits and an optional password.
+- **Share links:** send files or folders to anyone with a link, straight from this PC (via [Tailscale](https://tailscale.com), a free-to-use app that connects your devices securely, more on that under *Share links*). You can set a time limit, download or per-person limits and an optional password.
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
 - **PC remote:** media keys, volume and arrow keys from your phone. It's off until you switch it on.
 - **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network) and **Is my PC exposed?**
@@ -51,6 +53,13 @@ Drop files or folders onto **Share links** and the link is copied right away. No
 - **Personal links:** one visit can take every file, and the link is used up once that person has downloaded.
 - **Folders** are listed once, when you share them. Files added later aren't included, and hidden files, system files and shortcuts/links are left out. "What's included" shows exactly what's shared. Swiftlane asks before sharing a whole personal folder or drive, or files that look private (keys, passwords, wallets), and it never shares Windows, program or app-data folders.
 - **Recipients** get a plain download page that works in any browser. They can grab each file or everything as one .zip, and downloads can resume.
+
+**What is Tailscale?** [Tailscale](https://tailscale.com) is an app that links your devices into your own private, encrypted network, and it has a free plan for personal use. Its **Funnel** feature can also make one service on your PC reachable from the wider internet, even for people who don't use Tailscale. That's what Swiftlane uses for share links, so you only need Tailscale on the PC that does the sharing. The people downloading don't need it, and neither does your phone for normal transfers.
+
+- **Download it:** [tailscale.com/download](https://tailscale.com/download) (Windows, plus macOS, Linux, iPhone and Android)
+- **Install guide:** [tailscale.com/docs/install](https://tailscale.com/docs/install)
+- **Quickstart for first-time setup:** [tailscale.com/docs/how-to/quickstart](https://tailscale.com/docs/how-to/quickstart)
+- **How Funnel works:** [tailscale.com/kb/1223/funnel](https://tailscale.com/kb/1223/funnel)
 
 **How people reach it:** through **Tailscale Funnel**. The link looks like `https://<pc-name>.<tailnet>.ts.net/s/…`. It shows your PC's Tailscale name but not your IP or address, and no port is opened on your router. The encryption ends on your PC, so Tailscale's relay can't read the files. Swiftlane only switches Funnel **on while a link can actually be used** (plus 15 minutes after a used-up link's last download, so it can resume). It switches it **off** when the last link ends, when Swiftlane closes and when you uninstall. It never touches Funnel or Serve settings that something else created.
 
