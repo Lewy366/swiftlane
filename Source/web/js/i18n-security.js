@@ -249,3 +249,29 @@ Object.assign(I18N.it, {
   'Name for this contact': 'Nome per questo contatto', 'Remove contact': 'Rimuovi contatto', 'Remove this contact? They can no longer send to you, and you can\'t send to them.': 'Rimuovere questo contatto? Non potrà più inviarti file e tu non potrai inviarne a lui.',
   'last connected': 'ultima connessione', 'not connected yet': 'mai connesso', 'people': 'persone', 'Send to': 'Invia a',
 });
+
+// World clock
+Object.assign(I18N.de, {
+  'World clock': 'Weltuhr', 'Live times on a map, plan across time zones': 'Live-Zeiten auf einer Karte, über Zeitzonen planen',
+  'Live times around the world. Drag along the planner to see any moment everywhere.': 'Live-Zeiten auf der ganzen Welt. Zieh im Planer, um jeden Moment überall zu sehen.',
+  'Add city': 'Stadt hinzufügen', 'Search a city or country': 'Stadt oder Land suchen', 'Plan a time': 'Zeit planen', 'Back to now': 'Zurück zu jetzt', 'Live': 'Live',
+  'Drag along the hours to see that moment in every city. Light hours are working hours, dark ones are night.': 'Zieh über die Stunden, um diesen Moment in jeder Stadt zu sehen. Helle Stunden sind Arbeitszeit, dunkle sind Nacht.',
+  'Today': 'Heute', 'Tomorrow': 'Morgen', 'Yesterday': 'Gestern', 'same time': 'gleiche Zeit', 'hr': 'Std.', 'hrs': 'Std.', 'Here': 'Hier', 'Showing': 'Zeigt', 'your time': 'deiner Zeit',
+  'Where the sun is overhead right now': 'Wo die Sonne gerade senkrecht steht',
+});
+Object.assign(I18N.pl, {
+  'World clock': 'Zegar światowy', 'Live times on a map, plan across time zones': 'Aktualny czas na mapie, planowanie między strefami',
+  'Live times around the world. Drag along the planner to see any moment everywhere.': 'Aktualny czas na całym świecie. Przeciągnij w planerze, aby zobaczyć dowolną chwilę wszędzie.',
+  'Add city': 'Dodaj miasto', 'Search a city or country': 'Szukaj miasta lub kraju', 'Plan a time': 'Zaplanuj godzinę', 'Back to now': 'Wróć do teraz', 'Live': 'Na żywo',
+  'Drag along the hours to see that moment in every city. Light hours are working hours, dark ones are night.': 'Przeciągnij po godzinach, aby zobaczyć tę chwilę w każdym mieście. Jasne godziny to czas pracy, ciemne to noc.',
+  'Today': 'Dziś', 'Tomorrow': 'Jutro', 'Yesterday': 'Wczoraj', 'same time': 'ten sam czas', 'hr': 'godz.', 'hrs': 'godz.', 'Here': 'Tutaj', 'Showing': 'Pokazuje', 'your time': 'twojego czasu',
+  'Where the sun is overhead right now': 'Gdzie słońce jest teraz w zenicie',
+});
+Object.assign(I18N.it, {
+  'World clock': 'Orologio mondiale', 'Live times on a map, plan across time zones': 'Orari in tempo reale su una mappa, pianifica tra fusi orari',
+  'Live times around the world. Drag along the planner to see any moment everywhere.': 'Orari in tempo reale nel mondo. Trascina nel pianificatore per vedere qualsiasi momento ovunque.',
+  'Add city': 'Aggiungi città', 'Search a city or country': 'Cerca una città o un paese', 'Plan a time': 'Pianifica un orario', 'Back to now': 'Torna ad adesso', 'Live': 'In diretta',
+  'Drag along the hours to see that moment in every city. Light hours are working hours, dark ones are night.': 'Trascina sulle ore per vedere quel momento in ogni città. Le ore chiare sono lavorative, quelle scure sono notte.',
+  'Today': 'Oggi', 'Tomorrow': 'Domani', 'Yesterday': 'Ieri', 'same time': 'stessa ora', 'hr': 'h', 'hrs': 'h', 'Here': 'Qui', 'Showing': 'Mostra', 'your time': 'ora tua',
+  'Where the sun is overhead right now': 'Dove il sole è allo zenit adesso',
+});

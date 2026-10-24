@@ -27,7 +27,7 @@ from toolkit import adblock, calc, convert, currency, downloader, images, pdftoo
 from toolkit.common import Cancelled, clipboard_text
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 TAILSCALE_PAGES = ("https://login.tailscale.com/",)  # the only outside pages the Share page may open
 CALC_METHODS = {  # what the calculator page may call, nothing else
     "evaluate", "solve", "set_mode", "memory", "memory_add", "clear_memory", "base_n", "statistics",
@@ -224,6 +224,7 @@ class Api:
             "config_dir": str(core.CONFIG_DIR),
             "outbox": s.outbox.list(),
             "received": list(s.received),
+            "clocks": s.cfg.get("clocks"),
             "formats": convert.supported_formats(),
             "download_choices": {k: v["label"] for k, v in downloader.CHOICES.items()},
             "image_ratios": list(images.RATIOS),
@@ -777,6 +778,14 @@ class Api:
         except (AttributeError, TypeError):
             return False
         self._state.cfg["sidebar"] = clean
+        core.save_config(self._state.cfg)
+        return True
+
+    def set_clocks(self, ids):
+        """The World clock's cities (ids from the page's own city list; nothing else is stored)."""
+        if not isinstance(ids, list):
+            return False
+        self._state.cfg["clocks"] = [i for i in ids if isinstance(i, str) and re.fullmatch(r"[a-z]{2,20}", i)][:24]
         core.save_config(self._state.cfg)
         return True
 

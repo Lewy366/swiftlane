@@ -18,7 +18,7 @@ import installer
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))  # contains web/ (pages, styles, translations)
 PAYLOAD = Path(os.environ.get("SWIFTLANE_PAYLOAD") or ROOT / "payload.zip")
 VERSION = (ROOT / "version.txt").read_text("utf-8").strip() if (ROOT / "version.txt").exists() else "dev"
-FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 
 
 def windows_language():

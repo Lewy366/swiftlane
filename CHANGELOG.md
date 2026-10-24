@@ -2,6 +2,13 @@
 
 What's new in each version of Swiftlane.
 
+## 1.3.0 (2026-10-24)
+
+- New: World clock. A live world map with the night side shaded from the sun's real position, and your cities as pins
+- Analog clocks for each city (light by day, dark at night) with the time difference and whether it's today or tomorrow there
+- Plan a time: drag along the hours to see any moment in every city at once, then jump back to now
+- Works offline, with daylight saving always right
+
 ## 1.2.0 (2026-10-24)
 
 - New: Send to contacts. If the other person has Swiftlane too, send files straight from your PC to theirs: no link, no account, no ports to open

@@ -27,7 +27,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 APP = "Swiftlane"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 OLD_APP = "PocketDrop"  # the app's name before 2.2; its settings and files are carried over
 APPDATA = Path(os.environ.get("APPDATA") or Path.home())
 CONFIG_DIR = APPDATA / APP
@@ -56,7 +56,7 @@ DEFAULTS = {
     "features": {"transfer": True, "converter": True, "images": True,
                  "downloader": True, "currency": True, "calculator": True,
                  "speedtest": True, "adblock": True, "share": True,
-                 "pdf": True, "trimmer": True, "vault": True, "diskmap": True, "netscan": True, "exposure": True, "contacts": True,
+                 "pdf": True, "trimmer": True, "vault": True, "diskmap": True, "netscan": True, "exposure": True, "contacts": True, "worldclock": True,
                  "remote": False},       # PC remote: off until you switch it on (Security-first)
     "remote_power": False,      # PC remote may also sleep / shut down the PC
     "https_only": False,        # refuse unencrypted phone connections (turn on once phones are set up)

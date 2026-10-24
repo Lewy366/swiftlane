@@ -18,6 +18,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
 - **PC remote:** media keys, volume and arrow keys from your phone. It's off until you switch it on.
 - **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network) and **Is my PC exposed?**
+- **World clock:** live times on a world map with the night side shaded from the sun's real position, analog clocks for your cities, and a planner to see any moment in every time zone.
 - **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Disk space** map, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
 - Right-click any file in File Explorer and pick *Send to phone*, *Share with a link* or *Convert*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
@@ -103,6 +104,9 @@ For sending to people who also have Swiftlane. Each of you copies your **contact
 
 ### Request files
 On **Share links**, *Request files* makes a link that other people can use to upload files into a folder you pick. You set how long it works, the maximum number of files and the biggest total size, and you can add a password. The link only accepts uploads. It never shows or offers anything already in the folder or anything others have sent. Received files are marked as coming from the internet (so Windows warns before running them) and they never overwrite anything.
+
+### World clock
+A world map with the night side shaded from where the sun actually is right now, including a soft twilight band and a marker where the sun is overhead. Your cities show as pins with their time, and as cards with an analog clock (light by day, dark at night), the time difference to you, and whether it's today, tomorrow or yesterday there. **Plan a time** lines up 24 hours for every city (working hours light, night dark). Drag along it and every clock and the map jump to that moment, and *Back to now* returns to live time. Everything is calculated on your PC from Windows' own time zone data, so daylight saving is always right. Nothing goes online. Map outline: [Natural Earth](https://www.naturalearthdata.com) (public domain).
 
 ### PC remote
 Off until you switch it on in Settings. After that, paired phones get a *Remote* tab with play/pause, next/previous, volume, mute and arrow keys (handy for slides). Sleep and shut down sit behind a separate switch, and shut down waits 60 seconds and can be cancelled.

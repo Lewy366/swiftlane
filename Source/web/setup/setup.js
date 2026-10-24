@@ -20,6 +20,7 @@ const FEATURES = [
   ['diskmap', 'Disk space', 'See what fills up your drives'],
   ['netscan', 'Network devices', 'Who is on your home network'],
   ['exposure', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
+  ['worldclock', 'World clock', 'Live times on a map, plan across time zones'],
   ['converter', 'File converter', 'Images, video, audio and PDF'],
   ['images', 'Image editor', 'Crop, resize, straighten, adjust colours, compress'],
   ['downloader', 'Video downloader', 'YouTube and other sites'],

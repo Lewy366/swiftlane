@@ -69,6 +69,7 @@
   <symbol id="i-device" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2.5"/><path d="M8 10h.01M8 14h8"/></symbol>
   <symbol id="i-radar" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="M12 8v4.5M12 15.8h.01"/></symbol>
   <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.6 14.2A4.5 4.5 0 0 1 21 18.5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M10 13h.01M14 13h.01M10 16h.01M14 16h.01"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></symbol>
@@ -277,6 +278,18 @@
         </section>
       </div>
       <p class="muted small" style="margin:4px 4px 0">How it works: both PCs find each other by their contact keys and connect directly, end-to-end encrypted. If a direct connection isn't possible, the encrypted data passes through a relay of iroh (the networking project this uses), which can't read it. Files are never stored anywhere else, and only your contacts can reach you.</p>
+    </section>
+
+    <!-- ============ World clock ============ -->
+    <section class="page" id="page-worldclock" hidden>
+      <div class="page-head"><div><h1>World clock</h1><p>Live times around the world. Drag along the planner to see any moment everywhere.</p></div><button class="btn" id="wcAddBtn"><svg class="i"><use href="#i-plus"/></svg> Add city</button></div>
+      <section class="card wc-add" id="wcAdd" hidden><input class="input" id="wcSearch" placeholder="Search a city or country" autocomplete="off" spellcheck="false"><div class="wc-results" id="wcResults"></div></section>
+      <section class="card wc-mapcard"><div class="wc-map" id="wcMap"><canvas id="wcCanvas"></canvas><div class="wc-sun" id="wcSun" title="Where the sun is overhead right now"></div><div class="wc-pins" id="wcPins"></div></div></section>
+      <div class="wc-cards" id="wcCards"></div>
+      <section class="card"><h2>Plan a time<span class="spacer"></span><span class="muted small" id="wcShowing"></span><button class="btn small" id="wcNow" hidden>Back to now</button></h2>
+        <p class="muted small" style="margin-top:-6px">Drag along the hours to see that moment in every city. Light hours are working hours, dark ones are night.</p>
+        <div class="wc-planwrap" id="wcPlanWrap"><div class="wc-plan" id="wcPlan"></div><div class="wc-cursor" id="wcCursor"></div></div>
+      </section>
     </section>
 
     <!-- ============ PC remote ============ -->
@@ -654,6 +667,9 @@
 <script src="js/exposure.js"></script>
 <script src="js/remote.js"></script>
 <script src="js/contacts.js"></script>
+<script src="js/worldmap-data.js"></script>
+<script src="js/worldclock-cities.js"></script>
+<script src="js/worldclock.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/updates.js"></script>
 </body>
