@@ -262,3 +262,15 @@ Object.assign(I18N.it, {
   'Link copied · it works as soon as Swiftlane says it’s ready': 'Link copiato · funziona appena Swiftlane dice che è pronto',
   'Your link is ready · it works from the internet': 'Il link è pronto · funziona da internet',
 });
+Object.assign(I18N.de, {
+  'Show a picture in link previews': 'Bild in Link-Vorschauen zeigen',
+  'If the first file is a picture, chat apps show a small copy of it with the link. They may keep that copy on their servers. Never shown for shares with a password.': 'Ist die erste Datei ein Bild, zeigen Chat-Apps eine kleine Kopie davon beim Link. Sie können diese Kopie auf ihren Servern behalten. Bei Freigaben mit Passwort wird nie ein Bild gezeigt.',
+});
+Object.assign(I18N.pl, {
+  'Show a picture in link previews': 'Pokazuj obraz w podglądzie linku',
+  'If the first file is a picture, chat apps show a small copy of it with the link. They may keep that copy on their servers. Never shown for shares with a password.': 'Jeśli pierwszy plik jest obrazem, komunikatory pokażą jego małą kopię przy linku. Mogą przechowywać tę kopię na swoich serwerach. Nigdy nie jest pokazywany przy udostępnieniach z hasłem.',
+});
+Object.assign(I18N.it, {
+  'Show a picture in link previews': 'Mostra un\'immagine nelle anteprime dei link',
+  'If the first file is a picture, chat apps show a small copy of it with the link. They may keep that copy on their servers. Never shown for shares with a password.': 'Se il primo file è un\'immagine, le app di chat ne mostrano una piccola copia accanto al link. Possono conservarla sui loro server. Mai mostrata per le condivisioni con password.',
+});

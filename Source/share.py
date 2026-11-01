@@ -11,11 +11,16 @@ How it is kept small and safe:
   be blocked, and the share can have a password (scrypt, with lockouts).
 - Pages are plain server-made HTML with no scripts; file names are escaped; every file is
   sent as a download, never shown in the browser.
+- Pictures get previews (on the page and in chat apps' link cards): fresh small JPEGs made by
+  Swiftlane, upright, without EXIF/GPS, never the original file. Password-protected shares show
+  nothing in link cards and no previews until the visitor has entered the password.
 """
+import collections
 import contextlib
 import hashlib
 import hmac
 import html
+import io
 import json
 import os
 import re
@@ -52,6 +57,20 @@ PAGE_CSP = ("default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form
 REQUEST_CSP = ("default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self'; "
                "form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 UPLOAD_HEADROOM = 1024 * 1024 * 1024   # keep at least 1 GB free on the receiving drive
+PREVIEW_MAX_BYTES = 80 * 1024 * 1024   # pictures bigger than this get no preview
+PREVIEW_MAX_PIXELS = 120_000_000       # nor do pictures with more pixels (checked before decoding)
+PREVIEW_BIG, PREVIEW_SMALL = 1200, 96  # longest side of the page/link-card preview and the list's
+PREVIEW_CACHE_BYTES = 48 * 1024 * 1024
+PICTURES = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".heic", ".heif"}
+PROGRAMS = {".exe", ".msi", ".msix", ".appx", ".bat", ".cmd", ".com", ".scr", ".pif", ".cpl", ".ps1", ".psm1",
+            ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".hta", ".jar", ".reg", ".lnk", ".dll", ".sys", ".apk"}
+KINDS = {"PDF document": {".pdf"}, "Word document": {".doc", ".docx", ".odt", ".rtf"},
+         "Excel spreadsheet": {".xls", ".xlsx", ".ods", ".csv"}, "PowerPoint presentation": {".ppt", ".pptx", ".odp"},
+         "Text file": {".txt", ".md", ".log"}, "Picture": PICTURES | {".svg", ".raw", ".dng", ".cr2", ".nef", ".arw"},
+         "Video": {".mp4", ".mov", ".mkv", ".avi", ".webm", ".wmv", ".m4v"},
+         "Music or audio": {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".opus", ".wma"},
+         "Archive": {".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".bz2", ".xz"},
+         "Disk image": {".iso", ".img", ".vhd", ".vhdx"}, "Program": PROGRAMS}
 REQUEST_JS = r"""
 // Upload page of a Swiftlane request link: sends each file as-is, one after another.
 const cfg = document.getElementById('cfg').dataset, list = document.getElementById('list');
@@ -253,6 +272,117 @@ class Lockout:
             self.fails.pop(key, None)
 
 
+# ---------------------------------------------------------------- what a file is, and picture previews
+
+def _ext(name):
+    return os.path.splitext(name)[1].lower()
+
+
+def file_kind(name):
+    """Plain-language type for the page: "PDF document", "Program", ..."""
+    ext = _ext(name)
+    kind = next((k for k, exts in KINDS.items() if ext in exts), None)
+    return kind or (f"{ext[1:].upper()} file" if 1 < len(ext) <= 8 else "File")
+
+
+def is_program(name):
+    return _ext(name) in PROGRAMS
+
+
+def previewable(item):
+    return _ext(item["name"]) in PICTURES and 0 < item["size"] < PREVIEW_MAX_BYTES
+
+
+def card_picture(share):
+    """Number of the file whose preview chat apps may show in the link card, or None.
+    Only the first file, only if it's a picture, never with a password, and only if the sender allowed it."""
+    if share.get("kind") == "request" or share.get("password") or not share.get("card_picture"):
+        return None
+    return 0 if share["items"] and previewable(share["items"][0]) else None
+
+
+def make_preview(path, side):
+    """A fresh JPEG of the picture, at most `side` pixels on its longest side; None if it can't be made.
+    Upright (EXIF orientation applied), converted to sRGB, and saved from a new blank image, so no
+    EXIF, GPS, comments or other metadata of the original are carried over."""
+    import warnings
+    from PIL import Image, ImageOps
+    try:
+        import pillow_heif
+        pillow_heif.register_heif_opener()
+    except ImportError:
+        pass
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", Image.DecompressionBombWarning)  # our own, lower limit is checked below
+            with Image.open(path) as im:
+                if im.width * im.height > PREVIEW_MAX_PIXELS or im.width < 1 or im.height < 1:
+                    return None  # judged from the header, before anything is decoded
+                icc = im.info.get("icc_profile")
+                im.draft("RGB", (side, side))  # JPEG: decode at a reduced scale
+                if im.mode in ("P", "PA", "1"):
+                    im = im.convert("RGBA")  # palette pictures would otherwise shrink without smoothing
+                im.thumbnail((side, side), Image.LANCZOS)
+                im = ImageOps.exif_transpose(im)
+                if im.mode in ("RGBA", "LA"):
+                    flat = Image.new("RGB", im.size, (255, 255, 255))
+                    flat.paste(im, mask=im.getchannel("A"))
+                    im = flat
+                im = im.convert("RGB")
+                if icc:
+                    with contextlib.suppress(Exception):
+                        from PIL import ImageCms
+                        im = ImageCms.profileToProfile(im, ImageCms.ImageCmsProfile(io.BytesIO(icc)),
+                                                       ImageCms.createProfile("sRGB"), outputMode="RGB")
+                clean = Image.new("RGB", im.size)
+                clean.paste(im)
+                out = io.BytesIO()
+                clean.save(out, "JPEG", quality=82, optimize=True)
+                return out.getvalue()
+    except Exception:  # broken, unsupported or hostile files simply get no preview
+        return None
+
+
+class Previews:
+    """Makes previews one at a time and keeps them in memory (newest first, up to PREVIEW_CACHE_BYTES)."""
+
+    def __init__(self, make=make_preview):
+        self.make = make
+        self.making = threading.Lock()
+        self.lock = threading.Lock()
+        self.cache = collections.OrderedDict()  # (path, mtime, size, side) -> JPEG bytes or None
+        self.bytes = 0
+
+    def get(self, path, side):
+        try:
+            st = os.lstat(path)
+        except OSError:
+            return None
+        if _is_link(path, st) or not stat.S_ISREG(st.st_mode) or not 0 < st.st_size < PREVIEW_MAX_BYTES:
+            return None
+        key = (os.path.normcase(path), st.st_mtime_ns, st.st_size, side)
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+                return self.cache[key]
+        if not self.making.acquire(timeout=30):
+            return None
+        try:
+            with self.lock:
+                if key in self.cache:  # made by someone else while this one waited
+                    return self.cache[key]
+            data = self.make(path, side)
+        finally:
+            self.making.release()
+        with self.lock:
+            self.cache[key] = data
+            self.bytes += len(data or b"")
+            while self.bytes > PREVIEW_CACHE_BYTES and len(self.cache) > 1:
+                _, old = self.cache.popitem(last=False)
+                self.bytes -= len(old or b"")
+        return data
+
+
 # ---------------------------------------------------------------- the list of shares
 
 def _new_link(label, limit, counts="files"):
@@ -390,9 +520,10 @@ class Shares:
             return bool(gone)
 
     # ---- changes from the app
-    def create(self, paths, hours=24, mode="open", count=None, password="", labels=None, confirmed=False):
+    def create(self, paths, hours=24, mode="open", count=None, password="", labels=None, confirmed=False, card_picture=True):
         """mode "open": one link for anyone, optionally limited to `count` downloads.
-        mode "personal": one single-use link per person (`count` people, or one per label)."""
+        mode "personal": one single-use link per person (`count` people, or one per label).
+        card_picture: chat apps may show the first file's preview in the link card (if it's a picture)."""
         hours = float(hours)
         if not 0 < hours <= MAX_HOURS:
             raise ShareError("Choose a time between a few minutes and one year.")
@@ -419,7 +550,7 @@ class Shares:
         share = {"id": secrets.token_hex(6), "title": title, "created": self.now(),
                  "expires": self.now() + hours * 3600, "ended": None,
                  "items": found["items"], "total": found["total"], "skipped": found["skipped"],
-                 "password": hash_password(password) if password else None,
+                 "password": hash_password(password) if password else None, "card_picture": bool(card_picture),
                  "links": links, "sessions": {}}
         with self.lock:
             self.shares[share["id"]] = share
@@ -629,14 +760,33 @@ a.btn,button{display:inline-block;background:var(--acc);color:#fff;border:0;bord
 text-decoration:none;cursor:pointer;white-space:nowrap}a.dl{color:var(--acc);text-decoration:none;white-space:nowrap}
 input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);width:100%;max-width:320px}
 .top{display:flex;gap:12px;align-items:center;margin:0 0 16px;flex-wrap:wrap}.err{color:#c0392b}.foot{margin-top:24px;font-size:13px}
+.hero{display:block;width:100%;max-height:70vh;object-fit:contain;background:var(--card);border:1px solid var(--line);border-radius:8px;margin:0 0 16px}
+.th{flex:none;width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--line)}
+.ext{display:grid;place-items:center;font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--muted);overflow:hidden}
+.name small{display:block;color:var(--muted);font-size:13px}.warn{display:block;color:#a14a00;font-size:13px}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid #d97706;border-radius:8px;padding:10px 14px;color:var(--fg)}
+a.btn.big{display:block;text-align:center;font-size:17px;font-weight:600;padding:14px 20px;border-radius:8px;margin:0 0 16px}
+@media (prefers-color-scheme:dark){.warn{color:#f0b25a}a.btn,button{color:#0d1b33}}
 """
 
 
-def _page(title, body, status=200):
+def _page(title, body, status=200, head=""):
     doc = (f'<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-           f'<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">'
+           f'<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">{head}'
            f'<title>{html.escape(title)}</title><style>{PAGE_STYLE}</style></head><body><main>{body}</main></body></html>')
     return status, doc.encode("utf-8")
+
+
+def card_tags(title, description, image=None, alt=""):
+    """Open Graph and Twitter tags: what chat apps show in the link card."""
+    tags = [("property", "og:type", "website"), ("property", "og:site_name", "Swiftlane"),
+            ("property", "og:title", title), ("property", "og:description", description),
+            ("name", "twitter:card", "summary_large_image" if image else "summary"),
+            ("name", "twitter:title", title), ("name", "twitter:description", description)]
+    if image:
+        tags += [("property", "og:image", image), ("property", "og:image:type", "image/jpeg"),
+                 ("property", "og:image:alt", alt), ("name", "twitter:image", image), ("name", "twitter:image:alt", alt)]
+    return "".join(f'<meta {k}="{v}" content="{html.escape(c, quote=True)}">' for k, v, c in tags)
 
 
 def _gone_page():
@@ -724,9 +874,9 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- requests
     def do_HEAD(self):
-        # Only the page answers HEAD; file links would otherwise use up a download without sending it.
+        # Only the page and previews answer HEAD; file links would otherwise use up a download without sending it.
         found = self.route() if self.host_ok() else None
-        if found and found[2] == "":
+        if found and (found[2] == "" or found[2].startswith("t/")):
             self.do_GET()
         else:
             self.send_error(405)
@@ -760,6 +910,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
             else:
                 self.not_found()
+            return
+        if rest.startswith("t/") and rest[2:].isdigit() and len(rest) < 12:
+            self.send_preview(share, link, int(rest[2:]), query)
             return
         with self.server.transfer():
             if rest == "zip":
@@ -897,11 +1050,31 @@ class Handler(BaseHTTPRequestHandler):
         return _page(share["title"], body)
 
     # ---- the download page
-    def password_page(self, share, error="", status=200):
+    def password_page(self, share, error="", status=200, head=""):
         err = f'<p class="err">{html.escape(error)}</p>' if error else ""
         return _page("Password needed", f"<h1>Password needed</h1><p>Enter the password you were given to see the files.</p>{err}"
                      f'<form method="post"><div class="top"><input type="password" name="password" autofocus '
-                     f'autocomplete="off" aria-label="Password"><button type="submit">Open</button></div></form>', status)
+                     f'autocomplete="off" aria-label="Password"><button type="submit">Open</button></div></form>', status, head)
+
+    def public_base(self):
+        """https://<this PC's Funnel address>, or the local address while testing; for link-card pictures,
+        which chat apps need as full addresses. The Host header was already checked by host_ok()."""
+        host = (self.headers.get("Host") or "").lower()
+        name = (self.server.host_name or "").lower()
+        return f"https://{name}" if name and host in (name, f"{name}:443") else f"http://{host}"
+
+    def card(self, share, link):
+        """The link card: name, count and size, and the first picture if the sender allowed it.
+        Password-protected shares only say that a password is needed."""
+        if share["password"]:
+            return card_tags("Password-protected files",
+                             "Shared with Swiftlane. Open the link and enter the password you were given.")
+        files = len(share["items"])
+        what = file_kind(share["items"][0]["name"]) if files == 1 else f"{files} files"
+        desc = f"{what} · {human(share['total'])} · available for {_left(share['expires'] - time.time())}"
+        n = card_picture(share)
+        image = f"{self.public_base()}/s/{link['token']}/t/{n}" if n is not None else None
+        return card_tags(share["title"], desc, image, f"Preview of {os.path.basename(share['items'][0]['name'])}")
 
     def show_page(self, share, link):
         sid = self.cookie_session(link)
@@ -917,30 +1090,75 @@ class Handler(BaseHTTPRequestHandler):
             secure = "; Secure" if self.headers.get("X-Forwarded-Proto") == "https" else ""
             extra.append(("Set-Cookie", f"sl_{link['id']}={sid}; Path=/s/{link['token']}; HttpOnly; SameSite=Lax{secure}"))
         if share["password"] and not sess.get("unlocked"):
-            self.send_page(*self.password_page(share), extra=extra)
+            self.send_page(*self.password_page(share, head=self.card(share, link)), extra=extra)
             return
         if share.get("kind") == "request":
             self.send_page(*self.request_page(share, link, sid), extra=extra, csp=REQUEST_CSP)
             return
         q = f"?s={quote(sid)}"
+        base = f"/s/{link['token']}"
+        items = share["items"]
+        files = len(items)
         rows = []
-        for n, item in enumerate(share["items"][:2000]):
-            rows.append(f'<div class="row"><span class="name">{html.escape(item["name"])}</span>'
-                        f'<span class="size">{human(item["size"])}</span>'
-                        f'<a class="dl" href="/s/{link["token"]}/f/{n}{q}" download>Download</a></div>')
-        more = len(share["items"]) - 2000
+        for n, item in enumerate(items[:2000]):
+            name = item["name"]
+            if previewable(item) and n < 300:
+                thumb = f'<img class="th" src="{base}/t/{n}{q}&amp;small=1" alt="" loading="lazy" width="44" height="44">'
+            else:
+                thumb = f'<span class="th ext" aria-hidden="true">{html.escape(_ext(name)[1:5].upper() or "FILE")}</span>'
+            warn = '<span class="warn">Program · only run it if you trust the sender</span>' if is_program(name) else ""
+            link_dl = f'<a class="dl" href="{base}/f/{n}{q}" download>Download</a>' if files > 1 else ""
+            rows.append(f'<div class="row">{thumb}<span class="name">{html.escape(name)}'
+                        f'<small>{file_kind(name)} · {human(item["size"])}</small>{warn}</span>{link_dl}</div>')
+        more = files - 2000
         if more > 0:
             rows.append(f'<div class="row"><span class="name">and {more} more files (in “Download all”)</span></div>')
-        files = len(share["items"])
         left = _left(share["expires"] - time.time())
-        all_btn = (f'<a class="btn" href="/s/{link["token"]}/zip{q}">Download all ({human(share["total"])}, .zip)</a>'
-                   if files > 1 else
-                   f'<a class="btn" href="/s/{link["token"]}/f/0{q}">Download ({human(share["total"])})</a>')
+        hero = (f'<img class="hero" src="{base}/t/0{q}" alt="Preview of {html.escape(os.path.basename(items[0]["name"]), quote=True)}">'
+                if files == 1 and previewable(items[0]) else "")
+        programs = [i["name"] for i in items if is_program(i["name"])]
+        if len(programs) == 1:
+            note = (f'<p class="note">“{html.escape(os.path.basename(programs[0]))}” is a program. '
+                    f'Only run it if you trust the sender.</p>')
+        else:
+            note = (f'<p class="note">{len(programs)} of these files are programs. Only run them if you trust the sender.</p>'
+                    if programs else "")
+        big = (f'<a class="btn big" href="{base}/zip{q}">Download all ({human(share["total"])}, .zip)</a>' if files > 1 else
+               f'<a class="btn big" href="{base}/f/0{q}" download>Download ({human(share["total"])})</a>')
         body = (f"<h1>{html.escape(share['title'])}</h1>"
                 f"<p>{files} file{'s' if files != 1 else ''} · {human(share['total'])} · available for {left}</p>"
-                f'<div class="top">{all_btn}</div><div class="box">{"".join(rows)}</div>'
+                f'{hero}{note}{big}<div class="box">{"".join(rows)}</div>'
                 f'<p class="foot">Sent with Swiftlane, straight from the sender’s PC.</p>')
-        self.send_page(*_page(share["title"], body), extra=extra)
+        self.send_page(*_page(share["title"], body, head=self.card(share, link)), extra=extra)
+
+    def send_preview(self, share, link, index, query):
+        """/s/<token>/t/<n>: a picture's preview. Same rules as the page; never counts as a download.
+        Without a visit (chat apps fetching the link card) only the link card's picture is given."""
+        if not 0 <= index < len(share["items"]) or not previewable(share["items"][index]):
+            self.not_found()
+            return
+        sess = self.shares.session(share, link, query.get("s", [None])[0] or self.cookie_session(link))
+        counted = bool(sess and sess.get("counted"))
+        if not self.shares.is_active(share) or link["blocked"] or (not counted and not self.shares.link_open(share, link)):
+            self.not_found()
+            return
+        if share["password"] and not (sess and sess.get("unlocked")):
+            self.not_found()
+            return
+        if not sess and index != card_picture(share):
+            self.not_found()
+            return
+        data = self.server.previews.get(share["items"][index]["path"], PREVIEW_SMALL if "small" in query else PREVIEW_BIG)
+        if not data:
+            self.not_found()
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(data)))
+        self.common_headers()
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
 
     # ---- sending files
     def allowed(self, share, link, sid, item="zip", resume=False):
@@ -1095,6 +1313,7 @@ class ShareServer(ThreadingHTTPServer):
         self.shares = shares
         self.host_name = host_name  # e.g. mypc.tail1234.ts.net
         self.lockout = Lockout()
+        self.previews = Previews()
         self.slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
         self.busy = 0  # downloads running right now
         self._busy_lock = threading.Lock()

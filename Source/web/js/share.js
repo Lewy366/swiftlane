@@ -187,6 +187,7 @@
       hours: +$('shHours').value, mode,
       count: mode === 'open' ? ($('shLimit').value ? +$('shLimit').value : null) : +$('shPeople').value || 1,
       password: $('shPassword').value,
+      card_picture: $('shCardPic').checked,
     };
   }
 

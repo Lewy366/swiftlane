@@ -342,6 +342,8 @@
             <div class="field" style="margin-top:12px" id="shCountWrap"><span>How many downloads</span><input class="input" id="shLimit" type="number" min="1" placeholder="No limit"><small class="muted small">Each file download counts once, “Download all” counts once. Finishing a broken download doesn’t count again.</small></div>
             <div class="field" style="margin-top:12px" id="shPeopleWrap" hidden><span>People (each gets their own link and can download once)</span><input class="input" id="shPeople" type="number" min="1" max="100" value="1"></div>
             <div class="field" style="margin-top:12px"><span>Password (optional)</span><input class="input" id="shPassword" type="password" autocomplete="new-password" placeholder="No password"></div>
+            <label class="check small" style="margin-top:14px"><input type="checkbox" id="shCardPic" checked> Show a picture in link previews</label>
+            <p class="muted small" style="margin:4px 0 0">If the first file is a picture, chat apps show a small copy of it with the link. They may keep that copy on their servers. Never shown for shares with a password.</p>
             <label class="check small" style="margin-top:14px"><input type="checkbox" id="shAwake"> Keep this PC awake while links are active</label>
             <p class="muted small" style="margin:12px 0 0">Hidden files, system files and shortcuts inside folders are left out. Anyone with a link can pass the files on after downloading.</p>
           </section>

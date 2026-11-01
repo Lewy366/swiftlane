@@ -367,7 +367,8 @@ class Api:
         try:
             r = self._shares.create(list(paths or []), hours=o.get("hours") or 24, mode=o.get("mode", "open"),
                                     count=o.get("count"), password=str(o.get("password") or ""),
-                                    labels=o.get("labels"), confirmed=bool(confirmed))
+                                    labels=o.get("labels"), confirmed=bool(confirmed),
+                                    card_picture=bool(o.get("card_picture", True)))
         except share.ShareError as e:
             return {"error": str(e)}
         except (ValueError, TypeError):
