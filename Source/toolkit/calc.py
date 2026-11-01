@@ -9,10 +9,12 @@ Base-N, Statistics (1-var, 7 regressions), Distribution, Equation (polynomial,
 simultaneous, inequality), Matrix, Vector, Table, Ratio, constants, conversions.
 """
 import math
+import multiprocessing
 import random
 import re
 import statistics
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+import sys
+import threading
 from fractions import Fraction
 
 import sympy as sp
@@ -25,7 +27,7 @@ X, Y = sp.Symbol("x"), sp.Symbol("y")
 TRANSFORMS = standard_transformations + (implicit_multiplication, implicit_application,
                                          convert_xor, factorial_notation, rationalize)
 TIME_LIMIT = 10
-_pool = ThreadPoolExecutor(max_workers=2)
+START_LIMIT = 60  # first start of the calculator process (loading SymPy)
 
 
 class CalcError(Exception):
@@ -309,11 +311,9 @@ class Calculator:
         return value
 
     def _run(self, fn, *args):
-        future = _pool.submit(fn, *args)
-        try:
-            return future.result(timeout=TIME_LIMIT)
-        except FutureTimeout:
-            raise CalcError("Time limit: this one is too hard to work out")
+        # The time limit is kept by CalcProcess, which stops the whole process: a thread can't be
+        # stopped, and some sums (9^9^9) hold Python's lock so long that nothing else in the app runs.
+        return fn(*args)
 
     # ---- Calculate / Complex
     def evaluate(self, text, complex_mode=False):
@@ -940,3 +940,78 @@ def _distribution(kind, p, num):
         k = int(p["x"])
         return {"p": num(pmf(k) if kind == "poisson_pd" else sum(pmf(i) for i in range(k + 1)))}
     raise CalcError("Unknown distribution")
+
+
+# ---------------------------------------------------------------- running it in its own process
+
+def _worker(conn, state):
+    """The calculator process: keeps one Calculator and answers (method, args) until the app closes."""
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x4000)  # below normal: the PC stays smooth
+    calc = Calculator()
+    calc.__dict__.update(state or {})
+    conn.send("ready")
+    while True:
+        try:
+            method, args = conn.recv()
+        except (EOFError, OSError):
+            return  # Swiftlane closed
+        try:
+            result = getattr(calc, method)(**args)
+        except CalcError as e:
+            result = {"error": str(e)}
+        except Exception:
+            result = {"error": "Math ERROR"}
+        conn.send((result, dict(calc.__dict__), calc.memory()))
+
+
+class CalcProcess:
+    """The calculator, run in its own process so a sum that never finishes can't freeze Swiftlane.
+
+    A thread can't be stopped, and some sums (9^9^9, 200000!) hold Python's lock the whole time, so
+    in-process nothing else in the app could run. Here, after TIME_LIMIT the process is ended and the
+    next sum starts a fresh one with the same memory (Ans, variables, matrices, settings)."""
+
+    def __init__(self, angle="deg"):
+        local = Calculator()
+        local.set_mode(angle=angle)
+        self._state = dict(local.__dict__)
+        self._memory = local.memory()
+        self._lock = threading.Lock()
+        self._proc = self._conn = None
+
+    def memory(self):
+        return self._memory
+
+    def call(self, method, args):
+        with self._lock:
+            try:
+                if not (self._proc and self._proc.is_alive()):
+                    self._start()
+                self._conn.send((method, args))
+                if not self._conn.poll(TIME_LIMIT):
+                    self.stop()
+                    return {"error": "Time limit: this one is too hard to work out"}
+                result, self._state, self._memory = self._conn.recv()
+                return result
+            except (EOFError, OSError, TimeoutError):
+                self.stop()
+                return {"error": "Math ERROR"}
+
+    def _start(self):
+        parent, child = multiprocessing.Pipe()
+        self._proc = multiprocessing.Process(target=_worker, args=(child, self._state), daemon=True, name="Swiftlane calculator")
+        self._proc.start()
+        child.close()
+        self._conn = parent
+        if not parent.poll(START_LIMIT) or parent.recv() != "ready":
+            raise TimeoutError
+
+    def stop(self):
+        if self._proc:
+            self._proc.kill()
+            self._proc.join(5)
+        if self._conn:
+            self._conn.close()
+        self._proc = self._conn = None

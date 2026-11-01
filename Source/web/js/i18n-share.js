@@ -273,4 +273,6 @@ Object.assign(I18N.pl, {
 Object.assign(I18N.it, {
   'Show a picture in link previews': 'Mostra un\'immagine nelle anteprime dei link',
   'If the first file is a picture, chat apps show a small copy of it with the link. They may keep that copy on their servers. Never shown for shares with a password.': 'Se il primo file è un\'immagine, le app di chat ne mostrano una piccola copia accanto al link. Possono conservarla sui loro server. Mai mostrata per le condivisioni con password.',
-});
+});Object.assign(I18N.de, { 'Show password': 'Passwort zeigen', 'Hide password': 'Passwort verbergen' });
+Object.assign(I18N.pl, { 'Show password': 'Pokaż hasło', 'Hide password': 'Ukryj hasło' });
+Object.assign(I18N.it, { 'Show password': 'Mostra password', 'Hide password': 'Nascondi password' });

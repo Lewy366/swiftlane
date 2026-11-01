@@ -164,8 +164,7 @@ class Api:
         self._window = None
         self._server = None
         self._server_error = None
-        self._calc = calc.Calculator()
-        self._calc.set_mode(angle=state.cfg.get("calc_angle", "deg"))
+        self._calc = calc.CalcProcess(angle=state.cfg.get("calc_angle", "deg"))  # started on the first sum
         self._rates = currency.Rates(core.CONFIG_DIR / "rates.json")
         self._jobs = None  # set once the window exists
         self._start_page = None
@@ -1672,7 +1671,7 @@ class Api:
     def calc(self, method, args=None):
         if method not in CALC_METHODS:
             return {"error": "Unknown"}
-        result = getattr(self._calc, method)(**(args or {}))
+        result = self._calc.call(method, args or {})
         if method == "set_mode" and (args or {}).get("angle"):
             self._state.cfg["calc_angle"] = args["angle"]
             core.save_config(self._state.cfg)
@@ -1847,6 +1846,13 @@ def selftest(out_file):
     step("ffmpeg", lambda: subprocess.run([convert.ffmpeg_exe(), "-version"], capture_output=True, text=True,
                                           **convert.no_window()).stdout.split("\n")[0])
     step("calculator", lambda: calc.Calculator().evaluate("sin(45)+∫(x^2,0,3)")["decimal"])
+    def calc_process():
+        c = calc.CalcProcess()
+        try:
+            return c.call("evaluate", {"text": "6×7"})["decimal"]
+        finally:
+            c.stop()
+    step("calculator process", calc_process)
 
     def image_and_pdf():
         from PIL import Image
@@ -1949,9 +1955,12 @@ def main():
     if api._peer:
         api._peer.stop()  # contacts can no longer reach this PC
     api._shutdown_sharing()
+    api._calc.stop()
 
 
 if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()  # the packaged app also starts the calculator process through itself
     try:
         main()
     except SystemExit:

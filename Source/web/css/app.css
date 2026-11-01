@@ -728,9 +728,15 @@ input.trim-range::-webkit-slider-thumb { pointer-events: auto; width: 12px; heig
 .vault-locked .orb { width: 48px; height: 48px; margin-bottom: 12px; border-radius: 15px; display: grid; place-items: center; background: var(--accent); box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--accent) 80%, transparent); }
 .vault-locked .orb svg.i { width: 22px; height: 22px; stroke: var(--on-accent); stroke-width: 1.9; }
 .vault-unlock { display: flex; gap: 8px; width: min(380px, 100%); margin-top: 6px; }
-.vault-unlock .input { flex: 1; }
+.vault-unlock .pw-wrap { flex: 1; }
 .vault-pwchange { display: grid; grid-template-columns: repeat(2, minmax(0, 170px)); gap: 6px; }
-.vault-pwchange #vaultOld { grid-column: 1 / -1; }
+.vault-pwchange .pw-wrap:has(#vaultOld) { grid-column: 1 / -1; }
+/* own show/hide eye in password boxes (Edge's own one disappears when you leave the box) */
+.pw-wrap { position: relative; display: block; min-width: 0; }
+.pw-wrap .input { padding-right: 38px; }
+.pw-wrap .pw-eye { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+.pw-wrap .pw-eye.on { color: var(--accent); }
+input::-ms-reveal, input::-ms-clear { display: none; }
 .small-input { width: 150px; padding-top: 6px; padding-bottom: 6px; }
 #vaultList .row { cursor: pointer; }
 #vaultList .row.on { box-shadow: inset 0 0 0 2px var(--accent); }

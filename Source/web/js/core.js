@@ -13,6 +13,18 @@ function icon(name) {
   const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#i-' + name); s.append(u); return s;
 }
 function miniBtn(name, title, fn) { const b = el('button', 'mini'); b.title = title; b.append(icon(name)); b.onclick = e => { e.stopPropagation(); fn(); }; return b; }
+// Every password box gets its own show/hide eye. Edge's built-in one vanishes as soon as you leave the
+// box and only comes back once it's empty. The password is hidden again whenever the box is empty.
+function passwordEyes() {
+  for (const input of document.querySelectorAll('input[type="password"]')) {
+    const wrap = el('span', 'pw-wrap'); input.before(wrap); wrap.append(input);
+    const set = show => { input.type = show ? 'text' : 'password'; b.classList.toggle('on', show); b.title = t(show ? 'Hide password' : 'Show password'); };
+    const b = miniBtn('eye', '', () => { set(input.type === 'password'); input.focus(); });
+    b.type = 'button'; b.classList.add('pw-eye'); set(false);
+    for (const ev of ['focus', 'input']) input.addEventListener(ev, () => { if (!input.value) set(false); });
+    wrap.append(b);
+  }
+}
 function fmtSize(n) {
   const u = ['B', 'KB', 'MB', 'GB']; let i = 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
@@ -339,6 +351,7 @@ async function init() {
   setLanguage(App.state.language);
   $('version').textContent = 'v' + App.state.version;
   applyFeatures();
+  passwordEyes();
   for (const page of Object.values(App.pages)) if (page.init) page.init();
   let start = App.state.start_page;
   try { start = start || localStorage.getItem('swiftlane-page'); } catch (e) {}
