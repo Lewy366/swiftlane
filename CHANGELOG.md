@@ -2,6 +2,17 @@
 
 What's new in each version of Swiftlane.
 
+## 1.4.0 (2026-11-01)
+
+- Updates: Swiftlane checks every time it starts and every 30 minutes while it's open, and shows a big popup with what's new when an update is ready
+- "Later" hides the popup until Swiftlane next starts; nothing installs until you click Update now
+- Share links: chat apps now show a link card with the file name, number of files and size, plus a small picture if the first file is one
+- New option "Show a picture in link previews" (on by default); chat apps may keep a copy of that picture, so you can switch it off per share
+- The download page shows a big preview for a single picture, small previews in the list, plain file types and a big Download button
+- Programs (.exe, .msi, .bat…) get a clear warning: only run them if you trust the sender
+- Previews are fresh small copies without location or camera data, never the original file, and never count as a download
+- Password-protected links show no file names or pictures until the password is entered
+
 ## 1.3.1 (2026-11-01)
 
 - Share links: Swiftlane now checks each link from the internet side and only says "Your link is ready" once it really works
