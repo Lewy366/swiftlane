@@ -694,20 +694,26 @@ class Api:
         self.WHATS_NEW.unlink(missing_ok=True)
         return {"version": core.VERSION, "notes": data.get("notes", "")}
 
+    UPDATE_EVERY = 30 * 60      # while Swiftlane is open; GitHub answers "not modified" cheaply in between
+    UPDATE_RETRY = 5 * 60       # after a failed check (offline, PC just woke up)
+
     def _update_loop(self):
-        """Look for updates shortly after starting and then once a day; tell the user, never install."""
-        time.sleep(25)
+        """Look for updates every time Swiftlane starts, then every 30 minutes; tell the user, never install."""
+        time.sleep(8)
         while True:
+            wait = self.UPDATE_EVERY
             if self._state.cfg.get("update_check", True) and not self._updating:
                 r = self.check_update()
                 u = r.get("update")
+                if r.get("error"):
+                    wait = self.UPDATE_RETRY
                 if u and self._state.cfg.get("update_notified") != u["version"]:
                     self._state.cfg["update_notified"] = u["version"]
                     core.save_config(self._state.cfg)
                     self._state.notifier.show_soon("Update available", f"Swiftlane {u['version']} is ready. Open Swiftlane to see what's new and update.")
                 if u and self._jobs:
                     self._jobs.push("update-available", u)
-            time.sleep(24 * 3600)
+            time.sleep(wait)
 
     # ---------------------------------------------------------------- Explorer right-click menu
     _explorer_batch = None

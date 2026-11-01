@@ -615,6 +615,12 @@ body.light .sidebar::after, body.light .card::after, body.light .drop::after {
 .whatsnew { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,.35); animation: pagein .25s ease-out; }
 .wn-card { width: min(520px, calc(100% - 40px)); }
 .wn-card h2 { font-size: 20px; }
+.um-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.um-head h2 { margin: 0; }
+.um-icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--accent); color: var(--on-accent); }
+.um-icon svg.i { width: 22px; height: 22px; }
+.um-lead { margin: 0 0 8px; }
+.um-card .bar { margin-top: 12px; }
 
 /* ---------- sidebar folders, All tools, Ctrl+K */
 .search-btn { display: flex; align-items: center; gap: 9px; width: 100%; margin: 0 0 8px; padding: 7px 10px; border: 0; border-radius: 12px; cursor: pointer;

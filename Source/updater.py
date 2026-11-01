@@ -8,6 +8,8 @@ Swiftlane trusts nothing from GitHub itself: the manifest must verify against PU
 and the downloaded setup must match the manifest's size and SHA-256 (checked again right before
 it starts). Nothing installs without the user clicking Update, and Windows asks for admin.
 The only thing sent is an ordinary request for the latest release (GitHub sees the IP address).
+Checks are conditional (If-None-Match): while nothing new is published GitHub answers "not
+modified" with no body, so checking often costs almost nothing and doesn't use up its rate limit.
 """
 import hashlib
 import json
@@ -15,6 +17,8 @@ import os
 import re
 import secrets
 import tempfile
+import threading
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -45,10 +49,11 @@ def verify(manifest_bytes, sig_hex, public_key=None):
         raise UpdateError("The update isn't signed by Swiftlane's owner, so it was rejected.")
 
 
-def _open(url, timeout=20):
+def _open(url, timeout=20, headers=None):
     if not url.startswith(("https://", "http://127.0.0.1")):
         raise UpdateError("Unexpected update address.")
-    req = urllib.request.Request(url, headers={"User-Agent": "Swiftlane-updater", "Accept": "application/vnd.github+json"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Swiftlane-updater", "Accept": "application/vnd.github+json",
+                                               **(headers or {})})
     return urllib.request.urlopen(req, timeout=timeout)
 
 
@@ -60,16 +65,48 @@ def _get(url, limit):
     return data
 
 
+_last = {"etag": None, "result": None, "key": None}   # the last verified answer, reused while GitHub says "not modified"
+_last_lock = threading.Lock()
+
+
+def _latest_release():
+    """(release JSON or None if unchanged since the last verified check, etag)."""
+    headers = {"If-None-Match": _last["etag"]} if _last["etag"] and _last["result"] else {}
+    try:
+        with _open(LATEST, headers=headers) as r:
+            data = r.read(2 * 1024 * 1024 + 1)
+            etag = r.headers.get("ETag")
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            return None, _last["etag"]
+        raise
+    if len(data) > 2 * 1024 * 1024:
+        raise UpdateError("The update information is unexpectedly large.")
+    return json.loads(data), etag
+
+
 def check(current, public_key=None):
     """Latest release, verified. Returns {available, version, notes, size, ...}; raises UpdateError."""
-    try:
-        release = json.loads(_get(LATEST, 2 * 1024 * 1024))
-    except UpdateError:
-        raise
-    except OSError:
-        raise UpdateError("Couldn't reach GitHub. Check your internet connection.")
-    except ValueError:
-        raise UpdateError("GitHub sent something unexpected.")
+    with _last_lock:
+        key = (str(current), public_key)
+        if _last["key"] != key:
+            _last.update(etag=None, result=None, key=key)
+        try:
+            release, etag = _latest_release()
+            if release is None:
+                return _last["result"]
+            result = _check_release(release, current, public_key)
+        except UpdateError:
+            raise
+        except OSError:
+            raise UpdateError("Couldn't reach GitHub. Check your internet connection.")
+        except ValueError:
+            raise UpdateError("GitHub sent something unexpected.")
+        _last.update(etag=etag, result=result)
+        return result
+
+
+def _check_release(release, current, public_key=None):
     assets = {a.get("name"): a.get("browser_download_url") for a in release.get("assets", [])}
     if "manifest.json" not in assets or "manifest.sig" not in assets:
         raise UpdateError("The latest release is missing its signature.")

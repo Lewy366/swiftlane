@@ -610,7 +610,7 @@
               <div class="bar" id="updBar" hidden><i id="updFill"></i></div>
               <button class="btn primary" id="updGo">Update now</button>
             </div>
-            <div class="setting"><div><b>Check for updates automatically</b><small>Once a day. Nothing is installed until you click Update.</small></div><label class="switch"><input type="checkbox" id="updAuto"><span></span></label></div>
+            <div class="setting"><div><b>Check for updates automatically</b><small>Every time Swiftlane starts, then every 30 minutes while it’s open. Nothing is installed until you click Update.</small></div><label class="switch"><input type="checkbox" id="updAuto"><span></span></label></div>
             <p class="small muted" style="margin:8px 0 0">Updates come from github.com/Lewy366/swiftlane and are only installed if they carry the owner's signature.</p>
           </section>
           <section class="card">
@@ -626,6 +626,14 @@
   </main>
 </div>
 <div class="whatsnew" id="whatsNew" hidden><div class="card wn-card"><h2 id="wnTitle">What's new</h2><div class="notes" id="wnNotes" translate="no"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn primary" id="wnOk">Got it</button></div></div></div>
+<div class="whatsnew" id="updModal" hidden role="dialog" aria-modal="true" aria-labelledby="umTitle"><div class="card wn-card um-card">
+  <div class="um-head"><span class="um-icon"><svg class="i"><use href="#i-download"/></svg></span><div><h2 id="umTitle">Update available</h2><small class="muted" id="umMeta"></small></div></div>
+  <p class="um-lead" id="umLead"></p>
+  <div class="notes" id="umNotes" translate="no"></div>
+  <div class="bar" id="umBar" hidden><i id="umFill"></i></div>
+  <p class="small muted" style="margin:10px 0 0">Signed by Swiftlane’s owner and checked before it installs. Swiftlane closes for a minute and reopens updated.</p>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn ghost" id="umLater">Later</button><button class="btn primary" id="umGo">Update now</button></div>
+</div></div>
 <div class="whatsnew" id="sigModal" hidden><div class="card sig-card">
   <div id="sigStep1"><h2>Your signature</h2><p class="muted small" style="margin-top:-6px">Draw it with the mouse, or use a picture of it.</p>
     <canvas id="sigPad" width="600" height="220"></canvas>

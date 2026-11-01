@@ -29,6 +29,20 @@
     }
   }
 
+  // The big popup: shown as soon as an update is found, again every time Swiftlane starts
+  // until it's installed. "Later" only hides it for this run.
+  let laterFor = null;
+  function popup() {
+    const u = App.state.update;
+    if (!u || laterFor === u.version || !$('updModal')) return;
+    $('umTitle').textContent = t('Update available') + ': Swiftlane ' + u.version;
+    $('umMeta').textContent = t('You have') + ' ' + App.state.version + ' · ' + fmtSize(u.size) + (u.published ? ' · ' + new Date(u.published).toLocaleDateString() : '');
+    $('umLead').textContent = t("A new version of Swiftlane is ready to install. Here's what it changes:");
+    renderNotes($('umNotes'), u.notes);
+    $('updModal').hidden = false;
+    $('umGo').focus();
+  }
+
   async function check(manual) {
     $('updCheck').disabled = true; $('updStatus').textContent = 'Checking…';
     const r = await App.api.check_update();
@@ -37,25 +51,32 @@
     App.state.update = r.update;
     render();
     if (!r.update) $('updStatus').textContent = 'You have the latest version';
+    else if (manual) { laterFor = null; popup(); }
     if (manual && !r.update) toast('Swiftlane is up to date');
   }
 
   async function install() {
-    const go = $('updGo');
-    go.disabled = true; go.textContent = 'Downloading…'; $('updBar').hidden = false;
+    const go = $('updGo'), pop = $('umGo');
+    for (const b of [go, pop]) { b.disabled = true; b.textContent = 'Downloading…'; }
+    $('umLater').disabled = true;
+    $('updBar').hidden = false; $('umBar').hidden = false;
     let r = await App.api.install_update();
     if (r && r.confirm) {
       if (!confirm(t(r.confirm) + '\n\n' + t('Update now?'))) { reset(); return; }
       r = await App.api.install_update();
     }
     if (!r || r.error) { toast(r ? r.error : 'Update failed'); reset(); return; }
-    go.textContent = 'Starting the update…';
+    go.textContent = pop.textContent = 'Starting the update…';
     toast('Swiftlane closes now and reopens updated');
   }
-  function reset() { const go = $('updGo'); go.disabled = false; go.textContent = 'Update now'; $('updBar').hidden = true; }
+  function reset() {
+    for (const b of [$('updGo'), $('umGo')]) { b.disabled = false; b.textContent = 'Update now'; }
+    $('umLater').disabled = false;
+    $('updBar').hidden = true; $('umBar').hidden = true;
+  }
 
-  App.on('update-available', u => { App.state.update = u; render(); });
-  App.on('update-progress', d => { $('updFill').style.width = Math.round(d.fraction * 100) + '%'; });
+  App.on('update-available', u => { App.state.update = u; render(); popup(); });
+  App.on('update-progress', d => { const w = Math.round(d.fraction * 100) + '%'; $('updFill').style.width = w; $('umFill').style.width = w; });
 
   App.pages.updates = {
     init() {
@@ -63,8 +84,12 @@
       $('updAuto').onchange = e => App.api.set_option('update_check', e.target.checked);
       $('updCheck').onclick = () => check(true);
       $('updGo').onclick = install;
+      $('umGo').onclick = install;
+      $('umLater').onclick = () => { laterFor = App.state.update && App.state.update.version; $('updModal').hidden = true; };
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('updModal').hidden && !$('umLater').disabled) $('umLater').click(); });
       $('updatePill').onclick = () => { showPage('settings'); $('updatesCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
       render();
+      popup();
       const n = App.state.updated;  // just updated: say what's new, once
       if (n) {
         $('wnTitle').textContent = 'Updated to Swiftlane ' + n.version;
