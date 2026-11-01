@@ -11,6 +11,7 @@ import itertools
 import json
 import os
 import re
+import secrets
 import shutil
 import socket
 import subprocess
@@ -354,7 +355,7 @@ class Api:
         """Shares plus where Tailscale stands. check=True asks Tailscale again first."""
         if check or self._funnel_state is None:
             self._refresh_funnel()
-        return {"shares": self._shares.summary(self._base_url()), "funnel": self._funnel_state,
+        return {"shares": self._shares.summary(self._base_url()), "funnel": self._funnel_state, "ready": self._link_ready,
                 "note": self._funnel_note, "defaults": self._state.cfg["share"],
                 "busy": self._share_server.busy if self._share_server else 0}
 
@@ -453,6 +454,8 @@ class Api:
 
     def share_retry(self):
         """Ask Tailscale again (after you've switched something on in its admin page)."""
+        if self._link_ready is False:
+            self._link_ready = None  # try the internet-side check again
         self._sync_sharing()
         return self.share_info()
 
@@ -489,6 +492,41 @@ class Api:
 
     # ---- sharing in the background
     _funnel_state = None
+    _link_ready = None       # None: not checked yet / checking, True: works from the internet, False: didn't within the wait
+    _ready_checking = False
+    READY_WAIT = 180         # the first time, Tailscale needs a minute or two for the certificate and public DNS
+
+    def _check_link_ready(self):
+        """Funnel is on: try the link from the internet side until it works, then say so."""
+        if self._ready_checking:
+            return
+        self._ready_checking = True
+        try:
+            host = (self._funnel_state or {}).get("host") or self._share_host
+            srv = self._share_server
+            if not host or not srv:
+                return
+            srv.ready_nonce = secrets.token_urlsafe(18)
+            deadline, why = time.monotonic() + self.READY_WAIT, ""
+            while time.monotonic() < deadline and self._share_server is srv:
+                ok, why = share.reachable(host, srv.ready_nonce)
+                if ok is None:  # can't check here: don't hold the link back
+                    self._link_ready = True
+                    core.log(f"Share links: not checked from the internet ({why})")
+                    break
+                if ok:
+                    self._link_ready = True
+                    core.log("Share links checked: reachable from the internet")
+                    break
+                time.sleep(4)
+            else:
+                if self._share_server is srv:
+                    self._link_ready = False
+                    core.log(f"Share links not reachable from the internet after {self.READY_WAIT} s ({why})")
+            srv.ready_nonce = None
+        finally:
+            self._ready_checking = False
+            self._push_shares()
 
     def _base_url(self):
         return f"https://{self._share_host}" if self._share_host else None
@@ -537,6 +575,9 @@ class Api:
                 try:
                     r = self._funnel.on()
                     self._funnel_note = {"approve": r["approve"]} if r.get("approve") else None
+                    if r.get("ok") and self._link_ready is not True:
+                        self._link_ready = None
+                        threading.Thread(target=self._check_link_ready, daemon=True).start()
                 except share.ShareError as e:
                     self._funnel_note = {"error": str(e)}
                 except Exception as e:
@@ -548,6 +589,7 @@ class Api:
                     core.log(f"Couldn't switch Tailscale Funnel off: {e}")
                 self._stop_share_server()
                 self._funnel_note = None
+                self._link_ready = None  # Funnel is off: check again next time it's switched on
             self._refresh_funnel()
         self._push_shares()
 

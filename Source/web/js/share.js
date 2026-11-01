@@ -33,8 +33,13 @@
       btn('Open Tailscale admin', () => App.api.share_open_page('https://login.tailscale.com/admin/dns')); check(); cls = 'warn';
     } else if (f.state === 'in-use') {
       text = 'Tailscale Funnel is already used by something else on this PC, so Swiftlane leaves it alone and links can’t be reached.'; check(); cls = 'err';
+    } else if (f.state === 'on' && anyActive && info.ready === false) {
+      text = 'Your link isn’t reachable from the internet yet. Tailscale may still be setting it up, or something on this network is blocking it. Check again in a minute.'; check(); cls = 'err';
+    } else if (f.state === 'on' && anyActive && info.ready !== true) {
+      text = 'Getting your link ready… Swiftlane is checking that it works from the internet. The first time, Tailscale needs a minute or two to set up the secure address.'; cls = 'warn';
+      const spin = el('span', 'spinner'); acts.append(spin);
     } else if (f.state === 'on' && anyActive) {
-      text = 'Links are reachable from the internet while Swiftlane is open. Ending every link closes access again.'; cls = 'ok';
+      text = 'Your link is ready: checked from the internet. Links work while Swiftlane is open; ending every link closes access again.'; cls = 'ok';
     } else if (f.state === 'error') {
       text = 'Couldn’t ask Tailscale: ' + (f.error || ''); check(); cls = 'err';
     }
@@ -198,7 +203,9 @@
     if (r.error) { toast(r.error); return; }
     $('shPassword').value = '';
     setInfo(r);
-    toast(r.copied ? 'Link copied · paste it to whoever should get the files' : 'Links made · copy each person’s link from the list');
+    const waiting = r.ready !== true;
+    toast(r.copied ? (waiting ? 'Link copied · it works as soon as Swiftlane says it’s ready' : 'Link copied · paste it to whoever should get the files')
+                   : 'Links made · copy each person’s link from the list');
   }
 
   function saveDefaults() {
@@ -247,5 +254,9 @@
       render();
     },
   };
-  App.on('shares', r => { info = r; render(); });
+  App.on('shares', r => {
+    const wasReady = info && info.ready === true;
+    info = r; render();
+    if (!wasReady && r.ready === true && r.shares.some(s => s.active)) toast(t('Your link is ready · it works from the internet'));
+  });
 })();

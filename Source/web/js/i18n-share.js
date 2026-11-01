@@ -239,3 +239,26 @@ Object.assign(I18N.it, { 'Request files…': 'Richiedi file…', 'Request': 'Ric
   'Most they may send in total (MB):': 'Massimo in totale (MB):', 'Most files they may send:': 'Numero massimo di file:',
   'Request link copied · files people send land in “From links”': 'Link copiato · i file arrivano in “From links”' });
 I18N_PATTERNS.de.push([/^(\d+) files received$/, '$1 Dateien empfangen']); I18N_PATTERNS.pl.push([/^(\d+) files received$/, 'Otrzymano plików: $1']); I18N_PATTERNS.it.push([/^(\d+) files received$/, '$1 file ricevuti']);
+
+// link readiness check
+Object.assign(I18N.de, {
+  'Your link isn’t reachable from the internet yet. Tailscale may still be setting it up, or something on this network is blocking it. Check again in a minute.': 'Dein Link ist aus dem Internet noch nicht erreichbar. Tailscale richtet ihn vielleicht noch ein, oder etwas in diesem Netzwerk blockiert ihn. Prüf es in einer Minute noch einmal.',
+  'Getting your link ready… Swiftlane is checking that it works from the internet. The first time, Tailscale needs a minute or two to set up the secure address.': 'Dein Link wird vorbereitet… Swiftlane prüft, ob er aus dem Internet funktioniert. Beim ersten Mal braucht Tailscale ein bis zwei Minuten für die sichere Adresse.',
+  'Your link is ready: checked from the internet. Links work while Swiftlane is open; ending every link closes access again.': 'Dein Link ist bereit: aus dem Internet geprüft. Links funktionieren, solange Swiftlane offen ist; wenn du alle beendest, ist der Zugang wieder zu.',
+  'Link copied · it works as soon as Swiftlane says it’s ready': 'Link kopiert · er funktioniert, sobald Swiftlane „bereit“ meldet',
+  'Your link is ready · it works from the internet': 'Dein Link ist bereit · er funktioniert aus dem Internet',
+});
+Object.assign(I18N.pl, {
+  'Your link isn’t reachable from the internet yet. Tailscale may still be setting it up, or something on this network is blocking it. Check again in a minute.': 'Twój link nie jest jeszcze dostępny z internetu. Tailscale może go jeszcze konfigurować albo coś w tej sieci go blokuje. Sprawdź ponownie za minutę.',
+  'Getting your link ready… Swiftlane is checking that it works from the internet. The first time, Tailscale needs a minute or two to set up the secure address.': 'Przygotowuję link… Swiftlane sprawdza, czy działa z internetu. Za pierwszym razem Tailscale potrzebuje minuty lub dwóch na bezpieczny adres.',
+  'Your link is ready: checked from the internet. Links work while Swiftlane is open; ending every link closes access again.': 'Link gotowy: sprawdzony z internetu. Linki działają, gdy Swiftlane jest otwarty; zakończenie wszystkich zamyka dostęp.',
+  'Link copied · it works as soon as Swiftlane says it’s ready': 'Skopiowano link · zadziała, gdy Swiftlane pokaże, że jest gotowy',
+  'Your link is ready · it works from the internet': 'Link gotowy · działa z internetu',
+});
+Object.assign(I18N.it, {
+  'Your link isn’t reachable from the internet yet. Tailscale may still be setting it up, or something on this network is blocking it. Check again in a minute.': 'Il tuo link non è ancora raggiungibile da internet. Tailscale potrebbe ancora configurarlo, o qualcosa in questa rete lo blocca. Riprova tra un minuto.',
+  'Getting your link ready… Swiftlane is checking that it works from the internet. The first time, Tailscale needs a minute or two to set up the secure address.': 'Preparo il link… Swiftlane controlla che funzioni da internet. La prima volta Tailscale ha bisogno di un paio di minuti per l\'indirizzo sicuro.',
+  'Your link is ready: checked from the internet. Links work while Swiftlane is open; ending every link closes access again.': 'Il link è pronto: verificato da internet. I link funzionano finché Swiftlane è aperto; terminandoli tutti l\'accesso si chiude.',
+  'Link copied · it works as soon as Swiftlane says it’s ready': 'Link copiato · funziona appena Swiftlane dice che è pronto',
+  'Your link is ready · it works from the internet': 'Il link è pronto · funziona da internet',
+});

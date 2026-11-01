@@ -69,6 +69,8 @@ Drop files or folders onto **Share links** and the link is copied right away. No
 
 **How people reach it:** through **Tailscale Funnel**. The link looks like `https://<pc-name>.<tailnet>.ts.net/s/…`. It shows your PC's Tailscale name but not your IP or address, and no port is opened on your router. The encryption ends on your PC, so Tailscale's relay can't read the files. Swiftlane only switches Funnel **on while a link can actually be used** (plus 15 minutes after a used-up link's last download, so it can resume). It switches it **off** when the last link ends, when Swiftlane closes and when you uninstall. It never touches Funnel or Serve settings that something else created.
 
+**Ready check:** when Funnel switches on, Swiftlane tries your link from the internet side, the way a stranger's browser would. It looks up the address in public DNS (Cloudflare, Google or Quad9, which see only the address and never the link's code), connects through Tailscale's internet entrance and checks the certificate with Windows. The Share links page says *Getting your link ready…* until that works, then *Your link is ready*. The very first time, Tailscale needs a minute or two to set up the certificate.
+
 **One-time setup** (in your Tailscale account, the first time you share): Tailscale will ask you to turn on HTTPS certificates and allow Funnel for this PC. Swiftlane shows an *Open Tailscale* button for this. You should also turn on two-factor sign-in for your Tailscale account, because whoever controls the account controls Funnel.
 
 ### File converter

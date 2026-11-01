@@ -2,6 +2,12 @@
 
 What's new in each version of Swiftlane.
 
+## 1.3.1 (2026-11-01)
+
+- Share links: Swiftlane now checks each link from the internet side and only says "Your link is ready" once it really works
+- The first time Tailscale sets up your secure address (a minute or two), the Share links page shows "Getting your link ready" instead of handing out a link that doesn't open yet
+- If a link can't be reached from the internet, Swiftlane says so clearly with a "Check again" button
+
 ## 1.3.0 (2026-10-24)
 
 - New: World clock. A live world map with the night side shaded from the sun's real position, and your cities as pins

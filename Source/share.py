@@ -735,6 +735,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.host_ok():
             self.send_error(421)
             return
+        nonce = self.server.ready_nonce
+        if nonce and hmac.compare_digest(urlsplit(self.path).path, READY_PATH + nonce):
+            self.send_response(204)  # Swiftlane's own readiness check reached us through the internet
+            self.common_headers()
+            self.end_headers()
+            return
         found = self.route()
         if not found:
             self.not_found()
@@ -1092,6 +1098,7 @@ class ShareServer(ThreadingHTTPServer):
         self.slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
         self.busy = 0  # downloads running right now
         self._busy_lock = threading.Lock()
+        self.ready_nonce = None  # set while Swiftlane checks the link from the internet side (see reachable())
         super().__init__(("127.0.0.1", port), Handler)
 
     @contextlib.contextmanager
@@ -1228,6 +1235,66 @@ class Funnel:
             return
         self._call("funnel", "--https=443", "off", timeout=20)
         core.log("Tailscale Funnel off (nothing shared)")
+
+
+# ---------------------------------------------------------------- is the link really reachable from the internet?
+
+READY_PATH = "/.well-known/swiftlane-ready/"
+PUBLIC_DNS = ("1.1.1.1", "8.8.8.8", "9.9.9.9")
+
+
+def public_addresses(host, timeout=4):
+    """IPv4 addresses for `host` as the rest of the internet sees them (asks public DNS, not this PC's
+    Tailscale DNS, which would give the private tailnet address)."""
+    import random, struct
+    q = struct.pack(">HHHHHH", random.randint(0, 65535), 0x0100, 1, 0, 0, 0)
+    q += b"".join(bytes([len(p)]) + p.encode("ascii") for p in host.split(".")) + b"\0" + struct.pack(">HH", 1, 1)
+    for server in PUBLIC_DNS:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.settimeout(timeout)
+                s.sendto(q, (server, 53))
+                data = s.recv(1500)
+            count, i, ips = struct.unpack(">H", data[6:8])[0], len(q), []
+            for _ in range(count):
+                i += 2 if data[i] & 0xC0 == 0xC0 else data.index(b"\0", i) + 1 - i
+                rtype, _, _, length = struct.unpack(">HHIH", data[i:i + 10])
+                i += 10
+                if rtype == 1:
+                    ips.append(socket.inet_ntoa(data[i:i + 4]))
+                i += length
+            if ips:
+                return ips
+        except (OSError, struct.error, ValueError, IndexError):
+            continue
+    return []
+
+
+def reachable(host, nonce):
+    """One try: fetch https://<host>/.well-known/swiftlane-ready/<nonce> the way a stranger's browser would
+    (public DNS, Tailscale's internet entrance, Windows' own certificate checking). True only if our own share
+    server answered, which also proves the certificate is ready. Returns (ok, why); ok is None when this PC
+    can't run the check (Windows without its built-in curl.exe, i.e. older than Windows 10 1803)."""
+    curl = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "curl.exe"
+    if not curl.exists():
+        return None, "can't check on this Windows"
+    ips = public_addresses(host)
+    if not ips:
+        return False, "not in public DNS yet"
+    flags = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+    why = ""
+    for ip in ips[:2]:  # Windows' curl checks certificates with Windows itself, like Edge and Chrome
+        try:
+            r = subprocess.run([str(curl), "-sS", "-o", os.devnull, "--max-time", "12", "--resolve", f"{host}:443:{ip}",
+                                "-w", "%{http_code} %{ssl_verify_result}", f"https://{host}{READY_PATH}{nonce}"],
+                               capture_output=True, text=True, timeout=20, **flags)
+        except (OSError, subprocess.SubprocessError) as e:
+            why = e.__class__.__name__
+            continue
+        if r.stdout.strip() == "204 0":
+            return True, "ok"
+        why = (r.stderr or r.stdout).strip()[:120]
+    return False, why
 
 
 # ---------------------------------------------------------------- keeping the PC awake
