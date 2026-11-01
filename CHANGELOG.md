@@ -2,6 +2,12 @@
 
 What's new in each version of Swiftlane.
 
+## 1.4.1 (2026-11-01)
+
+- Fixed: a very hard sum in the calculator (like 9^9^9) could freeze the whole app; now it stops after 10 seconds with "Time limit" and everything else keeps working
+- The calculator keeps Ans, variables and matrices when a sum is stopped
+- Password boxes now have their own show/hide eye that stays visible, also after you click elsewhere
+
 ## 1.4.0 (2026-11-01)
 
 - Updates: Swiftlane checks every time it starts and every 30 minutes while it's open, and shows a big popup with what's new when an update is ready
