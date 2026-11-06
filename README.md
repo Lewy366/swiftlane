@@ -23,6 +23,12 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - Right-click any file in File Explorer and pick *Send to phone*, *Share with a link* or *Convert*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
 
+![Swiftlane: all tools on one page](docs/screenshots/all-tools.webp)
+
+*Every tool on one page. Star the ones you use most, or press **Ctrl+K** anywhere to jump to a tool by name.*
+
+![Ctrl+K: jump to any tool](docs/screenshots/command-palette.webp)
+
 ## Install
 
 Run **Swiftlane Setup.exe** (Windows will ask for admin permission). The setup wizard goes through these steps:
@@ -46,12 +52,18 @@ There's a box called **"Also delete the files Swiftlane made"** and it's **off b
 ## The tools
 
 ### Phone transfer & Connect phone
+![Phone transfer](docs/screenshots/phone-transfer.webp)
+
+![Connect phone](docs/screenshots/connect-phone.webp)
+
 - **Connect phone:** click the blurred QR code to reveal it, then scan it with your phone's camera. That opens the Swiftlane web app, which works on iPhone and Android. Add it to your home screen if you want it to feel like a normal app.
 - **Send to phone:** drag files onto the drop zone and they show up under *From PC* on your phone.
 - **Received:** files from your phone arrive live, and get sorted into folders if you chose that.
 - **iPhone share sheet:** make a *Send to PC* Shortcut (steps below) so you can send from any app using Share.
 
 ### Share links
+![Share links](docs/screenshots/share-links.webp)
+
 Drop files or folders onto **Share links** and the link is copied right away. Nothing gets uploaded anywhere. The files stay where they are and are sent from this PC when someone downloads them, so **this PC has to be on and Swiftlane has to be open** for the links to work. The speed depends on your internet upload speed.
 
 - **Settings for each share:** how long it's available (1 hour to 30 days, and you can extend or end it whenever you like), and who can download. That can be *anyone with the link*, optionally with a cap on the number of downloads (change it any time with *Download limit…*), or *personal links*, which give one link per person that each person can use once. You can add people later and block one person without affecting the others. A password is optional.
@@ -59,6 +71,10 @@ Drop files or folders onto **Share links** and the link is copied right away. No
 - **Personal links:** one visit can take every file, and the link is used up once that person has downloaded.
 - **Folders** are listed once, when you share them. Files added later aren't included, and hidden files, system files and shortcuts/links are left out. "What's included" shows exactly what's shared. Swiftlane asks before sharing a whole personal folder or drive, or files that look private (keys, passwords, wallets), and it never shares Windows, program or app-data folders.
 - **Recipients** get a plain download page that works in any browser. They can grab each file or everything as one .zip, and downloads can resume.
+
+*What the people you send a link to see, on a phone:*
+
+<p><img src="docs/screenshots/share-links-visitor-photo.webp" alt="Download page for one picture" width="260"> &nbsp; <img src="docs/screenshots/share-links-visitor.webp" alt="Download page for a folder" width="260"></p>
 
 **What is Tailscale?** [Tailscale](https://tailscale.com) is an app that links your devices into your own private, encrypted network, and it has a free plan for personal use. Its **Funnel** feature can also make one service on your PC reachable from the wider internet, even for people who don't use Tailscale. That's what Swiftlane uses for share links, so you only need Tailscale on the PC that does the sharing. The people downloading don't need it, and neither does your phone for normal transfers.
 
@@ -74,6 +90,8 @@ Drop files or folders onto **Share links** and the link is copied right away. No
 **One-time setup** (in your Tailscale account, the first time you share): Tailscale will ask you to turn on HTTPS certificates and allow Funnel for this PC. Swiftlane shows an *Open Tailscale* button for this. You should also turn on two-factor sign-in for your Tailscale account, because whoever controls the account controls Funnel.
 
 ### File converter
+![File converter](docs/screenshots/file-converter.webp)
+
 - Images: jpg, png, webp, gif, bmp, tiff, ico, avif and heic, converted to jpg, png, webp, gif, bmp, tiff, ico, avif or pdf.
 - Video: mp4, mov, mkv, avi, webm and more, converted to mp4, mov, mkv, avi, webm, gif, or audio only.
 - Audio: mp3, wav, m4a, aac, flac, ogg, opus and more.
@@ -82,57 +100,103 @@ Drop files or folders onto **Share links** and the link is copied right away. No
 Quality is *High*, *Balanced* or *Smaller file*. Swiftlane asks where to save, with a "Save as" box for one file or a folder for several.
 
 ### Image editor
+![Image editor](docs/screenshots/image-editor.webp)
+
 A live preview you work on with the mouse. Draw and drag a **crop** box (free or locked ratio), drag the corner to **resize**, **rotate/flip**, **straighten**, and adjust **brightness, contrast, saturation and sharpness**. You can pick the format and quality, and optionally strip location and camera info. It shows the new size and an estimated file size as you edit, and *Hold: original* and *Exact preview* let you compare before and after. Saving asks where to put the file.
 
 ### Video downloader
+![Video downloader](docs/screenshots/video-downloader.webp)
+
 Works with YouTube and the many other sites [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports. You can pick best quality, 1080p, 720p, 480p, MP3 or M4A, and download whole playlists. It asks where to save. YouTube needs Node.js for some formats. Only download things you have the right to save. Rebuilding the setup always pulls the newest yt-dlp.
 
 ### Currency converter
+![Currency converter](docs/screenshots/currency.webp)
+
 European Central Bank rates for 30 currencies, from the free Frankfurter service (no account needed). Rates refresh every working day and are kept for offline use.
 
 ### Calculator
+![Calculator](docs/screenshots/calculator.webp)
+
 Modelled on the Casio fx-87DE X ClassWiz. It gives exact results (fractions, √, π) with **S⇔D**, Deg/Rad/Gra and Norm/Fix/Sci (click the labels on the display), and has ∫, d/dx, Σ, Π, SOLVE, variables, Ans/PreAns, M+/M−, Pol/Rec, GCD/LCM, ÷R and FACT. There are also modes for Complex, Base-N, Statistics (7 regressions), Distribution, Equation (systems, polynomials, inequalities), Matrix, Vector, Table and Ratio, plus 35 constants and 21 unit conversions.
 
 ### Speed test
+![Speed test](docs/screenshots/speed-test.webp)
+
 Ping, jitter, download and upload against Cloudflare's nearest server, with a live gauge. Cloudflare limits how often one connection can run a test. If you run lots in a row it asks you to wait a few minutes, and Swiftlane tells you that instead of showing a wrong result.
 
 ### Ad blocker test
+![Ad blocker test](docs/screenshots/ad-blocker-test.webp)
+
 Checks about 45 well-known ad, tracker and analytics domains in six groups and shows which ones are blocked, along with your DNS servers. It tests blocking for the whole PC or network (AdGuard DNS, NextDNS, Pi-hole, your router, a hosts file). Browser extensions like uBlock Origin only work inside the browser, so no app can detect them.
 
 ### Send to contacts
+![Send to contacts](docs/screenshots/send-to-contacts.webp)
+
 For sending to people who also have Swiftlane. Each of you copies your **contact code** from *Send to contacts* and adds the other's (any chat is fine, the code contains nothing secret). To be sure you added the right person, compare the short **Check** code you see next to their name with the one under their own code. After that, drop files, pick the contact and press **Send**. Their Swiftlane shows who's sending what and how big, and nothing arrives until they click **Accept**. Files go to their Received folder, sorted like phone transfers. Both PCs need to be on with Swiftlane open. For people without Swiftlane, *Make a link instead* hands the files to **Share links**.
 
 **How it connects:** each PC has its own identity key (locked to your Windows account), and the contact code is its public half. Swiftlane uses [iroh](https://iroh.computer) to find the other PC by that key and connect straight through both routers, so nobody has to open ports. If a direct path isn't possible, the data goes through an iroh relay server, still end-to-end encrypted so the relay can't read it. iroh's servers do see which IP addresses connect, and when. The connection only runs while you have at least one contact, and anyone who isn't one of your contacts is turned away without an answer.
 
 ### Request files
+![Request files](docs/screenshots/request-files.webp)
+
 On **Share links**, *Request files* makes a link that other people can use to upload files into a folder you pick. You set how long it works, the maximum number of files and the biggest total size, and you can add a password. The link only accepts uploads. It never shows or offers anything already in the folder or anything others have sent. Received files are marked as coming from the internet (so Windows warns before running them) and they never overwrite anything.
 
+*What people see when they open your request link:*
+
+<p><img src="docs/screenshots/request-files-visitor.webp" alt="Upload page of a request link" width="260"></p>
+
 ### World clock
+![World clock](docs/screenshots/world-clock.webp)
+
 A world map with the night side shaded from where the sun actually is right now, including a soft twilight band and a marker where the sun is overhead. Your cities show as pins with their time, and as cards with an analog clock (light by day, dark at night), the time difference to you, and whether it's today, tomorrow or yesterday there. **Plan a time** lines up 24 hours for every city (working hours light, night dark). Drag along it and every clock and the map jump to that moment, and *Back to now* returns to live time. Everything is calculated on your PC from Windows' own time zone data, so daylight saving is always right. Nothing goes online. Map outline: [Natural Earth](https://www.naturalearthdata.com) (public domain).
 
 ### PC remote
+![PC remote](docs/screenshots/pc-remote.webp)
+
 Off until you switch it on in Settings. After that, paired phones get a *Remote* tab with play/pause, next/previous, volume, mute and arrow keys (handy for slides). Sleep and shut down sit behind a separate switch, and shut down waits 60 seconds and can be cancelled.
 
 ### PDF tools
+![PDF tools](docs/screenshots/pdf-tools.webp)
+
 Drop in one or more PDFs and the pages show up as a board. You can reorder them by dragging, rotate, remove and select pages. From there you can save as a new PDF (several PDFs get merged in order), **split** (selected pages start new parts, or every page on its own), **sign** (draw your signature or use a picture, then click where it goes) or **make smaller** (this turns pages into pictures). Your original files are never changed.
 
 ### Video trimmer
+![Video trimmer](docs/screenshots/video-trimmer.webp)
+
 Pick the start and end on a filmstrip. Your options are *Fast cut* (instant, no quality loss, starts at the nearest keyframe), *Exact cut*, *Fit a size* (Discord 10 MB, email 20 MB, WhatsApp 64 MB or your own) and *Sound only* (MP3).
 
 ### Disk space
+![Disk space](docs/screenshots/disk-space.webp)
+
 Pick a drive or folder and see what's taking up the room as a map of blocks you can click into, plus a list of the biggest files. Junctions and links aren't followed, so nothing gets counted twice. *Move to the Recycle Bin* is the only way to remove something, so it can always be restored. It's never offered for Windows, program folders, app data or your user folders, and not on drives without a Recycle Bin (USB sticks, network drives).
 
 ### Vault
+![Vault](docs/screenshots/vault.webp)
+
 Files locked with your password. A random 256-bit key encrypts every file with AES-256-GCM in 1 MB pieces. Your password (stretched with scrypt) only unlocks that key, so changing the password is instant. File names are encrypted too. Each piece is tied to its file and its position, so a changed, swapped or cut-off file refuses to open instead of handing back damaged data. Opened files go to a private temporary folder that's wiped when the vault locks, which happens after a few quiet minutes and whenever Swiftlane closes. **There is no password recovery.** The vault is just a normal folder, so you can back it up or put it on a USB stick and open it on another PC with Swiftlane.
 
 ### Network devices
+![Network devices](docs/screenshots/network-devices.webp)
+
 Shows who's on your home network: the name (from your router), the address, the hardware address, and whether it's the router, this PC or a phone using a private address. Only your own private /24 network is checked, with one ping per address plus Windows' own address table, and no ports are tried. Devices are remembered on this PC, so new ones get marked and you can give them names. If you want, Swiftlane can check every 10 minutes and notify you when a new device joins.
 
 ### Is my PC exposed?
+![Is my PC exposed?](docs/screenshots/pc-exposed.webp)
+
 A read-only check. It looks at whether the firewall is on, whether this network is Public or Private, whether Remote Desktop or the old SMB1 file sharing is on, which programs accept connections from the network (and what they are), whether your router opens ports to the internet on its own (UPnP) and which ones, and what Swiftlane itself has open. Fixes are buttons you click, and any change to Windows asks for admin permission.
 
 ### Settings
+![Settings](docs/screenshots/settings.webp)
+
 Appearance (accent colour, background picture with blur and darkening, language), turning features on and off (switching off phone transfer stops Swiftlane listening on the network), where received files go and how they're sorted, notifications, a new pairing code, the default download folder, the calculator angle unit and start with Windows.
+
+**Light or dark:** pick *Light*, *Dark* or *Auto* (follows Windows).
+
+![Swiftlane in light mode](docs/screenshots/light-mode.webp)
+
+**Updates:** Swiftlane checks for a new version every time it starts, then every 30 minutes while it's open. When one is out, a window shows what's new, and nothing is installed until you click *Update now*. Updates are only installed if they carry the owner's signature.
+
+![Update available window](docs/screenshots/update-popup.webp)
 
 ## iPhone "Send to PC" Shortcut
 
