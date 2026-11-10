@@ -1693,7 +1693,7 @@ class Api:
                 self._calc_window = None  # it was closed in the meantime
         w = webview.create_window(
             "Calculator · Swiftlane", url=str(core.WEB_DIR / "desktop.html"), js_api=CalcWindowApi(self),
-            width=600, height=860, min_size=(560, 520), background_color="#07070d",
+            width=440, height=760, min_size=(300, 420), background_color="#07070d",
             on_top=bool(self._state.cfg.get("calc_on_top", True)))
         w.events.closed += lambda: setattr(self, "_calc_window", None)
         self._calc_window = w
@@ -1758,7 +1758,7 @@ def run_window(state, api, minimized):
 
     window = webview.create_window(
         core.APP, url=str(core.WEB_DIR / "desktop.html"), js_api=api,
-        width=1240, height=860, min_size=(1040, 660), background_color="#07070d",
+        width=1240, height=860, min_size=(400, 480), background_color="#07070d",
         minimized=minimized)
     api._window = window
 

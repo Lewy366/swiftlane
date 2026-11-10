@@ -79,10 +79,13 @@
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-popout" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5zM12 14v6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 </svg>
 
 <div class="app">
+  <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
+  <div class="nav-scrim" id="navScrim"></div>
   <aside class="sidebar">
     <div class="brand"><svg class="wordmark" viewBox="0 0 640 150" role="img" aria-label="Swiftlane">
       <line x1="36.5" y1="20" x2="596.5" y2="20" class="wm-line" stroke-width="5" stroke-linecap="round"/><line x1="19.2" y1="118" x2="579.2" y2="118" class="wm-line" stroke-width="5" stroke-linecap="round"/>

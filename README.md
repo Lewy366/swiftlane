@@ -22,6 +22,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Disk space** map, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
 - Right-click any file in File Explorer and pick *Send to phone*, *Share with a link* or *Convert*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
+- Works in a small window too. Make it as narrow as you like (down to 400 px) and the pages stack into one column; below about 860 px the sidebar tucks away behind a ☰ menu button.
 
 ![Swiftlane: all tools on one page](docs/screenshots/all-tools.webp)
 

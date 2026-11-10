@@ -100,6 +100,7 @@ function showPage(name) {
   const navBtn = document.querySelector(`.nav[data-page="${name}"]`);
   if (navBtn && navBtn.dataset.feature && !f[navBtn.dataset.feature]) name = firstPage();
   App.page = name;
+  setNav(false);
   document.querySelectorAll('.page').forEach(p => p.hidden = p.id !== 'page-' + name);
   document.querySelectorAll('.nav').forEach(n => n.classList.toggle('on', n.dataset.page === name));
   try { localStorage.setItem('swiftlane-page', name); } catch (e) {}
@@ -107,6 +108,11 @@ function showPage(name) {
   if (page && page.show) page.show();
   $('main').scrollTop = 0;
 }
+// Small windows: the sidebar slides out behind the menu button and closes again once you pick something.
+function setNav(open) { document.body.classList.toggle('nav-open', open); }
+$('menuBtn').onclick = () => setNav(!document.body.classList.contains('nav-open'));
+$('navScrim').onclick = () => setNav(false);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) setNav(false); });
 function firstPage() {
   const btn = [...document.querySelectorAll('.nav[data-page]')].find(n => !n.hidden);
   return btn ? btn.dataset.page : 'settings';
