@@ -1699,6 +1699,16 @@ class Api:
         self._calc_window = w
         return {"ok": True}
 
+    def _close_calc_window(self):
+        """The main window closed: close the pop-out too. Otherwise Swiftlane would keep running behind
+        it, with the vault still unlocked and share links still reachable."""
+        w, self._calc_window = self._calc_window, None
+        if w is not None:
+            try:
+                w.destroy()
+            except Exception:
+                pass
+
     def calc_convert(self, value, conv_id, reverse=False):
         try:
             return calc.convert_unit(value, conv_id, reverse)
@@ -1782,6 +1792,7 @@ def run_window(state, api, minimized):
         window.dom.document.events.drop += DOMEventHandler(on_drop, True, True)
 
     window.events.loaded += on_loaded
+    window.events.closed += api._close_calc_window
     webview.start(icon=str(core.WEB_DIR / "icon.ico"), private_mode=True)
 
 
