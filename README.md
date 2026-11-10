@@ -119,6 +119,8 @@ European Central Bank rates for 30 currencies, from the free Frankfurter service
 
 Modelled on the Casio fx-87DE X ClassWiz. It gives exact results (fractions, √, π) with **S⇔D**, Deg/Rad/Gra and Norm/Fix/Sci (click the labels on the display), and has ∫, d/dx, Σ, Π, SOLVE, variables, Ans/PreAns, M+/M−, Pol/Rec, GCD/LCM, ÷R and FACT. There are also modes for Complex, Base-N, Statistics (7 regressions), Distribution, Equation (systems, polynomials, inequalities), Matrix, Vector, Table and Ratio, plus 35 constants and 21 unit conversions.
 
+**Pop out** opens the calculator in its own small window that stays on top of other windows (switch that off with *Keep on top*). It shares the same memory, variables and Ans as the main window, and it can only use the calculator and the clipboard, nothing else of Swiftlane.
+
 ### Speed test
 ![Speed test](docs/screenshots/speed-test.webp)
 

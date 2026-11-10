@@ -577,6 +577,14 @@
       const modes = $('calcModes');
       for (const [v, label] of MODES) { const b = el('button', v === mode ? 'on' : '', label); b.dataset.v = v; b.onclick = () => switchMode(v); modes.append(b); }
       switchMode('calc');
+      if (App.state.popout) {  // the pop-out window: the pin switches "stay on top" instead
+        $('calcPop').hidden = true; $('calcTop').hidden = false;
+        const pin = on => { App.state.calc_on_top = on; $('calcTop').classList.toggle('primary', on); };
+        pin(App.state.calc_on_top !== false);
+        $('calcTop').onclick = async () => pin(await App.api.set_on_top(!App.state.calc_on_top));
+      } else {
+        $('calcPop').onclick = () => App.api.calc_popout();
+      }
     },
     show() { const i = $('cExpr'); if (i) setTimeout(() => i.focus()); },
   };

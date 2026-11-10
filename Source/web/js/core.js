@@ -121,7 +121,7 @@ function numberNav() {
   return visible;
 }
 document.addEventListener('keydown', e => {
-  if (!e.ctrlKey || e.altKey || e.shiftKey || !/^[1-9]$/.test(e.key) || !App.state) return;
+  if (!e.ctrlKey || e.altKey || e.shiftKey || !/^[1-9]$/.test(e.key) || !App.state || App.state.popout) return;
   const target = numberNav()[+e.key - 1];
   if (target) { e.preventDefault(); showPage(target.dataset.page); }
 });
@@ -349,6 +349,13 @@ async function init() {
   App.state = await App.api.get_state();
   applyTheme(App.state.theme, await App.api.get_background());
   setLanguage(App.state.language);
+  if (App.state.popout) {  // the calculator's own window: just the calculator, nothing else of the app
+    document.body.classList.add('popout');
+    App.pages.calculator.init();
+    App.page = 'calculator';
+    document.querySelectorAll('.page').forEach(p => p.hidden = p.id !== 'page-calculator');
+    return;
+  }
   $('version').textContent = 'v' + App.state.version;
   applyFeatures();
   passwordEyes();

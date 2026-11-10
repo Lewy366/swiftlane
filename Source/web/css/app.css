@@ -873,3 +873,11 @@ body.light .wc-hr.sleep { background: #2c3a63; color: #b7c1e6; } body.light .wc-
 .wc-at { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; white-space: nowrap; }
 .wc-cursor { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--accent); border-radius: 2px; pointer-events: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 .wc-cursor::before { content: ''; position: absolute; top: -5px; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+
+/* ---------- the calculator's own pop-out window */
+body.popout .sidebar { display: none; }
+body.popout .app { grid-template-columns: 1fr; }
+body.popout .page-head p { display: none; }
+body.popout .page-head h1 { font-size: 20px; }
+body.popout .calc, body.popout .grid-side, body.popout .grid2 { grid-template-columns: 1fr; }
+body.popout .main { padding: 14px 16px 20px; }

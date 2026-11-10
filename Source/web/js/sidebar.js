@@ -219,7 +219,7 @@ const DEFAULT_LAYOUT = {
     $('palEmpty').hidden = results.length > 0;
   }
   document.addEventListener('keydown', e => {
-    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k' && App.state) {
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k' && App.state && !App.state.popout) {
       e.preventDefault(); $('palette').hidden ? openPalette() : closePalette(); return;
     }
     if ($('palette').hidden) return;

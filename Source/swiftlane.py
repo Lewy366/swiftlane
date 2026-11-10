@@ -1677,6 +1677,28 @@ class Api:
             core.save_config(self._state.cfg)
         return result
 
+    _calc_window = None
+
+    def calc_popout(self):
+        """Open the calculator in its own small window that stays on top (or bring it back if it's open)."""
+        import webview
+        w = self._calc_window
+        if w is not None:
+            try:
+                w.restore()
+                w.show()
+                w.on_top = bool(self._state.cfg.get("calc_on_top", True))
+                return {"ok": True}
+            except Exception:
+                self._calc_window = None  # it was closed in the meantime
+        w = webview.create_window(
+            "Calculator · Swiftlane", url=str(core.WEB_DIR / "desktop.html"), js_api=CalcWindowApi(self),
+            width=600, height=860, min_size=(560, 520), background_color="#07070d",
+            on_top=bool(self._state.cfg.get("calc_on_top", True)))
+        w.events.closed += lambda: setattr(self, "_calc_window", None)
+        self._calc_window = w
+        return {"ok": True}
+
     def calc_convert(self, value, conv_id, reverse=False):
         try:
             return calc.convert_unit(value, conv_id, reverse)
@@ -1686,6 +1708,48 @@ class Api:
 
 def _kb(n):
     return f"{n / 1024:.0f} KB" if n < 1024 * 1024 else f"{n / 1024 / 1024:.1f} MB"
+
+
+class CalcWindowApi:
+    """What the pop-out calculator window may call: the calculator and the clipboard, nothing else.
+    It shares the main window's calculator, so variables and Ans are the same in both."""
+
+    def __init__(self, api):
+        self._api = api
+
+    def get_state(self):
+        a, cfg = self._api, self._api._state.cfg
+        return {"popout": "calculator", "version": core.VERSION, "features": {"calculator": True},
+                "language": cfg.get("language", "en"), "theme": cfg["theme"], "calc": a._calc.memory(),
+                "calc_angle": cfg.get("calc_angle", "deg"), "calc_on_top": bool(cfg.get("calc_on_top", True)),
+                "constants": [list(c) for c in calc.CONSTANTS], "conversions": [[c[0], c[1], c[2]] for c in calc.CONVERSIONS],
+                "regressions": calc.REGRESSIONS, "sidebar": None, "start_page": None, "explorer": None,
+                "update": None, "updated": None}
+
+    def get_background(self):
+        return self._api.get_background()
+
+    def calc(self, method, args=None):
+        return self._api.calc(method, args)
+
+    def calc_convert(self, value, conv_id, reverse=False):
+        return self._api.calc_convert(value, conv_id, reverse)
+
+    def copy_text(self, text):
+        return self._api.copy_text(text)
+
+    def paste_text(self):
+        return self._api.paste_text()
+
+    def set_on_top(self, on):
+        """The pin button: keep the calculator above other windows, or not (remembered)."""
+        cfg = self._api._state.cfg
+        cfg["calc_on_top"] = bool(on)
+        core.save_config(cfg)
+        w = self._api._calc_window
+        if w is not None:
+            w.on_top = bool(on)
+        return bool(on)
 
 
 def run_window(state, api, minimized):
