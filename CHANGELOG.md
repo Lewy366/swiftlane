@@ -2,6 +2,15 @@
 
 What's new in each version of Swiftlane.
 
+## 1.5.0 (2026-11-10)
+
+- New: pop the calculator out into its own small window that stays on top of other windows (Pop out button on the Calculator page)
+- The pin button in that window switches "stay on top" on or off, and Swiftlane remembers your choice
+- Both windows share one calculator, so Ans, variables and matrices are the same in each
+- The pop-out window can only use the calculator and the clipboard, nothing else in Swiftlane
+- Closing the main window closes the pop-out too, so Swiftlane really quits (the vault locks and share links stop)
+- Swiftlane's window can now be made much smaller; in a small window the sidebar opens from a menu button
+
 ## 1.4.1 (2026-11-01)
 
 - Fixed: a very hard sum in the calculator (like 9^9^9) could freeze the whole app; now it stops after 10 seconds with "Time limit" and everything else keeps working
