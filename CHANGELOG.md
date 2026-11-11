@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 1.5.1 (2026-11-11)
+
+- On iPhone (Swiftlane added to the Home Screen), Save now opens the share sheet (Save to Photos / Save to Files) so you stay on the page, instead of a download screen with no way back
+
 ## 1.5.0 (2026-11-10)
 
 - New: pop the calculator out into its own small window that stays on top of other windows (Pop out button on the Calculator page)
