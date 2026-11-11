@@ -367,9 +367,11 @@ function render(items) {
     list.querySelectorAll('a.save').forEach((a, n) => { a.href = items[n].url; });
     return;
   }
+  for (const id of ready.keys()) if (!ids.has(id)) ready.delete(id);
   list.replaceChildren(...items.map(item => {
-    const ui = itemRow(item.name); ui.sub.textContent = fmt(item.size);
+    const ui = itemRow(item.name); ui.sub.textContent = ready.has(item.id) ? 'Ready. Tap Save again.' : fmt(item.size);
     const a = el('a', 'btn save', 'Save'); a.href = item.url; a.setAttribute('download', item.name);
+    if (homeScreen) a.onclick = e => saveInApp(e, item, ui, a);
     ui.row.append(a); return ui.row;
   }));
   $('inboxEmpty').hidden = items.length > 0;
@@ -377,6 +379,55 @@ function render(items) {
   badge.hidden = items.length === 0; badge.textContent = items.length;
   if (fresh && known.size + items.length > 0) { badge.classList.remove('pop'); void badge.offsetWidth; badge.classList.add('pop'); }
   known = ids;
+}
+// As a Home Screen app, iPhone opens a download link over the whole app with no way back
+// (WebKit bug 290847). There the file is loaded here and handed to the share sheet instead
+// (Save to Photos / Save to Files), so the page stays put. Normal Safari keeps the plain link.
+const homeScreen = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+const SHARE_MAX = 1024 * 1024 * 1024;   // the file sits in the phone's memory until saved
+const ready = new Map();                // id -> File, loaded and waiting for a tap
+async function share(file) {
+  try { await navigator.share({ files: [file] }); return 'done'; }
+  catch (err) { return err.name === 'AbortError' ? 'cancelled' : 'blocked'; }
+}
+async function saveInApp(e, item, ui, a) {
+  e.preventDefault();
+  const probe = new File([''], item.name, { type: 'application/octet-stream' });
+  if (!navigator.canShare || !navigator.canShare({ files: [probe] }) || item.size > SHARE_MAX) {
+    window.open(a.href, '_blank');      // opens in a sheet with a Done button
+    return;
+  }
+  const file = ready.get(item.id);
+  if (file) {
+    const r = await share(file);
+    if (r === 'done') { ready.delete(item.id); ui.sub.textContent = tr('Saved'); }
+    else if (r === 'blocked') ui.sub.textContent = tr('Failed');
+    return;
+  }
+  if (a.dataset.busy) return;
+  a.dataset.busy = '1'; ui.sub.textContent = tr('Loading…');
+  const bar = el('div', 'bar'), fill = el('i'); bar.append(fill); ui.meta.append(bar);
+  try {
+    const r = await fetch(a.href, { cache: 'no-store' });
+    if (!r.ok) throw new Error();
+    const total = +r.headers.get('Content-Length') || item.size, reader = r.body.getReader(), parts = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length; fill.style.width = Math.min(100, got / total * 100) + '%';
+    }
+    const f = new File(parts, item.name, { type: r.headers.get('Content-Type') || 'application/octet-stream' });
+    ready.set(item.id, f);
+    // iPhone often wants a fresh tap before it opens the share sheet; try now, else ask for one.
+    const s = await share(f);
+    if (s === 'done') { ready.delete(item.id); ui.sub.textContent = tr('Saved'); }
+    else ui.sub.textContent = tr('Ready. Tap Save again.');
+  } catch (err) {
+    ui.sub.textContent = tr('Failed');
+  } finally {
+    bar.remove(); delete a.dataset.busy;
+  }
 }
 function startPolling() { stopPolling(); poll(); pollTimer = setInterval(poll, 3000); }
 function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
@@ -406,6 +457,9 @@ const L = {
         'Pair with a different code': 'Associa con un altro codice', 'Waiting…': 'In attesa…', 'Failed': 'Non riuscito', 'Connection lost': 'Connessione persa', 'Save': 'Salva',
         'Wrong pairing code.': 'Codice errato.', 'Can’t reach your PC. Is Swiftlane open, and are you on the same Wi-Fi?': 'PC non raggiungibile. Swiftlane è aperto e sei sulla stessa rete Wi-Fi?' },
 };
+Object.assign(L.de, { 'Loading…': 'Wird geladen…', 'Ready. Tap Save again.': 'Bereit. Tippe nochmal auf Sichern.', 'Saved': 'Gesichert' });
+Object.assign(L.pl, { 'Loading…': 'Wczytywanie…', 'Ready. Tap Save again.': 'Gotowe. Stuknij Zapisz jeszcze raz.', 'Saved': 'Zapisano' });
+Object.assign(L.it, { 'Loading…': 'Caricamento…', 'Ready. Tap Save again.': 'Pronto. Tocca di nuovo Salva.', 'Saved': 'Salvato' });
 Object.assign(L.de, { 'Encrypt this connection': 'Verbindung verschlüsseln', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Handy und PC sind noch nicht verschlüsselt verbunden. Tippe, um es einmalig einzurichten.' });
 Object.assign(L.pl, { 'Encrypt this connection': 'Zaszyfruj połączenie', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Telefon i komputer nie łączą się jeszcze szyfrowanie. Stuknij, aby to ustawić (raz).' });
 Object.assign(L.it, { 'Encrypt this connection': 'Cifra la connessione', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Telefono e PC non usano ancora una connessione cifrata. Tocca per configurarla (una volta).' });
