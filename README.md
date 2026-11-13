@@ -201,6 +201,18 @@ Appearance (accent colour, background picture with blur and darkening, language)
 
 ![Update available window](docs/screenshots/update-popup.webp)
 
+## iPhone app (optional)
+
+The phone page also comes as a small iPhone app. It's the same page, plus QR-code pairing that's kept in the iPhone's Keychain and *Save to Files* for files from your PC. It only ever connects to PCs on your own network, and any other link opens in Safari.
+
+There's no App Store version. GitHub builds the app, and you install it yourself from Windows:
+
+1. Open this repo's **Actions** tab → **iPhone app** → the newest run → download **Swiftlane-iPhone** under *Artifacts*.
+2. Install [Sideloadly](https://sideloadly.io) on your PC, connect the iPhone by cable, drop `Swiftlane-unsigned.ipa` onto it and sign in with your Apple ID.
+3. On the iPhone, allow it under **Settings → General → VPN & Device Management**, and turn on **Developer Mode** if iOS asks.
+
+With a free Apple ID, Apple makes the app stop opening after **7 days**. Reinstall it the same way, over the old one, and your pairing is kept. A paid Apple developer account removes that limit.
+
 ## iPhone "Send to PC" Shortcut
 
 1. Open **Shortcuts**, tap **+** and name it **Send to PC**. In its details, turn on **Show in Share Sheet**.

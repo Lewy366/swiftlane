@@ -23,3 +23,9 @@ Source/release/
 
 # local test helpers (not part of the app)
 Dev tools/
+
+# iPhone app build output (made on GitHub)
+iPhone/Swiftlane.xcodeproj/
+iPhone/build/
+iPhone/out/
+iPhone/Swiftlane/Info.plist

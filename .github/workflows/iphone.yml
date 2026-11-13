@@ -1,0 +1,51 @@
+# Builds the iPhone app on one of GitHub's Macs. The result is an unsigned .ipa file under the
+# run's "Artifacts". Install it from Windows with Sideloadly and your own Apple ID (it signs it).
+# No secrets are used, and the job can only read this repository.
+name: iPhone app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["iPhone/**", ".github/workflows/iphone.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Make the Xcode project
+        working-directory: iPhone
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: iPhone
+        run: |
+          xcodebuild -project Swiftlane.xcodeproj -scheme Swiftlane -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+
+      - name: Pack as .ipa
+        working-directory: iPhone
+        run: |
+          mkdir -p out/Payload
+          cp -R build/Build/Products/Release-iphoneos/Swiftlane.app out/Payload/
+          cd out && zip -qry Swiftlane-unsigned.ipa Payload
+          shasum -a 256 Swiftlane-unsigned.ipa | tee Swiftlane-unsigned.ipa.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swiftlane-iPhone
+          path: |
+            iPhone/out/Swiftlane-unsigned.ipa
+            iPhone/out/Swiftlane-unsigned.ipa.sha256
+          retention-days: 30
