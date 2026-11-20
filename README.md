@@ -158,6 +158,11 @@ On **Share links**, *Request files* makes a link that other people can use to up
 
 A world map with the night side shaded from where the sun actually is right now, including a soft twilight band and a marker where the sun is overhead. Your cities show as pins with their time, and as cards with an analog clock (light by day, dark at night), the time difference to you, and whether it's today, tomorrow or yesterday there. **Plan a time** lines up 24 hours for every city (working hours light, night dark). Drag along it and every clock and the map jump to that moment, and *Back to now* returns to live time. Everything is calculated on your PC from Windows' own time zone data, so daylight saving is always right. Nothing goes online. Map outline: [Natural Earth](https://www.naturalearthdata.com) (public domain).
 
+### AirPlay
+![AirPlay](docs/screenshots/airplay.webp)
+
+Your iPhone's screen, videos and music on this PC. On the iPhone, open Control Centre > Screen Mirroring and pick the PC. The picture opens in its own window, and Alt+Enter switches full screen on and off. The first time you use it, click *Download and install* (a one-time 77 MB download). Windows asks for permission once, to install the receiver and let it through the firewall on home networks. After that, switch on *Available on this network*. Each new phone types the 4-digit PIN shown on the page (and in a notification) once, and after that it just connects. *Forget all* makes every phone type the PIN again. The receiver is the open-source [UxPlay](https://github.com/FDH2/UxPlay), and it only runs while the switch is on and Swiftlane is open.
+
 ### PC remote
 ![PC remote](docs/screenshots/pc-remote.webp)
 
