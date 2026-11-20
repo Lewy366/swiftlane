@@ -1,0 +1,128 @@
+# Builds the AirPlay receiver (UxPlay, GPL-3.0) that Swiftlane's AirPlay tool runs.
+# Built here from UxPlay's own source so nobody else's ready-made download is trusted.
+# Only runs when started by hand (Actions tab > Run workflow). It produces a zip and its
+# SHA-256; the hash is written into Swiftlane, which refuses any download that doesn't match.
+name: AirPlay receiver
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # exact UxPlay commit (1.74 with its own device finder, so no Bonjour service is needed)
+  UXPLAY_COMMIT: 48f5ce47c9ef694afccfac907c9e8828329657fe
+
+jobs:
+  build:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-libplist
+            mingw-w64-ucrt-x86_64-gstreamer
+            mingw-w64-ucrt-x86_64-gst-plugins-base
+            mingw-w64-ucrt-x86_64-gst-plugins-good
+            mingw-w64-ucrt-x86_64-gst-plugins-bad
+            mingw-w64-ucrt-x86_64-gst-libav
+
+      - name: Get UxPlay source
+        run: |
+          git init UxPlay && cd UxPlay
+          git fetch --depth 1 https://github.com/FDH2/UxPlay "$UXPLAY_COMMIT"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$UXPLAY_COMMIT"
+
+      - name: One-line change so Swiftlane sees its messages straight away
+        run: |
+          # Without this, Windows holds UxPlay's messages back while they go through a pipe, and
+          # Swiftlane would learn late that a phone connected or needs the PIN.
+          sed -i 's|^\(\s*std::string config_file = "";\)\s*$|\1\n    setvbuf(stdout, NULL, _IONBF, 0); /* Swiftlane: unbuffered log */|' UxPlay/uxplay.cpp
+          test "$(grep -c 'Swiftlane: unbuffered log' UxPlay/uxplay.cpp)" = 1
+
+      - name: Build
+        run: |
+          mkdir UxPlay/build && cd UxPlay/build
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+          ninja
+
+      - name: Bundle uxplay.exe with only the parts it needs
+        run: |
+          set -euo pipefail
+          OUT="$PWD/out/airplay"
+          PLUG="$OUT/lib/gstreamer-1.0"
+          mkdir -p "$PLUG"
+          cp UxPlay/build/uxplay.exe "$OUT/"
+          cp /ucrt64/libexec/gstreamer-1.0/gst-plugin-scanner.exe "$OUT/"
+          # GStreamer plugins: video window (Direct3D), decoders, sound output, stream readers
+          for p in coreelements app playback typefindfunctions videoconvertscale videorate videofilter \
+                   audioconvert audioresample volume autodetect d3d11 d3d12 libav wasapi wasapi2 \
+                   directsound videoparsersbad audioparsers jpeg png isomp4 soup adaptivedemux2 hls \
+                   mpegtsdemux rawparse imagefreeze; do
+            if [ -f "/ucrt64/lib/gstreamer-1.0/libgst$p.dll" ]; then
+              cp "/ucrt64/lib/gstreamer-1.0/libgst$p.dll" "$PLUG/"
+            else
+              echo "::warning::plugin $p not found"
+            fi
+          done
+          # loaded at run time, so the dependency scan below can't see it
+          cp /ucrt64/bin/libsoup-3.0-0.dll "$OUT/"
+          # every DLL the programs and plugins need (ldd follows the whole chain)
+          for f in "$OUT"/*.exe "$OUT"/*.dll "$PLUG"/*.dll; do
+            ldd "$f" | awk '$3 ~ /^\/ucrt64\// {print $3}'
+          done | sort -u | while read -r dll; do [ -e "$OUT/$(basename "$dll")" ] || cp "$dll" "$OUT/"; done
+          # licences and where the source of every part comes from
+          mkdir -p "$OUT/licenses"
+          cp UxPlay/LICENSE "$OUT/licenses/UxPlay-LICENSE.txt"
+          {
+            echo "UxPlay (GPL-3.0): https://github.com/FDH2/UxPlay/tree/$UXPLAY_COMMIT"
+            echo "Changed by Swiftlane: one added line in uxplay.cpp (setvbuf, unbuffered log output);"
+            echo "the build steps are in .github/workflows/airplay-receiver.yml at https://github.com/Lewy366/swiftlane"
+            echo "Other parts are MSYS2 packages (source: https://github.com/msys2/MINGW-packages):"
+            pacman -Q | grep '^mingw-w64-ucrt-x86_64-'
+          } > "$OUT/licenses/SOURCES.txt"
+          du -sh "$OUT"
+
+      - name: Check the plugins load
+        run: |
+          GST_PLUGIN_SYSTEM_PATH_1_0="$PWD/out/airplay/lib/gstreamer-1.0" GST_REGISTRY_1_0="$PWD/reg.bin" \
+            gst-inspect-1.0 d3d11videosink d3d12videosink avdec_h264 avdec_h265 avdec_aac wasapi2sink h264parse playbin > /dev/null
+
+      - name: Check it starts with nothing but its own files
+        shell: pwsh
+        run: |
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = "$PWD\out\airplay\lib\gstreamer-1.0"
+          $env:GST_PLUGIN_SCANNER_1_0 = "$PWD\out\airplay\gst-plugin-scanner.exe"
+          $env:GST_REGISTRY_1_0 = "$PWD\reg2.bin"
+          $p = Start-Process -FilePath "out\airplay\uxplay.exe" -ArgumentList "-h" -NoNewWindow -Wait -PassThru -RedirectStandardOutput help.txt
+          Get-Content help.txt -TotalCount 5
+          if ($p.ExitCode -eq -1073741515) { throw "a DLL is missing" }
+
+      - name: Zip and hash
+        shell: pwsh
+        run: |
+          Compress-Archive -Path out\airplay\* -DestinationPath airplay-receiver.zip
+          $h = (Get-FileHash airplay-receiver.zip -Algorithm SHA256).Hash.ToLower()
+          "$h  airplay-receiver.zip" | Set-Content airplay-receiver.zip.sha256
+          "SHA-256: $h  size: $((Get-Item airplay-receiver.zip).Length)" >> $env:GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: airplay-receiver
+          path: |
+            airplay-receiver.zip
+            airplay-receiver.zip.sha256
