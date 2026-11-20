@@ -102,7 +102,8 @@ jobs:
           missing=""
           for e in appsrc queue decodebin h264parse h265parse aacparse avdec_h264 avdec_h265 avdec_aac avdec_alac \
                    audioconvert audioresample volume level autoaudiosink wasapi2sink videoconvert videoscale videoflip \
-                   imagefreeze textoverlay jpegdec d3d11videosink d3d12videosink d3d11h264dec playbin playbin3; do
+                   imagefreeze textoverlay jpegdec d3d11videosink d3d12videosink playbin playbin3; do
+            # (hardware decoders like d3d11h264dec only appear on a PC with a graphics card, so not here)
             gst-inspect-1.0 "$e" > /dev/null 2>&1 || missing="$missing $e"
           done
           if [ -n "$missing" ]; then echo "::error::missing elements:$missing"; exit 1; fi
