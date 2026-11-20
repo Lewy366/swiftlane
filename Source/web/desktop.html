@@ -58,6 +58,7 @@
   <symbol id="i-paste" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
   <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></symbol>
+  <symbol id="i-airplay" viewBox="0 0 24 24"><path d="M6 17H4.5A2.5 2.5 0 0 1 2 14.5v-9A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v9a2.5 2.5 0 0 1-2.5 2.5H18"/><path d="M12 14l5 7H7z"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
@@ -489,6 +490,35 @@
       <div id="calcBody"></div>
     </section>
 
+    <!-- ============ AirPlay to this PC ============ -->
+    <section class="page" id="page-airplay" hidden>
+      <div class="page-head"><div><h1>AirPlay</h1><p>Show your iPhone's screen, videos and music on this PC. On the iPhone: Control Centre &gt; Screen Mirroring, then pick this PC.</p></div></div>
+      <section class="card" id="apGet" hidden>
+        <h2>Get the AirPlay receiver</h2>
+        <p class="muted small" style="margin-top:-6px">UxPlay, an open-source AirPlay receiver, built from its source code on Swiftlane's GitHub and checked before it installs. Windows asks for permission to install it and to let it through the firewall on home networks only.</p>
+        <div class="bar" id="apBar" hidden><i id="apFill"></i></div>
+        <p class="muted small" id="apStep" hidden></p>
+        <button class="btn primary" id="apInstall">Download and install</button> <span class="muted small" id="apSize"></span>
+        <p class="muted small" id="apNotYet" hidden>The receiver isn't ready for download yet.</p>
+      </section>
+      <div id="apMain" hidden>
+        <section class="card">
+          <div class="setting" style="border:0;padding-top:0"><div><b>Available on this network</b><small>When it's off, nothing listens on the network. Phones see it as: <span id="apName" translate="no"></span></small></div><label class="switch"><input type="checkbox" id="apOn"><span></span></label></div>
+          <div class="notice" id="apPublic" hidden><svg class="i"><use href="#i-info"/></svg><span>This network is set to Public, so the firewall keeps phones out. Set it to Private in Windows Settings &gt; Network &amp; internet, if it's your home network.</span></div>
+          <p class="err small" id="apError" hidden></p>
+          <div class="ap-live" id="apLive" hidden>
+            <div class="ap-status"><span class="ap-dot" id="apDot"></span><b id="apStatus"></b></div>
+            <div class="ap-pin"><small>PIN for a new phone</small><b id="apPin" translate="no"></b><small>Asked only the first time a phone connects.</small></div>
+          </div>
+          <p class="muted small" style="margin:12px 0 0">The picture opens in its own window. Alt+Enter in that window switches full screen on and off.</p>
+        </section>
+        <section class="card"><h2>Phones that can connect without the PIN<span class="spacer"></span><button class="btn ghost small" id="apForget" hidden>Forget all</button></h2>
+          <div class="list" id="apPhones"></div><div class="empty" id="apNoPhones">None yet. A phone is added once it types the PIN.</div>
+        </section>
+      </div>
+      <p class="muted small">Receiver: <a href="#" id="apSource" style="color:var(--cyan)">UxPlay</a> (GPL-3.0), runs as its own program while AirPlay is on.</p>
+    </section>
+
     <!-- ============ Speed test ============ -->
     <section class="page" id="page-speedtest" hidden>
       <div class="page-head"><div><h1>Speed test</h1><p>Download, upload and ping, measured against Cloudflare's nearest server.</p></div></div>
@@ -673,6 +703,7 @@
 <script src="js/currency.js"></script>
 <script src="js/calculator.js"></script>
 <script src="js/speedtest.js"></script>
+<script src="js/airplay.js"></script>
 <script src="js/adblock.js"></script>
 <script src="js/pdf.js"></script>
 <script src="js/trimmer.js"></script>

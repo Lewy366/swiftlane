@@ -24,11 +24,11 @@ from pathlib import Path
 import server as core
 import share
 import updater
-from toolkit import adblock, calc, convert, currency, downloader, images, pdftools, speedtest, trimmer, vault, diskmap, netscan, exposure
+from toolkit import adblock, airplay, calc, convert, currency, downloader, images, pdftools, speedtest, trimmer, vault, diskmap, netscan, exposure
 from toolkit.common import Cancelled, clipboard_text
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-FEATURES = ("transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = ("transfer", "share", "remote", "airplay", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
 TAILSCALE_PAGES = ("https://login.tailscale.com/",)  # the only outside pages the Share page may open
 CALC_METHODS = {  # what the calculator page may call, nothing else
     "evaluate", "solve", "set_mode", "memory", "memory_add", "clear_memory", "base_n", "statistics",
@@ -193,6 +193,9 @@ class Api:
         self._share_host = None
         self._share_lock = threading.Lock()
         self._funnel_note = None  # last problem switching Funnel on, shown on the Share page
+        # AirPlay to this PC: the receiver runs only while you have it switched on
+        self._airplay = airplay.Receiver(core.CONFIG_DIR / "airplay", self._airplay_event)
+        self._airplay_job = None
         state.remote = self._remote
 
     # ---------------------------------------------------------------- app state
@@ -260,6 +263,8 @@ class Api:
             threading.Thread(target=self._sync_sharing, daemon=True).start()
         if name == "contacts":
             threading.Thread(target=self._peer_sync, daemon=True).start()
+        if name == "airplay" and not enabled:
+            self._airplay.stop()  # the page is gone, so nothing may keep listening
         return self.get_state()
 
     def _start_server(self):
@@ -1657,6 +1662,80 @@ class Api:
     def adblock_test(self):
         return adblock.run(progress=lambda done, total: self._jobs.push("adblock-progress", {"done": done, "total": total}))
 
+    # ---------------------------------------------------------------- AirPlay to this PC
+    _airplay_installing = False
+
+    def _airplay_event(self, kind, info):
+        if kind == "pin":  # a new phone is asking for the PIN right now
+            self._state.notifier.show_soon("AirPlay PIN", f"Type {info['pin']} on your iPhone")
+        elif kind == "connect":
+            core.log(f"AirPlay: {info['name']} connected")
+        elif kind == "paired":
+            core.log(f"AirPlay: new phone allowed: {info.get('name')}")
+        if self._jobs:
+            self._jobs.push("airplay", self.airplay_state())
+
+    def airplay_state(self):
+        r = self._airplay
+        return {"installed": airplay.installed(), "available": airplay.available(),
+                "on": bool(self._state.cfg.get("airplay_on")), "status": r.status, "pin": r.pin,
+                "client": r.client, "error": r.error, "name": f"{airplay.pc_name()} (Swiftlane)",
+                "phones": r.phones(), "installing": self._airplay_installing, "size": airplay.SIZE}
+
+    def airplay_network(self):
+        """Is this a Private (home) network? The firewall rule only covers those."""
+        return airplay.network_is_private()
+
+    def airplay_switch(self, on):
+        cfg = self._state.cfg
+        if on:
+            try:
+                self._airplay.start()
+            except Exception as e:
+                return {"error": str(e)}
+            core.log("AirPlay receiver on")
+        else:
+            self._airplay.stop()
+            core.log("AirPlay receiver off")
+        cfg["airplay_on"] = bool(on)
+        core.save_config(cfg)
+        return self.airplay_state()
+
+    def airplay_open_source(self):
+        os.startfile("https://github.com/FDH2/UxPlay")
+
+    def airplay_forget(self):
+        self._airplay.forget_phones()
+        core.log("AirPlay: forgot all phones (each needs the PIN again)")
+        return self.airplay_state()
+
+    def airplay_install(self):
+        """Download the receiver, check it, and install it as administrator (Windows asks)."""
+        if self._airplay_installing:
+            return None
+        self._airplay_installing = True
+
+        def work(report, cancelled):
+            path = None
+            try:
+                path = airplay.download(progress=lambda f: report(f * 0.9, "Downloading"), cancelled=cancelled)
+                report(0.92, "Installing: Windows asks for permission")
+                script = app_dir() / "airplay-install.ps1"
+                code = run_elevated("powershell.exe", f'-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{script}" '
+                                                      f'-Zip "{path}" -Sha256 {airplay.SHA256}', wait=True)
+                if code is None:
+                    raise RuntimeError("Windows didn't get permission, so nothing was installed.")
+                if code or not airplay.installed():
+                    raise RuntimeError(f"Installing didn't work (code {code}).")
+                core.log("AirPlay receiver installed")
+                return []
+            finally:
+                if path:
+                    shutil.rmtree(path.parent, ignore_errors=True)
+                self._airplay_installing = False
+                self._jobs.push("airplay", self.airplay_state())
+        return self._jobs.start("airplay", "AirPlay receiver", work)
+
     # ---------------------------------------------------------------- currency
     def currency_status(self, refresh=False):
         return self._rates.refresh(force=bool(refresh))
@@ -1796,10 +1875,16 @@ def run_window(state, api, minimized):
     webview.start(icon=str(core.WEB_DIR / "icon.ico"), private_mode=True)
 
 
-def run_elevated(exe, params, show=False, directory=None):
+def app_dir():
+    """Where Swiftlane's own files are (Program Files\\Swiftlane once installed: only admins can change it)."""
+    return Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+
+
+def run_elevated(exe, params, show=False, directory=None, wait=False):
     """Start a program as administrator (Windows asks). Returns False if the user said no.
     show: give it a visible window. directory: its current folder (never leave it in ours, or that
-    folder counts as in use and Setup can't replace it)."""
+    folder counts as in use and Setup can't replace it).
+    wait: wait until it ends and return its exit code instead (None if the user said no)."""
     from ctypes import wintypes
 
     class SHELLEXECUTEINFO(ctypes.Structure):
@@ -1811,7 +1896,17 @@ def run_elevated(exe, params, show=False, directory=None):
     info = SHELLEXECUTEINFO(cbSize=ctypes.sizeof(SHELLEXECUTEINFO), fMask=0x40, lpVerb="runas",
                             lpFile=exe, lpParameters=params, lpDirectory=str(directory or os.environ.get("TEMP") or Path.home()),
                             nShow=1 if show else 0)
-    return bool(ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)))
+    ok = bool(ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)))
+    if not wait:
+        return ok
+    if not ok or not info.hProcess:
+        return None
+    kernel32 = ctypes.windll.kernel32
+    kernel32.WaitForSingleObject(info.hProcess, 10 * 60 * 1000)
+    code = wintypes.DWORD()
+    kernel32.GetExitCodeProcess(info.hProcess, ctypes.byref(code))
+    kernel32.CloseHandle(info.hProcess)
+    return code.value
 
 
 class UninstallApi:
@@ -2024,7 +2119,13 @@ def main():
     threading.Thread(target=api._vault_loop, daemon=True).start()
     threading.Thread(target=api._net_loop, daemon=True).start()
     threading.Thread(target=api._peer_sync, daemon=True).start()
+    if cfg["features"].get("airplay") and cfg.get("airplay_on") and airplay.installed():
+        try:
+            api._airplay.start()
+        except Exception as e:
+            core.log(f"AirPlay receiver didn't start: {e}")
     run_window(state, api, args.minimized)
+    api._airplay.stop()  # phones can no longer find this PC
     if api._vault:
         api._vault.lock()  # also wipes files opened from it
     if api._peer:

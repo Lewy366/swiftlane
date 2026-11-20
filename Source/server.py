@@ -57,7 +57,9 @@ DEFAULTS = {
                  "downloader": True, "currency": True, "calculator": True,
                  "speedtest": True, "adblock": True, "share": True,
                  "pdf": True, "trimmer": True, "vault": True, "diskmap": True, "netscan": True, "exposure": True, "contacts": True, "worldclock": True,
+                 "airplay": True,        # the AirPlay page; the receiver itself stays off until you switch it on
                  "remote": False},       # PC remote: off until you switch it on (Security-first)
+    "airplay_on": False,        # AirPlay to this PC: listening on the network only after you switch it on
     "remote_power": False,      # PC remote may also sleep / shut down the PC
     "https_only": False,        # refuse unencrypted phone connections (turn on once phones are set up)
     "sort_files": True,        # received files go into Photos/Videos/... subfolders

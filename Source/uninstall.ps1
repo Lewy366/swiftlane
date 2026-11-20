@@ -10,7 +10,11 @@ Get-Process Swiftlane, PocketDrop | Stop-Process -Force
 Start-Sleep -Milliseconds 700
 
 if (-not $InstallDir) { $InstallDir = Join-Path $env:ProgramFiles 'Swiftlane' }
-Get-NetFirewallRule -DisplayName 'Swiftlane', 'PocketDrop' | Remove-NetFirewallRule
+Get-NetFirewallRule -DisplayName 'Swiftlane', 'PocketDrop', 'Swiftlane AirPlay' | Remove-NetFirewallRule
+# the AirPlay receiver, if it was installed (its own folder, see airplay-install.ps1)
+$airplay = Join-Path $env:ProgramFiles 'Swiftlane AirPlay'
+Get-Process uxplay | Where-Object { $_.Path -like "$airplay\*" } | Stop-Process -Force
+Remove-Item $airplay -Recurse -Force
 foreach ($app in 'Swiftlane', 'PocketDrop') {
     Remove-Item (Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs\$app.lnk") -Force
     Remove-Item "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$app" -Recurse -Force

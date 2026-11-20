@@ -1,4 +1,4 @@
-"""Packs the built app (Source/dist/Swiftlane) plus uninstall.ps1 into payload.zip for the setup.
+"""Packs the built app (Source/dist/Swiftlane) plus uninstall.ps1 and airplay-install.ps1 into payload.zip for the setup.
 Usage: python make_payload.py <source_dir> <out_dir>"""
 import re
 import sys
@@ -17,5 +17,6 @@ with zipfile.ZipFile(out / "payload.zip", "w", zipfile.ZIP_LZMA) as z:
         if f.is_file():
             z.write(f, f.relative_to(app))
     z.write(src / "uninstall.ps1", "uninstall.ps1")
+    z.write(src / "airplay-install.ps1", "airplay-install.ps1")
 size = (out / "payload.zip").stat().st_size
 print(f"payload.zip: Swiftlane {version}, {size / 1e6:.0f} MB")
