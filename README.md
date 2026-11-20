@@ -4,6 +4,13 @@
 
 Ever wanted to download a YouTube video, cut a clip or edit a photo, but didn't want to install a bunch of separate programs, make accounts on online editors or click through sketchy websites? Swiftlane has all of that in one app on your PC, so you don't have to go looking anywhere else. Your files stay on your computer the whole time.
 
+### ⬇️ Download
+
+| | |
+|---|---|
+| **Windows PC** | [**Swiftlane Setup** (latest release)](https://github.com/Lewy366/swiftlane/releases/latest). Download *Swiftlane-Setup.exe* and run it. |
+| **iPhone app** *(optional)* | [**How to install it**](#iphone-app-optional). You don't need it: the phone page also works in Safari. |
+
 > **About this project:** Swiftlane is a personal test project of mine. I directed the work, but the code itself was written by an AI (Anthropic's Claude). The source is public so anyone can check exactly what the app does. It comes as-is, with no warranty.
 >
 > **Ideas and feedback are welcome.** If you have a suggestion for a new feature, found something that doesn't work, or just want to comment on the project, open an issue on this repo's Issues tab. I read them all and I'm happy to hear new ideas.
@@ -12,7 +19,7 @@ Ever wanted to download a YouTube video, cut a clip or edit a photo, but didn't 
 
 Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer between your phone and your PC, and around that sits a bunch of everyday tools. Everything runs on your own PC. The only things that touch an outside service are the currency rates, the speed test and video downloads, and those need the internet anyway.
 
-- **Phone transfer:** send files between your phone and this PC over your own network. You don't need to install anything on the phone.
+- **Phone transfer:** send files between your phone and this PC over your own network. You don't need to install anything on the phone, but there's an optional [iPhone app](#iphone-app-optional) too.
 - **Share links:** send files or folders to anyone with a link, straight from this PC (via [Tailscale](https://tailscale.com), a free-to-use app that connects your devices securely, more on that under *Share links*). You can set a time limit, download or per-person limits and an optional password.
 - **Send to contacts:** if the other person has Swiftlane too, send files straight from your PC to theirs. No link, no account, no ports to open, and they always accept first.
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
@@ -32,7 +39,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 
 ## Install
 
-Run **Swiftlane Setup.exe** (Windows will ask for admin permission). The setup wizard goes through these steps:
+Download **Swiftlane-Setup.exe** from the [latest release](https://github.com/Lewy366/swiftlane/releases/latest) and run it (Windows will ask for admin permission). For the iPhone app, see [iPhone app](#iphone-app-optional). The setup wizard goes through these steps:
 
 1. **Welcome:** if Swiftlane is already installed, you can choose *Update* (keeps your settings, pairing code and files) or *Uninstall*.
 2. **Location & shortcuts:** Program Files by default, plus Start menu, desktop icon and start with Windows.
@@ -207,7 +214,7 @@ The phone page also comes as a small iPhone app. It's the same page, plus QR-cod
 
 There's no App Store version. GitHub builds the app, and you install it yourself from Windows:
 
-1. Open this repo's **Actions** tab → **iPhone app** → the newest run → download **Swiftlane-iPhone** under *Artifacts*.
+1. Open [**the iPhone app builds**](https://github.com/Lewy366/swiftlane/actions/workflows/iphone.yml) and click the newest run with a green tick. Under *Artifacts*, download **Swiftlane-iPhone** and unzip it to get `Swiftlane-unsigned.ipa`. GitHub only lets you download it while you're signed in, and it keeps each build for 30 days.
 2. Install [Sideloadly](https://sideloadly.io) on your PC, connect the iPhone by cable, drop `Swiftlane-unsigned.ipa` onto it and sign in with your Apple ID.
 3. On the iPhone, allow it under **Settings → General → VPN & Device Management**, and turn on **Developer Mode** if iOS asks.
 
