@@ -71,7 +71,7 @@ jobs:
           for p in coreelements app playback typefindfunctions videoconvertscale videorate videofilter \
                    audioconvert audioresample volume autodetect d3d11 d3d12 libav wasapi wasapi2 \
                    directsound videoparsersbad audioparsers jpeg png isomp4 soup adaptivedemux2 hls \
-                   mpegtsdemux rawparse imagefreeze; do
+                   mpegtsdemux rawparse imagefreeze level pango; do
             if [ -f "/ucrt64/lib/gstreamer-1.0/libgst$p.dll" ]; then
               cp "/ucrt64/lib/gstreamer-1.0/libgst$p.dll" "$PLUG/"
             else
@@ -96,10 +96,16 @@ jobs:
           } > "$OUT/licenses/SOURCES.txt"
           du -sh "$OUT"
 
-      - name: Check the plugins load
+      - name: Check every element UxPlay's pipelines use is there
         run: |
-          GST_PLUGIN_SYSTEM_PATH_1_0="$PWD/out/airplay/lib/gstreamer-1.0" GST_REGISTRY_1_0="$PWD/reg.bin" \
-            gst-inspect-1.0 d3d11videosink d3d12videosink avdec_h264 avdec_h265 avdec_aac wasapi2sink h264parse playbin > /dev/null
+          export GST_PLUGIN_SYSTEM_PATH_1_0="$PWD/out/airplay/lib/gstreamer-1.0" GST_REGISTRY_1_0="$PWD/reg.bin"
+          missing=""
+          for e in appsrc queue decodebin h264parse h265parse aacparse avdec_h264 avdec_h265 avdec_aac avdec_alac \
+                   audioconvert audioresample volume level autoaudiosink wasapi2sink videoconvert videoscale videoflip \
+                   imagefreeze textoverlay jpegdec d3d11videosink d3d12videosink d3d11h264dec playbin playbin3; do
+            gst-inspect-1.0 "$e" > /dev/null 2>&1 || missing="$missing $e"
+          done
+          if [ -n "$missing" ]; then echo "::error::missing elements:$missing"; exit 1; fi
 
       - name: Check it starts with nothing but its own files
         shell: pwsh
