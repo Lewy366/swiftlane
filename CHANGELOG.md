@@ -2,6 +2,11 @@
 
 What's new in each version of Swiftlane.
 
+## 1.6.0 (2026-11-21)
+
+- New: AirPlay. Mirror your iPhone's screen, or play its videos and music, on this PC: pick the PC under Screen Mirroring on the iPhone and the picture opens in its own window (Alt+Enter for full screen).
+- It's off until you switch it on, and a new phone types a 4-digit PIN once. The receiver (the open-source UxPlay) is a one-time 77 MB download, and Windows asks once for permission to install it.
+
 ## 1.5.1 (2026-11-11)
 
 - On iPhone (Swiftlane added to the Home Screen), Save now opens the share sheet (Save to Photos / Save to Files) so you stay on the page, instead of a download screen with no way back
