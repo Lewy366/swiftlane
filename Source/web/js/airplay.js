@@ -1,4 +1,5 @@
-// AirPlay to this PC: get the receiver once, switch it on, see the PIN and the phones it remembers.
+// Screen mirroring page: AirPlay (iPhone, iPad, Mac), Miracast (Android, through Windows' own
+// Wireless Display) and casting from a laptop's browser, plus the Allow/Deny prompt for casts.
 (() => {
   let state = null, jobId = null;
 
@@ -53,8 +54,62 @@
     }
   });
 
+  // ---- Android (Miracast through Windows' own Wireless Display)
+  function renderMiracast(m) {
+    $('mcNo').hidden = m.supported !== false;
+    $('mcSetup').hidden = m.supported === false || m.installed;
+    $('mcReady').hidden = !m.installed;
+    $('mcInstall').hidden = !!m.installing;
+    $('mcBar').hidden = !m.installing;
+  }
+  App.on('miracast', renderMiracast);
+
+  // ---- Laptops (casting from a browser)
+  function renderCast(c) {
+    $('caOn').checked = c.on;
+    $('caLink').hidden = !c.link;
+    if (c.link) {
+      $('caUrl').textContent = c.link;
+      $('caQr').innerHTML = c.qr;   // SVG made by Swiftlane itself (core.qr_svg)
+      $('caFp').textContent = c.fingerprint;
+    }
+  }
+  const asked = new Set();
+  App.on('cast-offer', o => {
+    if (asked.has(o.id)) return;
+    asked.add(o.id);
+    $('castWho').textContent = `${o.name} · ${o.ip}`;
+    $('castModal').hidden = false;
+    const answer = async ok => {
+      $('castModal').hidden = true;
+      const r = await App.api.cast_decide(o.id, ok);
+      if (r && r.error) toast(t(r.error));
+    };
+    $('castAllow').onclick = () => answer(true);
+    $('castDeny').onclick = () => answer(false);
+    $('castAllow').focus();
+  });
+
   App.pages.airplay = {
     init() {
+      $('mcInstall').onclick = async () => {
+        renderMiracast({ supported: true, installed: false, installing: true });
+        const r = await App.api.miracast_install();
+        if (r && r.error) toast(t(r.error));
+        renderMiracast(await App.api.miracast_state());
+      };
+      $('mcStart').onclick = async () => { const r = await App.api.miracast_start(); if (r && r.error) toast(t(r.error)); };
+      $('mcSettings').onclick = () => App.api.miracast_settings();
+      $('caOn').onchange = async () => {
+        const r = await App.api.cast_switch($('caOn').checked);
+        if (r && r.error) { $('caError').textContent = t(r.error); $('caError').hidden = false; $('caOn').checked = false; return; }
+        $('caError').hidden = true;
+        renderCast(r);
+      };
+      $('caCopy').onclick = async () => {
+        try { await navigator.clipboard.writeText($('caUrl').textContent); toast(t('Link copied')); }
+        catch (e) { toast(t('Couldn\'t copy. Select the link and press Ctrl+C.')); }
+      };
       $('apInstall').onclick = async () => {
         if (jobId) return;
         $('apInstall').hidden = true;
@@ -77,6 +132,8 @@
       render(await App.api.airplay_state());
       $('apSize').textContent = `${t('One-time download')} · ${Math.round(state.size / 1e6)} MB`;
       if (state.on) checkNetwork();
+      renderCast(await App.api.cast_state());
+      renderMiracast(await App.api.miracast_state());
     },
   };
 })();

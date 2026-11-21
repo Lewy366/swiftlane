@@ -5,7 +5,7 @@
     ['share', 'link', 'Share links', 'Send files to anyone with a link, through Tailscale'],
     ['contacts', 'people', 'Send to contacts', 'Straight to another Swiftlane, no link needed'],
     ['worldclock', 'globe', 'World clock', 'Live times on a map, plan across time zones'],
-    ['airplay', 'airplay', 'AirPlay', 'Your iPhone\'s screen, videos and music on this PC'],
+    ['airplay', 'airplay', 'Screen mirroring', 'Phone or laptop screen on this PC: AirPlay, Miracast, browser'],
     ['remote', 'remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
     ['pdf', 'pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
     ['trimmer', 'scissors', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],

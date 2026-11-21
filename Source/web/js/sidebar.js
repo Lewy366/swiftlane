@@ -12,7 +12,7 @@ const TOOLS = [
   { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
   { id: 'exposure', name: 'Is my PC exposed?', icon: 'radar', feature: 'exposure', desc: 'Firewall, open ports, remote access, router', keys: 'security exposed firewall ports upnp remote desktop safe check hacker', home: 'Security' },
   { id: 'worldclock', name: 'World clock', icon: 'globe', feature: 'worldclock', desc: 'Live times on a map, plan across time zones', keys: 'time zone clock world map city convert meeting utc', home: 'Everyday' },
-  { id: 'airplay', name: 'AirPlay', icon: 'airplay', feature: 'airplay', desc: 'Your iPhone\'s screen, videos and music on this PC', keys: 'airplay mirror mirroring screen iphone ipad cast stream tv project', home: 'Everyday' },
+  { id: 'airplay', name: 'Screen mirroring', icon: 'airplay', feature: 'airplay', desc: 'Phone or laptop screen on this PC: AirPlay, Miracast, browser', keys: 'airplay miracast mirror mirroring screen iphone ipad mac android samsung smart view laptop browser cast stream tv project', home: 'Everyday' },
   { id: 'remote', name: 'PC remote', icon: 'remote', desc: 'Music, volume and slides from your phone', keys: 'remote control phone volume music play pause slides presentation', home: 'Everyday' },
   { id: 'images', name: 'Image editor', icon: 'image', feature: 'images', desc: 'Crop, resize, straighten, adjust colours, compress', keys: 'photo crop resize edit picture' },
   { id: 'downloader', name: 'Video downloader', icon: 'download', feature: 'downloader', desc: 'YouTube and other sites', keys: 'youtube video mp3 download' },

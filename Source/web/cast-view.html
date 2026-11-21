@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Swiftlane cast</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: #eee;
+               font: 14px/1.4 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; user-select: none; }
+  video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+  .msg { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; color: #bbb; pointer-events: none; }
+  .hint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(20, 20, 28, .82);
+          padding: 8px 14px; border-radius: 10px; transition: opacity .6s; white-space: nowrap; }
+  .hint.gone { opacity: 0; }
+  button { pointer-events: auto; font: inherit; color: #fff; background: #0ea5cf; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; margin-top: 10px; }
+</style>
+</head>
+<body>
+<video id="v" playsinline></video>
+<div class="msg" id="msg">Connecting…</div>
+<div class="hint gone" id="hint">Double-click or F11: full screen · Esc: back to a window</div>
+<script>
+(() => {
+  const v = document.getElementById('v'), msg = document.getElementById('msg'), hint = document.getElementById('hint');
+  const L = { de: { 'Connecting…': 'Verbinde …', 'The laptop stopped sharing.': 'Der Laptop teilt nicht mehr.', 'Click for sound': 'Klicken für Ton', 'Double-click or F11: full screen · Esc: back to a window': 'Doppelklick oder F11: Vollbild · Esc: zurück zum Fenster' },
+              pl: { 'Connecting…': 'Łączenie…', 'The laptop stopped sharing.': 'Laptop przestał udostępniać.', 'Click for sound': 'Kliknij, aby włączyć dźwięk', 'Double-click or F11: full screen · Esc: back to a window': 'Dwuklik lub F11: pełny ekran · Esc: z powrotem do okna' },
+              it: { 'Connecting…': 'Connessione…', 'The laptop stopped sharing.': 'Il portatile ha smesso di condividere.', 'Click for sound': 'Clicca per l’audio', 'Double-click or F11: full screen · Esc: back to a window': 'Doppio clic o F11: schermo intero · Esc: torna alla finestra' } };
+  let dict = {};
+  const t = s => dict[s] || s;
+  let pc = null, full = false, hideTimer = null;
+
+  function showHint() {
+    hint.classList.remove('gone');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => hint.classList.add('gone'), 3500);
+  }
+  async function toggleFull(want) {
+    if (want === full) return;
+    full = await window.pywebview.api.toggle_fullscreen();
+    showHint();
+  }
+  document.addEventListener('dblclick', () => toggleFull(!full));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F11' || (e.key === 'Enter' && e.altKey)) { e.preventDefault(); toggleFull(!full); }
+    if (e.key === 'Escape') toggleFull(false);
+  });
+  document.addEventListener('mousemove', showHint);
+
+  function ended(text, fromPc) {
+    if (!pc) return;
+    pc.close(); pc = null;
+    v.srcObject = null;
+    msg.textContent = t(text);
+    if (!fromPc) window.pywebview.api.ended();
+  }
+  window.castEnded = () => ended('The laptop stopped sharing.', true);   // Swiftlane closes the window itself
+
+  function gathered(conn) {
+    return new Promise(resolve => {
+      if (conn.iceGatheringState === 'complete') return resolve();
+      conn.addEventListener('icegatheringstatechange', () => { if (conn.iceGatheringState === 'complete') resolve(); });
+      setTimeout(resolve, 3000);
+    });
+  }
+
+  async function play() {
+    try { await v.play(); }
+    catch (e) {   // Windows wants a click before sound: play silently until then
+      v.muted = true; await v.play().catch(() => {});
+      const b = document.createElement('button'); b.textContent = t('Click for sound');
+      b.onclick = () => { v.muted = false; v.play(); b.remove(); };
+      msg.replaceChildren(b);
+    }
+  }
+
+  async function start() {
+    const info = await window.pywebview.api.offer();
+    dict = L[info.lang] || {};
+    hint.textContent = t(hint.textContent); msg.textContent = t('Connecting…');
+    if (!info.sdp) return ended('The laptop stopped sharing.');
+    pc = new RTCPeerConnection({ iceServers: [] });
+    const conn = pc;
+    pc.addEventListener('track', e => {
+      if (!v.srcObject) { v.srcObject = e.streams[0] || new MediaStream([e.track]); msg.textContent = ''; play(); showHint(); }
+      e.track.addEventListener('ended', () => ended('The laptop stopped sharing.'));
+    });
+    pc.addEventListener('connectionstatechange', () => {
+      if (conn === pc && ['failed', 'closed', 'disconnected'].includes(conn.connectionState)) {
+        setTimeout(() => { if (conn === pc && conn.connectionState !== 'connected') ended('The laptop stopped sharing.'); }, conn.connectionState === 'disconnected' ? 4000 : 0);
+      }
+    });
+    await pc.setRemoteDescription({ type: 'offer', sdp: info.sdp });
+    await pc.setLocalDescription(await pc.createAnswer());
+    await gathered(conn);
+    await window.pywebview.api.answer(conn.localDescription.sdp);
+  }
+  window.addEventListener('pywebviewready', () => start().catch(e => { msg.textContent = String(e.message || e); }));
+})();
+</script>
+</body>
+</html>

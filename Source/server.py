@@ -107,6 +107,7 @@ STATIC_FILES = {
     "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json"),
     "/icon-180.png": ("icon-180.png", "image/png"),
     "/icon-512.png": ("icon-512.png", "image/png"),
+    "/cast": ("cast.html", "text/html; charset=utf-8"),   # cast a laptop's screen to this PC (see cast.py)
 }
 PAGE_CSP = ("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
             "connect-src 'self'; img-src 'self' data:; manifest-src 'self'; "
@@ -479,6 +480,7 @@ class State:
         self.link_secret = secrets.token_bytes(32)  # download links die with the app
         self.listeners = []
         self.remote = None                   # set by the app: (action, ip) -> None or a problem to show
+        self.cast = None                     # set by the app: cast.CastHub (casting from a browser)
         self.ca = None                       # tls.Authority once encrypted phone transfer is ready
         self.remote_times = deque(maxlen=10)  # at most 10 remote presses per 2 seconds
         for leftover in self.save_dir.glob(".*.part"):
@@ -639,8 +641,52 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, {"items": items, "remote": bool(cfg["features"].get("remote")), "power": bool(cfg.get("remote_power"))})
         elif url.path.startswith("/dl/"):
             self.send_download(url)
+        elif url.path == "/api/cast/answer":
+            hub = self.cast_hub()
+            if hub:
+                oid = parse_qs(url.query).get("id", [""])[0]
+                own = self.connection.getsockname()[0]
+                self.send_json(200, hub.status(oid, self.client_address[0], own))
         else:
             self.send_json(404, {"error": "Not found."})
+
+    def cast_hub(self):
+        """The cast hub if casting from a browser is on and the link's code is right (else answers)."""
+        hub = self.state.cast
+        if not hub or not hub.on:
+            self.send_json(403, {"error": "Casting to this PC is switched off in Swiftlane."})
+            return None
+        ip = self.client_address[0]
+        if hub.check(self.headers.get("X-Cast-Token")):
+            self.state.lockout.clear(ip)
+            return hub
+        if self.state.lockout.fail(ip):
+            log(f"Locked out {ip} for 15 minutes after {FAIL_LIMIT} wrong codes")
+        self.send_json(401, {"error": "This link is out of date. Open the new one Swiftlane shows."})
+        return None
+
+    def cast_offer(self):
+        hub = self.cast_hub()
+        if not hub:
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = -1
+        if not 0 < length <= 80 * 1024:
+            self.send_json(400, {"error": "Bad request."})
+            return
+        try:
+            body = json.loads(self.rfile.read(length))
+            oid = hub.offer(self.client_address[0], body.get("sdp"), body.get("name"))
+        except (ValueError, AttributeError) as e:
+            self.send_json(400, {"error": str(e) if isinstance(e, ValueError) and str(e) else "Bad request."})
+            return
+        except RuntimeError as e:
+            self.send_json(429, {"error": str(e)})
+            return
+        log(f"Cast request from {self.client_address[0]}")
+        self.send_json(200, {"id": oid})
 
     def send_download(self, url):
         """Serve a queued file. Links are signed and expire, so they work in plain <a href>."""
@@ -687,6 +733,15 @@ class Handler(BaseHTTPRequestHandler):
             return
         if url.path == "/api/remote":
             self.remote_action()
+            return
+        if url.path == "/api/cast/offer":
+            self.cast_offer()
+            return
+        if url.path == "/api/cast/end":
+            hub = self.cast_hub()
+            if hub:
+                hub.end(parse_qs(url.query).get("id", [""])[0], self.client_address[0])
+                self.send_json(200, {"ok": True})
             return
         if url.path != "/upload":
             self.send_json(404, {"error": "Not found."})

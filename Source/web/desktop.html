@@ -492,7 +492,9 @@
 
     <!-- ============ AirPlay to this PC ============ -->
     <section class="page" id="page-airplay" hidden>
-      <div class="page-head"><div><h1>AirPlay</h1><p>Show your iPhone's screen, videos and music on this PC. On the iPhone: Control Centre &gt; Screen Mirroring, then pick this PC.</p></div></div>
+      <div class="page-head"><div><h1>Screen mirroring</h1><p>Show a phone's or a laptop's screen on this PC, in its own window that you can make full screen.</p></div></div>
+      <h2 class="sm-sec"><svg class="i"><use href="#i-airplay"/></svg><span>iPhone, iPad and Mac</span><small>AirPlay</small></h2>
+      <p class="muted small sm-how">On the device: Control Centre &gt; Screen Mirroring, then pick this PC.</p>
       <section class="card" id="apGet" hidden>
         <h2>Get the AirPlay receiver</h2>
         <p class="muted small" style="margin-top:-6px">UxPlay, an open-source AirPlay receiver, built from its source code on Swiftlane's GitHub and checked before it installs. Windows asks for permission to install it and to let it through the firewall on home networks only.</p>
@@ -517,6 +519,38 @@
         </section>
       </div>
       <p class="muted small">Receiver: <a href="#" id="apSource" style="color:var(--cyan)">UxPlay</a> (GPL-3.0), runs as its own program while AirPlay is on.</p>
+
+      <h2 class="sm-sec"><svg class="i"><use href="#i-phone"/></svg><span>Android phones</span><small>Miracast</small></h2>
+      <p class="muted small sm-how">On the phone: Smart View, Screen cast or Cast in the quick settings, then pick this PC. Uses Windows' own receiver (Wireless Display).</p>
+      <section class="card" id="mcCard">
+        <div id="mcSetup" hidden>
+          <p class="muted small" style="margin-top:0">Wireless Display is a free part of Windows. Windows asks for permission once and downloads it from Windows Update.</p>
+          <button class="btn primary" id="mcInstall">Set up Wireless Display</button>
+          <div class="bar indeterminate" id="mcBar" hidden><i></i></div>
+        </div>
+        <div id="mcReady" hidden>
+          <div class="setting" style="border:0;padding-top:0"><div><b>Receive from Android</b><small>Opens Windows' Wireless Display window. Phones only see this PC while it's open.</small></div><button class="btn primary" id="mcStart">Start receiving</button></div>
+          <div class="setting"><div><b>PIN and who may connect</b><small>Windows' own settings: ask each time, PIN for new phones, which networks.</small></div><button class="btn" id="mcSettings">Open settings</button></div>
+        </div>
+        <p class="muted small" id="mcNo" hidden style="margin:0">This PC's Wi-Fi can't receive Miracast, so Android phones can't mirror to it directly.</p>
+      </section>
+
+      <h2 class="sm-sec"><svg class="i"><use href="#i-pc"/></svg><span>Laptops and computers</span><small>From the browser</small></h2>
+      <p class="muted small sm-how">Windows, Mac, Linux or Chromebook: open a link in Chrome, Edge, Firefox or Safari and share the screen. Nothing to install.</p>
+      <section class="card">
+        <div class="setting" style="border:0;padding-top:0"><div><b>Allow casting from a browser</b><small>Each cast still waits for you to click Allow here. A new link is made every time you switch this on, and it switches off when Swiftlane closes.</small></div><label class="switch"><input type="checkbox" id="caOn"><span></span></label></div>
+        <div class="ca-link" id="caLink" hidden>
+          <div class="ca-qr" id="caQr"></div>
+          <div class="ca-info">
+            <small class="muted">Open this on the laptop</small>
+            <code id="caUrl" translate="no"></code>
+            <div><button class="btn small" id="caCopy">Copy link</button></div>
+            <small class="muted">The first time, the browser warns that it doesn't know the certificate. It's Swiftlane's own: check that it shows this fingerprint, then continue.</small>
+            <code class="ca-fp" id="caFp" translate="no"></code>
+          </div>
+        </div>
+        <p class="err small" id="caError" hidden></p>
+      </section>
     </section>
 
     <!-- ============ Speed test ============ -->
@@ -679,6 +713,11 @@
     <div class="sig-place" id="sigPlace"><img id="sigPage" alt=""><img id="sigPreview" class="sig-preview" alt=""></div>
     <div class="slider-row"><span>Size</span><input type="range" id="sigSize" min="8" max="60" value="28"><b></b></div>
     <div class="pdf-bar" style="margin-top:12px"><span class="spacer"></span><button class="btn ghost" id="sigCancel2">Cancel</button><button class="btn primary" id="sigAdd">Add signature</button></div></div>
+</div></div>
+<div class="whatsnew" id="castModal" hidden role="dialog" aria-modal="true" aria-labelledby="castTitle"><div class="card wn-card">
+  <div class="um-head"><span class="um-icon"><svg class="i"><use href="#i-pc"/></svg></span><div><h2 id="castTitle">Show a screen on this PC?</h2><small class="muted" id="castWho" translate="no"></small></div></div>
+  <p class="small muted" style="margin:12px 0 0">It opens in its own window. Only allow screens you expect.</p>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn ghost" id="castDeny">Deny</button><button class="btn primary" id="castAllow">Allow</button></div>
 </div></div>
 <div class="whatsnew" id="offerModal" hidden><div class="card offer-card">
   <h2 id="offerTitle" translate="no"></h2><p class="muted small" id="offerSize" style="margin-top:-6px"></p>

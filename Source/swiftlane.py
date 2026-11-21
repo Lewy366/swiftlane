@@ -24,7 +24,7 @@ from pathlib import Path
 import server as core
 import share
 import updater
-from toolkit import adblock, airplay, calc, convert, currency, downloader, images, pdftools, speedtest, trimmer, vault, diskmap, netscan, exposure
+from toolkit import adblock, airplay, miracast, calc, convert, currency, downloader, images, pdftools, speedtest, trimmer, vault, diskmap, netscan, exposure
 from toolkit.common import Cancelled, clipboard_text
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -195,7 +195,12 @@ class Api:
         self._funnel_note = None  # last problem switching Funnel on, shown on the Share page
         # AirPlay to this PC: the receiver runs only while you have it switched on
         self._airplay = airplay.Receiver(core.CONFIG_DIR / "airplay", self._airplay_event)
-        self._airplay_job = None
+        # Cast from a browser: a laptop shares its screen through the phone server's /cast page
+        import cast
+        self._cast = cast.CastHub(self._cast_offer)
+        self._cast.on_end = self._cast_ended
+        self._cast_windows = {}     # request id -> viewer window
+        state.cast = self._cast
         state.remote = self._remote
 
     # ---------------------------------------------------------------- app state
@@ -265,6 +270,8 @@ class Api:
             threading.Thread(target=self._peer_sync, daemon=True).start()
         if name == "airplay" and not enabled:
             self._airplay.stop()  # the page is gone, so nothing may keep listening
+        if name in ("airplay", "transfer") and not enabled and self._cast.on:
+            self.cast_switch(False)  # casting lives on the same page and uses Phone transfer's connection
         return self.get_state()
 
     def _start_server(self):
@@ -1701,6 +1708,119 @@ class Api:
         core.save_config(cfg)
         return self.airplay_state()
 
+    # ---------------------------------------------------------------- Android (Miracast, Windows' own receiver)
+    _miracast_installing = False
+
+    def miracast_state(self):
+        return {"supported": miracast.supported(), "installed": bool(miracast.app_id()),
+                "installing": self._miracast_installing}
+
+    def miracast_install(self):
+        """Windows asks for admin, then downloads Wireless Display from Windows Update (a minute or two)."""
+        if self._miracast_installing:
+            return {"error": "Already setting it up."}
+        self._miracast_installing = True
+        try:
+            code = run_elevated(*miracast.install_command(), wait=True)
+        finally:
+            self._miracast_installing = False
+        if code is None:
+            return {"error": "Windows didn't get permission, so nothing was installed."}
+        if not miracast.app_id():
+            return {"error": "Windows couldn't install Wireless Display. Try Settings > System > Optional features."}
+        core.log("Wireless Display (Miracast receiver) installed")
+        return self.miracast_state()
+
+    def miracast_start(self):
+        try:
+            miracast.start()
+        except Exception as e:
+            return {"error": str(e)}
+        return True
+
+    def miracast_settings(self):
+        miracast.open_settings()
+
+    # ---------------------------------------------------------------- cast from a browser (laptops)
+    def _cast_offer(self, info):
+        """A laptop wants to show its screen: ask on the PC (notification + a prompt in the window)."""
+        self._state.notifier.show_soon("Show a screen on this PC?", f"{info['name']} ({info['ip']}) · Allow or deny it in Swiftlane")
+        if self._jobs:
+            self._jobs.push("cast-offer", info)
+        focus_existing_window()
+
+    def cast_state(self):
+        s, hub = self._state, self._cast
+        link = None
+        if hub.on and s.ca and self._server:
+            link = f"https://{core.local_addresses()[0][1]}:{s.cfg['port']}/cast#{hub.token}"
+        return {"on": hub.on, "link": link, "qr": core.qr_svg(link) if link else None,
+                "fingerprint": s.ca.fingerprint if s.ca else "", "server": self._server is not None, "tls": bool(s.ca)}
+
+    def cast_switch(self, on):
+        if on:
+            if not self._server:
+                return {"error": "Casting uses Phone transfer's connection. Switch Phone transfer on in Settings first."}
+            if not self._state.ca:
+                return {"error": "Encrypted connections aren't ready on this PC, and browsers only share screens over them."}
+            self._cast.enable()
+            core.log("Cast from a browser on")
+        else:
+            self._cast.disable()
+            for w in list(self._cast_windows.values()):
+                try:
+                    w.destroy()
+                except Exception:
+                    pass
+            self._cast_windows.clear()
+            core.log("Cast from a browser off")
+        return self.cast_state()
+
+    def cast_decide(self, oid, allow):
+        o = self._cast.decide(str(oid), bool(allow))
+        if not o:
+            return {"error": "That request has expired."}
+        core.log(f"Cast from {o['name']} ({o['ip']}) {'allowed' if allow else 'denied'}")
+        if allow:
+            import webview
+            viewer = CastViewerApi(self, o["id"])
+            w = webview.create_window(f"{o['name']} · Swiftlane", url=str(core.WEB_DIR / "cast-view.html"), js_api=viewer,
+                                      width=1280, height=760, min_size=(320, 200), background_color="#000000")
+            viewer._window = w
+            self._cast_windows[o["id"]] = w
+
+            def closed():
+                self._cast.end(o["id"])  # the laptop's page sees it ended
+                self._cast_windows.pop(o["id"], None)
+            w.events.closed += closed
+        return True
+
+    def _cast_ended(self, oid):
+        """The laptop stopped sharing: say so in its window, then close it."""
+        w = self._cast_windows.get(oid)
+        if not w:
+            return
+        try:
+            w.evaluate_js("window.castEnded && window.castEnded()")
+        except Exception:
+            pass
+
+        def close_soon():
+            time.sleep(2.5)
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        threading.Thread(target=close_soon, daemon=True).start()
+
+    def _close_cast_windows(self):
+        self._cast.disable()
+        for w in list(self._cast_windows.values()):
+            try:
+                w.destroy()
+            except Exception:
+                pass
+
     def airplay_open_source(self):
         os.startfile("https://github.com/FDH2/UxPlay")
 
@@ -1795,6 +1915,42 @@ class Api:
             return {"error": str(e) or "Math ERROR"}
 
 
+class CastViewerApi:
+    """The window that shows a laptop's screen. It may only fetch its own request and answer it."""
+
+    def __init__(self, api, oid):
+        self._api = api
+        self._oid = oid
+        self._window = None
+        self._full = False
+
+    def offer(self):
+        o = self._api._cast.get(self._oid)
+        return {"sdp": o["sdp"] if o and o["status"] == "allowed" else None,
+                "lang": self._api._state.cfg.get("language", "en")}
+
+    def answer(self, sdp):
+        return self._api._cast.answer(self._oid, sdp)
+
+    def toggle_fullscreen(self):
+        if self._window:
+            self._window.toggle_fullscreen()
+            self._full = not self._full
+        return self._full
+
+    def ended(self):
+        """The laptop stopped: show that for a moment, then close the window."""
+        self._api._cast.end(self._oid)
+
+        def close_soon():
+            time.sleep(2.5)
+            try:
+                self._window.destroy()
+            except Exception:
+                pass
+        threading.Thread(target=close_soon, daemon=True).start()
+
+
 def _kb(n):
     return f"{n / 1024:.0f} KB" if n < 1024 * 1024 else f"{n / 1024 / 1024:.1f} MB"
 
@@ -1872,6 +2028,7 @@ def run_window(state, api, minimized):
 
     window.events.loaded += on_loaded
     window.events.closed += api._close_calc_window
+    window.events.closed += api._close_cast_windows
     webview.start(icon=str(core.WEB_DIR / "icon.ico"), private_mode=True)
 
 
