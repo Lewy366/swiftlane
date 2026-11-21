@@ -2,6 +2,12 @@
 
 What's new in each version of Swiftlane.
 
+## 1.6.1 (2026-11-22)
+
+- AirPlay is now Screen mirroring, with two more ways in besides iPhone, iPad and Mac.
+- Android phones: mirror through Windows' own Wireless Display receiver (Miracast). Swiftlane sets it up from Windows Update and opens it; pick the PC under Smart View or Screen cast on the phone.
+- Laptops and computers: open a link in Chrome, Edge, Firefox or Safari and share the screen, with nothing to install. Swiftlane asks you Allow or Deny first, and the picture opens in its own window (double-click or F11 for full screen).
+
 ## 1.6.0 (2026-11-21)
 
 - New: AirPlay. Mirror your iPhone's screen, or play its videos and music, on this PC: pick the PC under Screen Mirroring on the iPhone and the picture opens in its own window (Alt+Enter for full screen).
