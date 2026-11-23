@@ -1102,7 +1102,7 @@ print(v.export([sys.argv[4]], sys.argv[3])[0].read_text())
         let target2 = dir.join("out2");
         std::fs::create_dir(&target2).unwrap();
         let out = python(check, &[&dir.join("vault"), &target2, Path::new(&new_id)]).unwrap();
-        assert_eq!(out.trim(), format!("{}\nadded by rust", files.len() + 1));
+        assert_eq!(out.trim().replace("\r\n", "\n"), format!("{}\nadded by rust", files.len() + 1));
         done(&dir);
     }
 
