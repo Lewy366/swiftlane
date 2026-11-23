@@ -528,8 +528,54 @@ fn cert_file(app: &AppHandle, path: &str) -> Response {
     r
 }
 
-async fn not_yet() -> Response {
-    json_resp(StatusCode::FORBIDDEN, json!({ "error": "That isn't in the Rust version of Swiftlane yet." }))
+async fn remote_action(State(app): State<AppHandle>, Extension(c): Extension<Conn>, req: Request) -> Response {
+    if let Some(r) = authorized(&app, c.ip, req.headers()) {
+        return r;
+    }
+    let enabled = app
+        .state::<AppState>()
+        .cfg
+        .lock()
+        .unwrap()["features"]["remote"]
+        .as_bool()
+        .unwrap_or(false);
+    if !enabled {
+        return json_resp(
+            StatusCode::FORBIDDEN,
+            json!({ "error": "The PC remote is switched off in Swiftlane's settings." }),
+        );
+    }
+    let bad = || json_resp(StatusCode::BAD_REQUEST, json!({ "error": "Bad request." }));
+    let length = req
+        .headers()
+        .get(header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0);
+    if !(1..=256).contains(&length) {
+        return bad();
+    }
+    let Ok(Ok(body)) =
+        tokio::time::timeout(Duration::from_secs(5), axum::body::to_bytes(req.into_body(), 256))
+            .await
+    else {
+        return bad();
+    };
+    let action = serde_json::from_slice::<Value>(&body)
+        .ok()
+        .and_then(|v| v.get("action").and_then(Value::as_str).map(String::from))
+        .unwrap_or_default();
+    if !crate::tools::remote::allow_press() {
+        return json_resp(
+            StatusCode::TOO_MANY_REQUESTS,
+            json!({ "error": "Too many presses. Wait a moment." }),
+        );
+    }
+    let ip = c.ip.to_string();
+    match crate::tools::remote::handle_phone_action(&app, &action, &ip) {
+        Ok(()) => json_resp(StatusCode::OK, json!({ "ok": true })),
+        Err(problem) => json_resp(StatusCode::FORBIDDEN, json!({ "error": problem })),
+    }
 }
 
 fn pc_name() -> String {
@@ -795,7 +841,7 @@ fn router(app: AppHandle) -> Router {
         .route("/api/outbox", get(outbox))
         .route("/dl/{id}/{name}", get(download))
         .route("/upload", post(upload))
-        .route("/api/remote", post(not_yet))
+        .route("/api/remote", post(remote_action))
         .route("/api/cast/offer", post(cast_offer))
         .route("/api/cast/end", post(cast_end))
         .route("/api/cast/answer", get(cast_answer))

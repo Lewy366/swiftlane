@@ -191,7 +191,6 @@ fn now_secs() -> f64 {
 }
 
 /// Checks and records the phone remote rate limit (max 10 presses / 2 seconds).
-#[allow(dead_code)] // called from transfer.rs once /api/remote is wired
 pub fn allow_press() -> bool {
     with_state(|s| s.rate.allow(Instant::now()))
 }
@@ -213,7 +212,6 @@ pub fn remote_state(app: &AppHandle) -> Value {
     })
 }
 
-#[allow(dead_code)] // called from transfer.rs once /api/remote is wired
 fn record_seen(app: &AppHandle, action: &str, ip: &str, problem: Option<&str>) {
     let need_lookup = with_state(|s| {
         let name = s.phone_names.get(ip).cloned().flatten();
@@ -258,7 +256,6 @@ fn record_seen(app: &AppHandle, action: &str, ip: &str, problem: Option<&str>) {
 
 /// Called by the phone transfer server for a paired phone's `/api/remote` press.
 /// Returns `Ok(())` on success, or `Err(message)` to return to the phone with HTTP 403.
-#[allow(dead_code)] // called from transfer.rs once /api/remote is wired
 pub fn handle_phone_action(app: &AppHandle, action: &str, ip: &str) -> Result<(), String> {
     if !is_action(action) {
         return Err("Unknown action.".into());
