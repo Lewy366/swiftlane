@@ -45,6 +45,8 @@ pub async fn call(app: AppHandle, window: tauri::WebviewWindow, method: String, 
             dispatch(&app, &method, &args)
         } else if label == "calculator" {
             tools::calc::popout_call(&app, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
+        } else if label == "uninstall" {
+            tools::uninstall::window_call(&app, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
         } else {
             tools::casting::viewer_call(&app, &label, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
         }

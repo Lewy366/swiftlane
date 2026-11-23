@@ -29,6 +29,7 @@ fn main() {
     }
     tools::explorer::set_start_page(cli.start_page);
     let minimized = cli.minimized;
+    let uninstall_mode = cli.uninstall;
     let initial_explorer = cli.explorer;
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -36,12 +37,16 @@ fn main() {
         .manage(api::AppState::load())
         .invoke_handler(tauri::generate_handler![api::call])
         .setup(move |app| {
+            let handle = app.handle().clone();
+            if uninstall_mode {
+                let _ = tools::uninstall::open_window(&handle);
+                return Ok(());
+            }
             if minimized {
                 if let Some(w) = app.get_webview_window("main") {
                     let _ = w.minimize();
                 }
             }
-            let handle = app.handle().clone();
             tools::explorer::start(&handle, initial_explorer);
             if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
                 let _ = transfer::start(&handle);
