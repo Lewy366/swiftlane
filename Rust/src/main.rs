@@ -6,12 +6,11 @@ mod api;
 mod config;
 mod notify;
 mod funnel;
-#[allow(dead_code)] // used by the tools as they are ported
 mod jobs;
 mod share;
 mod share_server;
 mod sharing;
-#[allow(dead_code)]
+#[allow(dead_code)] // shared helpers (ask_save, program, command) for the tools still being ported
 mod tools;
 mod tls;
 mod transfer;
@@ -42,6 +41,7 @@ fn main() {
             std::thread::spawn(move || transfer::watch_addresses(watcher));
             let sharer = handle.clone();
             std::thread::spawn(move || sharing::share_loop(sharer));
+            tools::vault::start(&handle);
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())
@@ -62,8 +62,10 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("Swiftlane couldn't start")
         .run(|app, event| {
-            // Closing: links stop working until Swiftlane runs again, so Funnel closes too.
+            // Closing: links stop working until Swiftlane runs again, so Funnel closes too, and
+            // the vault locks (which also wipes files opened from it).
             if let tauri::RunEvent::Exit = event {
+                tools::vault::shutdown();
                 sharing::shutdown(app);
             }
         });

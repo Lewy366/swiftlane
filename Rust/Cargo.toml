@@ -46,13 +46,32 @@ zip = { version = "9", default-features = false }
 arboard = { version = "3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
+aes-gcm = "0.10"
+zeroize = "1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Networking_WinSock", "Win32_Security_Cryptography", "Win32_System_Power"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Networking_WinSock", "Win32_Security_Cryptography", "Win32_System_Power", "Win32_Storage_FileSystem"] }
+# the Recycle Bin (IFileOperation, with a check that nothing is ever deleted for good)
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell"] }
+windows-core = "0.62"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-util"] }
+
+# The vault's password check (scrypt) and encryption are slow without optimisation, even in test builds.
+[profile.dev.package.scrypt]
+opt-level = 3
+[profile.dev.package.salsa20]
+opt-level = 3
+[profile.dev.package.aes]
+opt-level = 3
+[profile.dev.package.aes-gcm]
+opt-level = 3
+[profile.dev.package.ghash]
+opt-level = 3
+[profile.dev.package.polyval]
+opt-level = 3
 
 [profile.release]
 codegen-units = 1
