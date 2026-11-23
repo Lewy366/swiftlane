@@ -1,0 +1,17 @@
+{
+  "ffmpeg": {
+    "version": "9.1",
+    "url": "https://github.com/GyanD/codexffmpeg/releases/download/9.1/ffmpeg-9.1-essentials_build.zip",
+    "sha256": "b9bbbb3acece000cbeec994f856649354e52c773807841e78908374b24d658fd"
+  },
+  "pdfium": {
+    "version": "chromium/8125",
+    "url": "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8125/pdfium-win-x64.tgz",
+    "sha256": "9a964261760cff52570aabf038ab346d3a5034dd8b30d0d5fe8861235d356b8b"
+  },
+  "yt_dlp": {
+    "version": "2026.10.26",
+    "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.26/yt-dlp.exe",
+    "sha256": "f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d"
+  }
+}
