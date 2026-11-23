@@ -18,6 +18,8 @@ mod webp;
 mod convert;
 mod trimmer;
 mod downloader;
+mod currency;
+mod speedtest;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -29,6 +31,8 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         convert::dispatch,
         trimmer::dispatch,
         downloader::dispatch,
+        currency::dispatch,
+        speedtest::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }
