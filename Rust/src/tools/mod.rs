@@ -11,12 +11,14 @@ use tauri_plugin_dialog::DialogExt;
 
 pub mod diskmap;
 pub mod vault;
+mod pdf;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
         // each tool module adds its dispatch function here
         diskmap::dispatch,
         vault::dispatch,
+        pdf::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

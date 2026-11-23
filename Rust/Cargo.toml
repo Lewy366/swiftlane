@@ -48,6 +48,10 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
 aes-gcm = "0.10"
 zeroize = "1"
+# PDF tools: lopdf (pure Rust) re-assembles pages; PDFium (pdfium.dll shipped next to the exe,
+# loaded at run time) draws them. pdfium_7543: works with pdfium-binaries chromium/7543 or newer.
+lopdf = { version = "0.47", default-features = false }
+pdfium-render = { version = "0.9", default-features = false, features = ["pdfium_7543", "thread_safe"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
