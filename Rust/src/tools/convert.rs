@@ -746,6 +746,11 @@ fn media(src: &Path, target: &str, out_dir: &Path, q: &Quality, out: Option<Path
                 let Ok(line) = line else { break };
                 text.push_str(&String::from_utf8_lossy(&line));
                 text.push('\n');
+                if text.len() > 16_000 {
+                    // only the end is shown, so keep the last ~8 KB
+                    let cut = (text.len() - 8_000..text.len()).find(|i| text.is_char_boundary(*i)).unwrap_or(0);
+                    text.drain(..cut);
+                }
             }
         }
         text

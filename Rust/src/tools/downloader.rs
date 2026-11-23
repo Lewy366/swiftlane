@@ -79,8 +79,8 @@ fn check_url(raw: &str) -> Result<String, String> {
         return Err(UNSUPPORTED.into());
     }
     let host = &rest[..rest.find(['/', '?', '#']).unwrap_or(rest.len())];
-    let host = host.rsplit('@').next().unwrap_or("");
-    if host.is_empty() || host.starts_with(':') || host.starts_with('-') {
+    // "user@site" links hide where they really go (https://youtube.com@evil.example), so refuse them.
+    if host.is_empty() || host.contains('@') || host.starts_with(':') || host.starts_with('-') {
         return Err(UNSUPPORTED.into());
     }
     Ok(format!("{scheme}://{rest}"))
@@ -338,6 +338,9 @@ mod tests {
         assert_eq!(check_url("youtube.com/watch?v=x").unwrap(), "https://youtube.com/watch?v=x");
         assert_eq!(check_url("example.com:8080/v").unwrap(), "https://example.com:8080/v");
         assert_eq!(check_url("example.com/r?u=http://x").unwrap(), "https://example.com/r?u=http://x");
+        assert!(check_url("https://youtube.com@evil.example/v").is_err());
+        assert!(check_url("youtube.com@evil.example/v").is_err());
+        assert!(check_url("https://example.com/watch?u=a@b").is_ok()); // @ after the site is fine
         for bad in ["", "file:///C:/Windows/win.ini", "file:C:/x", "ytsearch:cats", "javascript:alert(1)", "ftp://example.com/a",
             "--exec calc", "-o x", "https://", "https:///path", "https://a b", "https://a\nb", "https://-x.com/"] {
             assert!(check_url(bad).is_err(), "{bad:?} should be refused");
