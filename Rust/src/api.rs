@@ -178,12 +178,12 @@ pub fn get_state(st: &AppState) -> Value {
         "language": cfg["language"],
         "theme": cfg["theme"],
         "node": crate::tools::program("node").is_some(),
-        "start_page": null,
+        "start_page": tools::explorer::take_start_page(),
         "update_check": cfg["update_check"],
         "sidebar": cfg.get("sidebar").cloned().unwrap_or(Value::Null),
         "remote_power": cfg["remote_power"],
-        "context_menu": false,
-        "explorer": null,
+        "context_menu": tools::explorer::is_enabled(),
+        "explorer": tools::explorer::take_pending(),
         "update": update,
         "updated": take_whats_new()
     });

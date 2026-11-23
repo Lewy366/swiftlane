@@ -21,7 +21,15 @@ use serde_json::json;
 use tauri::{DragDropEvent, Manager, WindowEvent};
 
 fn main() {
-    let minimized = std::env::args().any(|a| a == "--minimized");
+    let cli = tools::explorer::parse_args(std::env::args());
+    if let Some((ref cmd, ref paths)) = cli.explorer {
+        if tools::explorer::try_handoff(cmd, paths) {
+            return;
+        }
+    }
+    tools::explorer::set_start_page(cli.start_page);
+    let minimized = cli.minimized;
+    let initial_explorer = cli.explorer;
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
@@ -34,6 +42,7 @@ fn main() {
                 }
             }
             let handle = app.handle().clone();
+            tools::explorer::start(&handle, initial_explorer);
             if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
                 let _ = transfer::start(&handle);
             }
@@ -66,6 +75,7 @@ fn main() {
             // Closing: links stop working until Swiftlane runs again, so Funnel closes too, and
             // the vault locks (which also wipes files opened from it).
             if let tauri::RunEvent::Exit = event {
+                tools::explorer::shutdown();
                 tools::vault::shutdown();
                 tools::casting::shutdown(app);
                 sharing::shutdown(app);
