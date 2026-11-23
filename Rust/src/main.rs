@@ -5,6 +5,8 @@
 mod api;
 mod config;
 mod notify;
+#[allow(dead_code)] // the share server that uses it comes next
+mod share;
 mod tls;
 mod transfer;
 mod updater;
