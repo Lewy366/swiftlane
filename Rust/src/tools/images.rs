@@ -227,7 +227,8 @@ pub fn encode(img: &RgbaImage, alpha: bool, fmt: Fmt, quality: u8, exif_block: O
                 return Err("JPG pictures can be at most 65535 pixels wide and tall. Make it smaller or pick PNG.".into());
             }
             let mut enc = jpeg_encoder::Encoder::new(&mut buf, quality.clamp(1, 100));
-            enc.set_optimized_huffman_tables(true);
+            // No optimised Huffman tables: the image crate's own JPG reader decodes those files as
+            // solid green, so Swiftlane couldn't reopen what it saved (test: saved_jpg_reopens_with_its_colours).
             enc.set_sampling_factor(jpeg_encoder::SamplingFactor::F_2_2);
             if let Some(icc) = icc {
                 let _ = enc.add_icc_profile(icc);
@@ -803,6 +804,20 @@ mod tests {
     impl Drop for TempDir {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// JPGs Swiftlane saves must open again in Swiftlane with the right colours (not solid green).
+    #[test]
+    fn saved_jpg_reopens_with_its_colours() {
+        let img = RgbaImage::from_fn(64, 48, |x, y| image::Rgba([(x * 4) as u8, (y * 5) as u8, 200, 255]));
+        let bytes = encode(&img, false, Fmt::Jpeg, 90, None, None).unwrap();
+        let back = image::load_from_memory(&bytes).unwrap().to_rgba8();
+        for (x, y) in [(2, 2), (60, 2), (2, 45), (60, 45), (32, 24)] {
+            let (a, b) = (img.get_pixel(x, y), back.get_pixel(x, y));
+            for c in 0..3 {
+                assert!((a[c] as i32 - b[c] as i32).abs() <= 12, "pixel ({x},{y}): saved {a:?}, read back {b:?}");
+            }
         }
     }
 
