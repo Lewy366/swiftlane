@@ -13,11 +13,11 @@
     pdf: 'PDF tools',
   };
   const CURRENT_NOTES = [
-    'Native Rust core with instant startup and lower memory use',
-    'Swiftlane 2.0 interface with full-bleed Home and Topographic backdrop',
-    'Find files with optional NTFS MFT index and safe Duplicate finder',
-    'Startup check manager and offline QR Studio generator & scanner',
-    'Parallel Disk space scanner with smart cleanup advisor',
+    'Full-bleed Home screen with Recent tools, Recent files, and live Patch notes',
+    'Storage & Cleanup: 5-10x faster parallel drive map + optional 2-5s NTFS MFT scan',
+    'Cleanup advisor sorting findings into Safe to remove, Consider, and Should stay',
+    'Built-in Quick clean (caches & Steam leftovers), Downloads tidy, and Steam games',
+    'Find files, Duplicate finder, Startup check, and offline QR Studio',
   ];
 
   let receivedLive = [];
