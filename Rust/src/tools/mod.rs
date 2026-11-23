@@ -16,6 +16,8 @@ mod exif;
 pub mod images;
 mod webp;
 mod convert;
+mod trimmer;
+mod downloader;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -25,6 +27,8 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         pdf::dispatch,
         images::dispatch,
         convert::dispatch,
+        trimmer::dispatch,
+        downloader::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

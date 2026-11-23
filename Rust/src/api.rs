@@ -166,7 +166,7 @@ pub fn get_state(st: &AppState) -> Value {
         "calc_angle": cfg["calc_angle"],
         "language": cfg["language"],
         "theme": cfg["theme"],
-        "node": false,
+        "node": crate::tools::program("node").is_some(),
         "start_page": null,
         "update_check": cfg["update_check"],
         "sidebar": cfg.get("sidebar").cloned().unwrap_or(Value::Null),
