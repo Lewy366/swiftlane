@@ -1,5 +1,7 @@
 # Builds the Rust version of Swiftlane (Rust/) on one of GitHub's Windows machines.
-# The result is Swiftlane.exe under the run's "Artifacts". It is NOT a release: it isn't signed
+# The result is a complete, runnable folder under the run's "Artifacts" (Swiftlane.exe with
+# Source/web built in, plus pinned & SHA-256-verified ffmpeg/ffprobe, pdfium.dll, yt-dlp,
+# calc.py, uninstall.ps1 and airplay-install.ps1). It is NOT a release: it isn't signed
 # with the update key, and installed copies never see it. No secrets are used; read-only access.
 name: Windows app (Rust)
 
@@ -7,10 +9,31 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["Rust/**", "Source/web/**", ".github/workflows/windows-rust.yml"]
+    paths:
+      - "Rust/**"
+      - "Source/web/**"
+      - "Source/toolkit/calc.py"
+      - "Source/uninstall.ps1"
+      - "Source/airplay-install.ps1"
+      - ".github/workflows/windows-rust.yml"
 
 permissions:
   contents: read
+
+env:
+  # Every bundled helper is pinned to an exact version and verified against its SHA-256 (never "latest").
+  FFMPEG_VERSION: "9.1"
+  FFMPEG_URL: "https://github.com/GyanD/codexffmpeg/releases/download/9.1/ffmpeg-9.1-essentials_build.zip"
+  FFMPEG_SHA256: "b9bbbb3acece000cbeec994f856649354e52c773807841e78908374b24d658fd"
+
+  # Matches pdfium-render 0.9.6's default API target (pdfium_8125).
+  PDFIUM_VERSION: "chromium/8125"
+  PDFIUM_URL: "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8125/pdfium-win-x64.tgz"
+  PDFIUM_SHA256: "9a964261760cff52570aabf038ab346d3a5034dd8b30d0d5fe8861235d356b8b"
+
+  YTDLP_VERSION: "2026.10.26"
+  YTDLP_URL: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.26/yt-dlp.exe"
+  YTDLP_SHA256: "f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d"
 
 jobs:
   build:
@@ -21,29 +44,182 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check web scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-ChildItem Source/web -Recurse -Filter '*.js' | ForEach-Object {
+            node --check $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax error in $($_.FullName)" }
+          }
+
+      - name: Fetch and verify pinned helpers (ffmpeg, pdfium.dll, yt-dlp)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+
+          function Fetch-Verified([string]$Url, [string]$Dest, [string]$ExpectedSha256, [string]$Label) {
+            Invoke-WebRequest -Uri $Url -OutFile $Dest -UseBasicParsing
+            $actual = (Get-FileHash $Dest -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $ExpectedSha256.ToLower()) {
+              throw "$Label SHA-256 mismatch: expected $ExpectedSha256, got $actual"
+            }
+            Write-Host "Verified $Label ($actual)"
+          }
+
+          New-Item -ItemType Directory _dl, _deps, _deps/licenses | Out-Null
+
+          # 1. FFmpeg + FFprobe (static Windows x64 essentials build)
+          $ffZip = "_dl/ffmpeg.zip"
+          Fetch-Verified $env:FFMPEG_URL $ffZip $env:FFMPEG_SHA256 "FFmpeg $env:FFMPEG_VERSION"
+          Expand-Archive -Path $ffZip -DestinationPath "_dl/ffmpeg" -Force
+          $ffBin = Get-ChildItem "_dl/ffmpeg" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $fpBin = Get-ChildItem "_dl/ffmpeg" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          $ffLic = Get-ChildItem "_dl/ffmpeg" -Recurse -Filter "LICENSE" | Select-Object -First 1
+          if (-not $ffBin -or -not $fpBin) { throw "ffmpeg.exe or ffprobe.exe missing from archive" }
+          Copy-Item $ffBin.FullName "_deps/ffmpeg.exe"
+          Copy-Item $fpBin.FullName "_deps/ffprobe.exe"
+          if ($ffLic) { Copy-Item $ffLic.FullName "_deps/licenses/FFmpeg-LICENSE.txt" }
+
+          # 2. PDFium (Windows x64 DLL)
+          $pdfTgz = "_dl/pdfium.tgz"
+          Fetch-Verified $env:PDFIUM_URL $pdfTgz $env:PDFIUM_SHA256 "PDFium $env:PDFIUM_VERSION"
+          New-Item -ItemType Directory "_dl/pdfium" | Out-Null
+          tar -xzf $pdfTgz -C "_dl/pdfium"
+          if ($LASTEXITCODE -ne 0) { throw "tar failed extracting pdfium" }
+          $pdfDll = Get-ChildItem "_dl/pdfium" -Recurse -Filter "pdfium.dll" | Select-Object -First 1
+          $pdfLic = Get-ChildItem "_dl/pdfium" -Recurse -Filter "LICENSE" | Select-Object -First 1
+          if (-not $pdfDll) { throw "pdfium.dll missing from archive" }
+          Copy-Item $pdfDll.FullName "_deps/pdfium.dll"
+          if ($pdfLic) { Copy-Item $pdfLic.FullName "_deps/licenses/PDFium-LICENSE.txt" }
+
+          # 3. yt-dlp (standalone Windows x64 exe)
+          Fetch-Verified $env:YTDLP_URL "_deps/yt-dlp.exe" $env:YTDLP_SHA256 "yt-dlp $env:YTDLP_VERSION"
+
+          @(
+            "Bundled third-party helpers (all downloaded from pinned releases and SHA-256 verified in CI):"
+            ""
+            "FFmpeg / FFprobe $env:FFMPEG_VERSION"
+            "  URL:    $env:FFMPEG_URL"
+            "  SHA256: $env:FFMPEG_SHA256"
+            ""
+            "PDFium $env:PDFIUM_VERSION"
+            "  URL:    $env:PDFIUM_URL"
+            "  SHA256: $env:PDFIUM_SHA256"
+            ""
+            "yt-dlp $env:YTDLP_VERSION (Unlicense)"
+            "  URL:    $env:YTDLP_URL"
+            "  SHA256: $env:YTDLP_SHA256"
+          ) | Set-Content "_deps/licenses/SOURCES.txt" -Encoding UTF8
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: Rust
 
       - name: Tests
-        working-directory: Rust
-        run: cargo test --locked
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Put pinned ffmpeg/ffprobe/yt-dlp on PATH so FFmpeg and AVIF tests run in CI too.
+          $env:PATH = "$PWD\_deps;$env:PATH"
+          Push-Location Rust
+          try {
+            cargo test --locked
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
 
       - name: Build
         working-directory: Rust
         run: cargo build --release --locked
 
-      - name: Collect
+      - name: Collect runnable folder
         shell: pwsh
         run: |
-          New-Item -ItemType Directory out | Out-Null
-          New-Item -ItemType Directory out/toolkit | Out-Null
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory out, out/toolkit, out/licenses | Out-Null
+          # Source/web is compiled into Swiftlane.exe via Tauri's frontendDist.
           Copy-Item Rust/target/release/swiftlane.exe out/Swiftlane.exe
           Copy-Item Source/uninstall.ps1 out/uninstall.ps1
           Copy-Item Source/airplay-install.ps1 out/airplay-install.ps1
           Copy-Item Source/toolkit/calc.py out/toolkit/calc.py
-          (Get-FileHash out/Swiftlane.exe -Algorithm SHA256).Hash.ToLower() + "  Swiftlane.exe" | Set-Content out/Swiftlane.exe.sha256
-          Get-Item out/Swiftlane.exe, out/uninstall.ps1, out/airplay-install.ps1, out/toolkit/calc.py | Select-Object Name, Length
+          Copy-Item _deps/ffmpeg.exe out/ffmpeg.exe
+          Copy-Item _deps/ffprobe.exe out/ffprobe.exe
+          Copy-Item _deps/pdfium.dll out/pdfium.dll
+          Copy-Item _deps/yt-dlp.exe out/yt-dlp.exe
+          Copy-Item _deps/licenses/* out/licenses/
+
+          $exeHash = (Get-FileHash out/Swiftlane.exe -Algorithm SHA256).Hash.ToLower()
+          "$exeHash  Swiftlane.exe" | Set-Content out/Swiftlane.exe.sha256
+
+          $manifest = @(
+            "Swiftlane.exe"
+            "ffmpeg.exe"
+            "ffprobe.exe"
+            "pdfium.dll"
+            "yt-dlp.exe"
+            "toolkit/calc.py"
+            "uninstall.ps1"
+            "airplay-install.ps1"
+          )
+          $manifest | ForEach-Object {
+            $h = (Get-FileHash "out/$_" -Algorithm SHA256).Hash.ToLower()
+            "$h  $_"
+          } | Set-Content out/SHA256SUMS.txt
+
+          Get-ChildItem out -Recurse -File | Select-Object FullName, Length
+
+      - name: Smoke-check assembled folder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $required = @(
+            "out/Swiftlane.exe",
+            "out/ffmpeg.exe",
+            "out/ffprobe.exe",
+            "out/pdfium.dll",
+            "out/yt-dlp.exe",
+            "out/toolkit/calc.py",
+            "out/uninstall.ps1",
+            "out/airplay-install.ps1",
+            "out/licenses/SOURCES.txt"
+          )
+          foreach ($f in $required) {
+            if (-not (Test-Path $f) -or (Get-Item $f).Length -eq 0) {
+              throw "Missing or empty bundled file: $f"
+            }
+          }
+
+          # Verify helper binaries start with only Windows system DLLs
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          & "$PWD\out\ffmpeg.exe" -version | Select-Object -First 2
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe failed to run" }
+          & "$PWD\out\ffprobe.exe" -version | Select-Object -First 2
+          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe failed to run" }
+          & "$PWD\out\yt-dlp.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "yt-dlp.exe failed to run" }
+
+          # Verify pdfium.dll loads cleanly without missing CRT dependencies
+          $dllPath = (Resolve-Path "out/pdfium.dll").Path
+          Add-Type -TypeDefinition @"
+          using System;
+          using System.Runtime.InteropServices;
+          public static class DllCheck {
+              [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+              public static extern IntPtr LoadLibraryW(string path);
+              [DllImport("kernel32.dll", SetLastError = true)]
+              public static extern bool FreeLibrary(IntPtr h);
+          }
+          "@
+          $h = [DllCheck]::LoadLibraryW($dllPath)
+          if ($h -eq [IntPtr]::Zero) {
+            $err = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+            throw "pdfium.dll failed to load (Win32 error $err)"
+          }
+          [void][DllCheck]::FreeLibrary($h)
+          Write-Host "pdfium.dll loaded cleanly"
 
       - uses: actions/upload-artifact@v4
         with:
