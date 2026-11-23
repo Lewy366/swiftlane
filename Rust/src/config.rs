@@ -22,8 +22,9 @@ fn defaults() -> Value {
             "transfer": true, "converter": true, "images": true, "downloader": true, "currency": true,
             "calculator": true, "speedtest": true, "adblock": true, "share": true, "pdf": true,
             "trimmer": true, "vault": true, "diskmap": true, "netscan": true, "exposure": true,
-            "contacts": true, "worldclock": true, "remote": false
+            "contacts": true, "worldclock": true, "remote": false, "airplay": true
         },
+        "airplay_on": false,
         "remote_power": false,
         "https_only": false,
         "sort_files": true,

@@ -20,6 +20,7 @@ mod trimmer;
 mod downloader;
 mod currency;
 mod speedtest;
+pub mod casting;
 mod adblock;
 mod netscan;
 mod exposure;
@@ -36,6 +37,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         downloader::dispatch,
         currency::dispatch,
         speedtest::dispatch,
+        casting::dispatch,
         adblock::dispatch,
         netscan::dispatch,
         exposure::dispatch,

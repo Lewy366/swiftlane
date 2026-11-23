@@ -36,8 +36,17 @@ pub fn push(app: &AppHandle, event: &str, data: Value) {
 }
 
 #[tauri::command]
-pub async fn call(app: AppHandle, method: String, args: Vec<Value>) -> Value {
-    tauri::async_runtime::spawn_blocking(move || dispatch(&app, &method, &args))
+pub async fn call(app: AppHandle, window: tauri::WebviewWindow, method: String, args: Vec<Value>) -> Value {
+    // Only the main window reaches Swiftlane's methods. Other windows (a laptop's screen) get just
+    // their own few methods, like the Python version's separate js_api per window.
+    let label = window.label().to_string();
+    tauri::async_runtime::spawn_blocking(move || {
+        if label == "main" {
+            dispatch(&app, &method, &args)
+        } else {
+            tools::casting::viewer_call(&app, &label, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
+        }
+    })
         .await
         .unwrap_or_else(|_| json!({ "error": "Something went wrong inside Swiftlane." }))
 }
@@ -228,7 +237,7 @@ fn set_theme(st: &AppState, theme: &Value) -> Value {
 
 const FEATURES: &[&str] = &[
     "transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts",
-    "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock",
+    "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock", "airplay",
 ];
 
 fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {
@@ -243,6 +252,9 @@ fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {
             } else {
                 transfer::stop(app);
             }
+        }
+        if !on {
+            tools::casting::feature_off(app, name); // AirPlay / casting stop listening with their page
         }
     }
     get_state(st)

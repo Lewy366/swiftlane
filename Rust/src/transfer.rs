@@ -495,6 +495,7 @@ async fn page(State(app): State<AppHandle>, req: Request) -> Response {
         "/manifest.webmanifest" => static_file(&app, "manifest.webmanifest", "application/manifest+json"),
         "/icon-180.png" => static_file(&app, "icon-180.png", "image/png"),
         "/icon-512.png" => static_file(&app, "icon-512.png", "image/png"),
+        "/cast" => static_file(&app, "cast.html", "text/html; charset=utf-8"),
         "/cert" | "/swiftlane.mobileconfig" | "/swiftlane-ca.cer" => cert_file(&app, req.uri().path()),
         _ => json_resp(StatusCode::NOT_FOUND, json!({ "error": "Not found." })),
     }
@@ -705,6 +706,81 @@ async fn upload(State(app): State<AppHandle>, Extension(c): Extension<Conn>, Que
     }
 }
 
+// ---- cast from a browser (tools/casting.rs): only passes the connection descriptions along
+
+#[derive(serde::Deserialize)]
+struct CastQuery {
+    id: Option<String>,
+}
+
+/// The cast hub if casting from a browser is on and the link's code is right (constant time; wrong
+/// codes count towards the same lockout as wrong pairing codes).
+fn cast_hub(app: &AppHandle, ip: IpAddr, headers: &HeaderMap) -> Result<&'static crate::tools::casting::hub::CastHub, Response> {
+    let hub = crate::tools::casting::cast_hub();
+    if !hub.on() {
+        return Err(json_resp(StatusCode::FORBIDDEN, json!({ "error": "Casting to this PC is switched off in Swiftlane." })));
+    }
+    let st = app.state::<AppState>();
+    if hub.check(headers.get("X-Cast-Token").and_then(|v| v.to_str().ok()).unwrap_or("")) {
+        st.transfer.clear(ip);
+        return Ok(hub);
+    }
+    if st.transfer.fail(ip) {
+        config::log(&format!("Locked out {ip} for 15 minutes after {FAIL_LIMIT} wrong codes"));
+    }
+    Err(json_resp(StatusCode::UNAUTHORIZED, json!({ "error": "This link is out of date. Open the new one Swiftlane shows." })))
+}
+
+async fn cast_offer(State(app): State<AppHandle>, Extension(c): Extension<Conn>, req: Request) -> Response {
+    let hub = match cast_hub(&app, c.ip, req.headers()) {
+        Ok(h) => h,
+        Err(r) => return r,
+    };
+    let bad = || json_resp(StatusCode::BAD_REQUEST, json!({ "error": "Bad request." }));
+    let length = req.headers().get(header::CONTENT_LENGTH).and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
+    if !(1..=80 * 1024).contains(&length) {
+        return bad();
+    }
+    let Ok(Ok(body)) = tokio::time::timeout(Duration::from_secs(30), axum::body::to_bytes(req.into_body(), 80 * 1024)).await else {
+        return bad();
+    };
+    let Ok(Value::Object(body)) = serde_json::from_slice::<Value>(&body) else { return bad() };
+    let name = match body.get("name") {
+        Some(Value::String(s)) => s.clone(),
+        None | Some(Value::Null) => String::new(),
+        Some(v) => v.to_string(),
+    };
+    match hub.offer(c.ip, body.get("sdp").and_then(Value::as_str), &name) {
+        Ok(o) => {
+            config::log(&format!("Cast request from {}", c.ip));
+            crate::tools::casting::announce(&app, &o);
+            json_resp(StatusCode::OK, json!({ "id": o.id }))
+        }
+        Err(e @ crate::tools::casting::hub::OfferError::TooMany) => json_resp(StatusCode::TOO_MANY_REQUESTS, json!({ "error": e.message() })),
+        Err(e) => json_resp(StatusCode::BAD_REQUEST, json!({ "error": e.message() })),
+    }
+}
+
+async fn cast_answer(State(app): State<AppHandle>, Extension(c): Extension<Conn>, Query(q): Query<CastQuery>, headers: HeaderMap) -> Response {
+    match cast_hub(&app, c.ip, &headers) {
+        Ok(hub) => json_resp(StatusCode::OK, hub.status(&q.id.unwrap_or_default(), c.ip, c.local.ip())),
+        Err(r) => r,
+    }
+}
+
+async fn cast_end(State(app): State<AppHandle>, Extension(c): Extension<Conn>, Query(q): Query<CastQuery>, headers: HeaderMap) -> Response {
+    match cast_hub(&app, c.ip, &headers) {
+        Ok(hub) => {
+            let id = q.id.unwrap_or_default();
+            if hub.end(&id, Some(c.ip)) {
+                crate::tools::casting::laptop_ended(&app, &id); // close its window on the PC
+            }
+            json_resp(StatusCode::OK, json!({ "ok": true }))
+        }
+        Err(r) => r,
+    }
+}
+
 fn router(app: AppHandle) -> Router {
     Router::new()
         .route("/", get(page))
@@ -714,15 +790,15 @@ fn router(app: AppHandle) -> Router {
         .route("/cert", get(page))
         .route("/swiftlane.mobileconfig", get(page))
         .route("/swiftlane-ca.cer", get(page))
-        .route("/cast", get(not_yet))
+        .route("/cast", get(page))
         .route("/ping", get(ping))
         .route("/api/outbox", get(outbox))
         .route("/dl/{id}/{name}", get(download))
         .route("/upload", post(upload))
         .route("/api/remote", post(not_yet))
-        .route("/api/cast/offer", post(not_yet))
-        .route("/api/cast/end", post(not_yet))
-        .route("/api/cast/answer", get(not_yet))
+        .route("/api/cast/offer", post(cast_offer))
+        .route("/api/cast/end", post(cast_end))
+        .route("/api/cast/answer", get(cast_answer))
         .fallback(page)
         .layer(axum::extract::DefaultBodyLimit::disable()) // uploads check their own size limit
         .layer(axum::middleware::from_fn_with_state(app.clone(), guard))

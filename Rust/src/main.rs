@@ -42,6 +42,7 @@ fn main() {
             let sharer = handle.clone();
             std::thread::spawn(move || sharing::share_loop(sharer));
             tools::vault::start(&handle);
+            tools::casting::start_with_swiftlane(&handle);
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())
@@ -66,6 +67,7 @@ fn main() {
             // the vault locks (which also wipes files opened from it).
             if let tauri::RunEvent::Exit = event {
                 tools::vault::shutdown();
+                tools::casting::shutdown(app);
                 sharing::shutdown(app);
             }
         });
