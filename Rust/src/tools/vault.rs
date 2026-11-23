@@ -1049,7 +1049,14 @@ mod tests {
     }
 
     fn python_ready() -> bool {
-        let ok = Command::new("python3").args(["-B", "-c", "import cryptography"]).output().is_ok_and(|o| o.status.success());
+        // The Python version now lives in the archived swiftlane-deprecated repo; these checks
+        // only run when its vault.py is put back next to the sources.
+        let vault_py = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("Source").join("toolkit").join("vault.py");
+        if !vault_py.is_file() {
+            eprintln!("skipped: Source/toolkit/vault.py (Python version) isn't here");
+            return false;
+        }
+        let ok =Command::new("python3").args(["-B", "-c", "import cryptography"]).output().is_ok_and(|o| o.status.success());
         if !ok {
             eprintln!("skipped: python3 with the cryptography package isn't available");
         }
