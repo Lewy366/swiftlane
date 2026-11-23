@@ -2,6 +2,15 @@
 
 What's new in each version of Swiftlane.
 
+## 2.0.0 (2026-11-23)
+
+- Rebuilt Swiftlane in Rust (Tauri) for faster startup, lower memory usage, and multi-core performance — keeping all your existing settings, pairing codes, contacts, and encrypted vaults.
+- New Swiftlane 2.0 look: Interlocked SL emblem & wordmark, crisp solid slate dark & light themes, Topographic built-in backdrop (custom pictures, GIFs, and videos still supported in Settings), and category-tinted icons on All tools.
+- New: Duplicate finder — fast multi-core SHA-256 duplicate scan with smart keep presets; removed copies only ever go to the Recycle Bin.
+- New: Find files — instant search across hundreds of thousands of files (no-admin folder scan plus an optional read-only NTFS MFT admin scan).
+- New: Startup check — see everything that starts with Windows (Registry Run, Startup folders, Scheduled Tasks) with publisher info and reversible Task Manager-compatible toggles.
+- New: QR Studio — create offline Wi-Fi, link, contact, email, and text QR codes (PNG/SVG/clipboard) and decode QR codes locally from dropped images or pasted screenshots.
+
 ## 1.6.1 (2026-11-22)
 
 - AirPlay is now Screen mirroring, with two more ways in besides iPhone, iPad and Mac.
