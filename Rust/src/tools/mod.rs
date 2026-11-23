@@ -15,6 +15,7 @@ mod pdf;
 mod exif;
 pub mod images;
 mod webp;
+mod convert;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -23,6 +24,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         vault::dispatch,
         pdf::dispatch,
         images::dispatch,
+        convert::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

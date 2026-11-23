@@ -656,7 +656,7 @@ fn place_signature(out: &mut Document, page_id: ObjectId, img: &image::RgbaImage
 
 /// PDFium, loaded once from pdfium.dll in Swiftlane's own folder (never from PATH or the current
 /// folder). None if it's missing or doesn't work.
-fn engine() -> Result<&'static Pdfium, String> {
+pub(super) fn engine() -> Result<&'static Pdfium, String> {
     static ENGINE: OnceLock<Option<Pdfium>> = OnceLock::new();
     ENGINE
         .get_or_init(|| {
@@ -675,7 +675,7 @@ fn engine() -> Result<&'static Pdfium, String> {
         .ok_or_else(|| NO_ENGINE.to_string())
 }
 
-fn open_pdfium<'a>(pdfium: &'a Pdfium, path: &Path) -> Result<PdfDocument<'a>, String> {
+pub(super) fn open_pdfium<'a>(pdfium: &'a Pdfium, path: &Path) -> Result<PdfDocument<'a>, String> {
     check_size(path)?;
     pdfium.load_pdf_from_file(path, None).map_err(|e| match e {
         PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::PasswordError) => LOCKED.to_string(),
