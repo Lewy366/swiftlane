@@ -57,6 +57,8 @@ fn main() {
             std::thread::spawn(move || sharing::share_loop(sharer));
             tools::vault::start(&handle);
             tools::casting::start_with_swiftlane(&handle);
+            let peers_handle = handle.clone();
+            std::thread::spawn(move || tools::peers::sync(&peers_handle));
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())
@@ -80,6 +82,7 @@ fn main() {
             // Closing: links stop working until Swiftlane runs again, so Funnel closes too, and
             // the vault locks (which also wipes files opened from it).
             if let tauri::RunEvent::Exit = event {
+                tools::peers::shutdown();
                 tools::explorer::shutdown();
                 tools::vault::shutdown();
                 tools::casting::shutdown(app);

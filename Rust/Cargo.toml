@@ -54,6 +54,7 @@ pdfium-render = { version = "0.9", default-features = false, features = ["pdfium
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp", "tiff", "ico"] }
 jpeg-encoder = "0.7"
 libwebp-sys = "0.14"
+iroh = "1.2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

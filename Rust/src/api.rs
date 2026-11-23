@@ -260,6 +260,10 @@ fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {
         if name == "share" {
             sharing::feature_switched(app, on);
         }
+        if name == "contacts" {
+            let app_sync = app.clone();
+            std::thread::spawn(move || tools::peers::sync(&app_sync));
+        }
         if name == "transfer" {
             if on {
                 let _ = transfer::start(app);
