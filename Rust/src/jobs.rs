@@ -34,6 +34,7 @@ impl Ctx {
     pub fn check(&self) -> Result<(), JobError> {
         if self.cancelled() { Err(JobError::Cancelled) } else { Ok(()) }
     }
+    #[allow(dead_code)] // for tools still to be ported
     pub fn app(&self) -> &AppHandle {
         &self.app
     }

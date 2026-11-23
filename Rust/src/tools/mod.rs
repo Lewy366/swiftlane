@@ -12,6 +12,9 @@ use tauri_plugin_dialog::DialogExt;
 pub mod diskmap;
 pub mod vault;
 mod pdf;
+mod exif;
+pub mod images;
+mod webp;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -19,6 +22,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         diskmap::dispatch,
         vault::dispatch,
         pdf::dispatch,
+        images::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }
@@ -70,6 +74,7 @@ pub fn command(program: &Path) -> std::process::Command {
 }
 
 /// The folder where received/converted files go by default (Settings > Save received files to).
+#[allow(dead_code)] // for tools still to be ported
 pub fn save_dir(app: &AppHandle) -> PathBuf {
     let st = tauri::Manager::state::<crate::api::AppState>(app);
     let cfg = st.cfg.lock().unwrap();
