@@ -27,5 +27,6 @@ They can't run the app window, Windows APIs, Tailscale or the two-PC tests. Chec
 The owner decided to rebuild Swiftlane in Rust (Tauri) and stop releasing the Python version; the calculator stays a Python helper. The Rust app lives in `Rust/`, shows the same interface (`Source/web`, via `js/bridge.js`) and keeps the same settings files. GitHub builds and tests it on Windows (`.github/workflows/windows-rust.yml`); Linux can `cargo test` locally.
 
 - Done: window and settings, background picture, start with Windows, updater (same signing key), phone transfer incl. encrypted connections (reuses the Python CA), share links incl. request links, previews and Tailscale Funnel.
-- Next: the tools (see `Source/toolkit`), PC remote and casting, then setup/uninstall/Explorer menu and the release pipeline.
+- Tools done: disk space, vault (file-compatible with Python vaults), PDF tools (page drawing needs pdfium.dll shipped next to the exe), image editor. Shared helpers: `jobs.rs`, `tools/mod.rs`.
+- Next: file converter (can reuse images.rs/exif.rs/webp.rs), video trimmer + downloader, network devices, PC exposed, ad blocker, speed test, currency, PC remote, send to contacts, casting, calculator as a Python helper; then setup/uninstall/Explorer menu, shipping ffmpeg/pdfium.dll, and the release pipeline.
 - Tests must never create or delete files outside a fresh temp folder.
