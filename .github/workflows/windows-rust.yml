@@ -194,12 +194,14 @@ jobs:
 
           # Verify helper binaries start with only Windows system DLLs
           $env:PATH = "C:\Windows\System32;C:\Windows"
-          & "$PWD\out\ffmpeg.exe" -version | Select-Object -First 2
-          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe failed to run" }
-          & "$PWD\out\ffprobe.exe" -version | Select-Object -First 2
-          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe failed to run" }
+          $ffOut = & "$PWD\out\ffmpeg.exe" -version
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe failed to run (exit $LASTEXITCODE)" }
+          $ffOut | Select-Object -First 2
+          $fpOut = & "$PWD\out\ffprobe.exe" -version
+          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe failed to run (exit $LASTEXITCODE)" }
+          $fpOut | Select-Object -First 2
           & "$PWD\out\yt-dlp.exe" --version
-          if ($LASTEXITCODE -ne 0) { throw "yt-dlp.exe failed to run" }
+          if ($LASTEXITCODE -ne 0) { throw "yt-dlp.exe failed to run (exit $LASTEXITCODE)" }
 
           # Verify pdfium.dll loads cleanly without missing CRT dependencies
           $dllPath = (Resolve-Path "out/pdfium.dll").Path
