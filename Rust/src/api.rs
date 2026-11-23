@@ -157,6 +157,16 @@ pub fn get_state(st: &AppState) -> Value {
         }),
         None => json!({ "ready": false, "https_only": false, "fingerprint": "", "cert_qr": null, "secure_qr": null }),
     };
+    let start_page = match tools::explorer::take_start_page() {
+        Value::Null => st
+            .cfg
+            .lock()
+            .unwrap()
+            .as_object_mut()
+            .and_then(|m| m.remove("_open_page"))
+            .unwrap_or(Value::Null),
+        v => v,
+    };
     let mut s = json!({
         "version": VERSION,
         "rust": true,
@@ -180,7 +190,7 @@ pub fn get_state(st: &AppState) -> Value {
         "language": cfg["language"],
         "theme": cfg["theme"],
         "node": crate::tools::program("node").is_some(),
-        "start_page": tools::explorer::take_start_page(),
+        "start_page": start_page,
         "update_check": cfg["update_check"],
         "sidebar": cfg.get("sidebar").cloned().unwrap_or(Value::Null),
         "remote_power": cfg["remote_power"],

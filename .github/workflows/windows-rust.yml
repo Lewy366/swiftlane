@@ -37,9 +37,13 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory out | Out-Null
+          New-Item -ItemType Directory out/toolkit | Out-Null
           Copy-Item Rust/target/release/swiftlane.exe out/Swiftlane.exe
+          Copy-Item Source/uninstall.ps1 out/uninstall.ps1
+          Copy-Item Source/airplay-install.ps1 out/airplay-install.ps1
+          Copy-Item Source/toolkit/calc.py out/toolkit/calc.py
           (Get-FileHash out/Swiftlane.exe -Algorithm SHA256).Hash.ToLower() + "  Swiftlane.exe" | Set-Content out/Swiftlane.exe.sha256
-          Get-Item out/Swiftlane.exe | Select-Object Name, Length
+          Get-Item out/Swiftlane.exe, out/uninstall.ps1, out/airplay-install.ps1, out/toolkit/calc.py | Select-Object Name, Length
 
       - uses: actions/upload-artifact@v4
         with:

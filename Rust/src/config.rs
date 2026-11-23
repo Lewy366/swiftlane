@@ -67,6 +67,11 @@ pub fn load() -> Value {
         }
     }
     let mut changed = false;
+    if let Some(exe_dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(PathBuf::from)) {
+        if apply_installer_choices(&mut cfg, &exe_dir.join("setup-choices.json")) {
+            changed = true;
+        }
+    }
     if cfg["save_dir"].as_str().map_or(true, str::is_empty) {
         let docs = dirs::document_dir().unwrap_or_else(|| config_dir().join(".."));
         cfg["save_dir"] = json!(docs.join("Swiftlane").to_string_lossy());
@@ -162,11 +167,98 @@ fn format_utc(secs: u64) -> String {
     format!("{y:04}-{mo:02}-{d:02} {h:02}:{m:02}:{s:02} UTC")
 }
 
+/// Applies choices saved by Swiftlane Setup (`setup-choices.json` next to `Swiftlane.exe`) once
+/// per install stamp. Never touches the pairing code.
+pub fn apply_installer_choices(cfg: &mut Value, path: &std::path::Path) -> bool {
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return false;
+    };
+    let Ok(choices) = serde_json::from_str::<Value>(&text) else {
+        return false;
+    };
+    let Some(stamp) = choices.get("stamp").filter(|v| !v.is_null()) else {
+        return false;
+    };
+    if cfg.get("setup_applied") == Some(stamp) {
+        return false;
+    }
+    for key in ["save_dir", "sort_files", "download_dir", "calc_angle", "language", "notify"] {
+        if let Some(v) = choices.get(key) {
+            cfg[key] = v.clone();
+        }
+    }
+    if let (Some(dst), Some(src)) = (
+        cfg.get_mut("features").and_then(Value::as_object_mut),
+        choices.get("features").and_then(Value::as_object),
+    ) {
+        for (k, v) in src {
+            if dst.contains_key(k) {
+                dst.insert(k.clone(), json!(v.as_bool().unwrap_or(false)));
+            }
+        }
+    }
+    if let (Some(dst), Some(src)) = (
+        cfg.get_mut("theme").and_then(Value::as_object_mut),
+        choices.get("theme").and_then(Value::as_object),
+    ) {
+        for (k, v) in src {
+            if k != "background" && dst.contains_key(k) {
+                dst.insert(k.clone(), v.clone());
+            }
+        }
+    }
+    if let Some(page) = choices.get("open_page").and_then(Value::as_str).filter(|s| !s.is_empty()) {
+        cfg["_open_page"] = json!(page);
+    }
+    cfg["setup_applied"] = stamp.clone();
+    log(&format!("Applied choices from Swiftlane Setup ({stamp})"));
+    true
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn utc_dates() {
         assert_eq!(super::format_utc(0), "1970-01-01 00:00:00 UTC");
         assert_eq!(super::format_utc(1_795_000_000), "2026-11-18 11:06:40 UTC");
+    }
+
+    #[test]
+    fn applies_setup_choices_once_without_touching_code() {
+        let mut b = [0u8; 6];
+        getrandom::getrandom(&mut b).unwrap();
+        let dir = std::env::temp_dir().join(format!("swl-cfg-test-{}", hex::encode(b)));
+        std::fs::create_dir(&dir).unwrap();
+        let choices_path = dir.join("setup-choices.json");
+        std::fs::write(
+            &choices_path,
+            json!({
+                "stamp": "2026-11-23T19:00:00Z",
+                "language": "de",
+                "code": "SHOULD-NOT-OVERWRITE",
+                "features": { "remote": true, "bogus": true },
+                "theme": { "accent": "violet", "background": true },
+                "open_page": "connect"
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let mut cfg = defaults();
+        cfg["code"] = json!("KEEPME");
+        assert!(apply_installer_choices(&mut cfg, &choices_path));
+        assert_eq!(cfg["language"], "de");
+        assert_eq!(cfg["code"], "KEEPME");
+        assert_eq!(cfg["features"]["remote"], true);
+        assert!(cfg["features"].get("bogus").is_none());
+        assert_eq!(cfg["theme"]["accent"], "violet");
+        assert_eq!(cfg["theme"]["background"], false);
+        assert_eq!(cfg["_open_page"], "connect");
+
+        // Second call with the same stamp is a no-op
+        assert!(!apply_installer_choices(&mut cfg, &choices_path));
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }
