@@ -287,7 +287,7 @@ fn sanitize_label(text: &str) -> String {
         .collect()
 }
 
-fn reverse_name(ip: &str) -> Option<String> {
+pub fn reverse_name(ip: &str) -> Option<String> {
     let ip_owned = ip.to_string();
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
