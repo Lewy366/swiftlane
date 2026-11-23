@@ -1,0 +1,10 @@
+{
+  "_note": "Size presets for Shrink to size. MB means 1,000,000 bytes, so a file that fits here fits however the other side counts. Edit this list to update the limits.",
+  "min_mb": 0.5,
+  "max_mb": 2000,
+  "presets": [
+    { "id": "discord", "name": "Discord", "mb": 10 },
+    { "id": "whatsapp", "name": "WhatsApp", "mb": 16 },
+    { "id": "email", "name": "Email", "mb": 25 }
+  ]
+}

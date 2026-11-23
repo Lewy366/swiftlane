@@ -673,6 +673,12 @@ async fn upload(State(app): State<AppHandle>, Extension(c): Extension<Conn>, Que
         return r;
     }
     let headers = req.headers().clone();
+    // Photos from the phone's camera (Phone camera page): same authorization as above, but they
+    // wait in a private temporary folder with their own, smaller limits.
+    if headers.get("X-Capture").is_some() {
+        let (code, body) = crate::tools::phonecam::receive(&app, c.ip, headers, req).await;
+        return json_resp(code, body);
+    }
     if headers.get(header::TRANSFER_ENCODING).is_some() {
         return json_resp(StatusCode::LENGTH_REQUIRED, json!({ "error": "Content-Length required." }));
     }

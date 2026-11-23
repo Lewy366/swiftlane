@@ -74,7 +74,7 @@ App.on('dropped', files => {
 // Files from Explorer's right-click menu: open the right tool with them
 function fromExplorer(r) {
   if (!r) return;
-  const page = { share: 'share', send: 'transfer', convert: 'converter' }[r.cmd];
+  const page = { share: 'share', send: 'transfer', convert: 'converter', shrink: 'shrink' }[r.cmd];
   showPage(page);
   if (r.cmd === 'share') App.pages.share.dropAll({ files: r.files, folders: r.folders });
   else if (r.files.length) App.pages[page].drop(r.files);

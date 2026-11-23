@@ -1,0 +1,62 @@
+// Translations for Phone camera & document scan (added to i18n.js's tables).
+Object.assign(I18N.de, {
+  'Phone camera': 'Handy-Kamera', 'Photos from your phone camera, and document scans to JPG or PDF': 'Fotos von der Handykamera und Dokumentscans als JPG oder PDF',
+  'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Fotos, die du am Handy mit Kamera / Scan aufnimmst, warten hier. Nutze eins als Foto oder entzerre eine Seite zu einem sauberen Scan. Gespeichert wird erst, wenn du klickst.',
+  'From your phone': 'Von deinem Handy', 'Remove all': 'Alle entfernen', 'No photos yet': 'Noch keine Fotos',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. It shows up here. Photos are kept in a private temporary folder and deleted when Swiftlane closes.': 'Öffne Swiftlane am Handy, tippe auf Kamera / Scan und mach ein Foto. Es erscheint hier. Fotos liegen in einem privaten temporären Ordner und werden beim Schließen von Swiftlane gelöscht.',
+  'Use as photo': 'Als Foto speichern', 'Scan document': 'Dokument scannen', 'Remove this photo': 'Dieses Foto entfernen', 'Scanned pages': 'Gescannte Seiten',
+  'Drag a page or use the arrows to put them in order. The PDF follows this order.': 'Ziehe eine Seite oder nutze die Pfeile, um die Reihenfolge festzulegen. Das PDF folgt dieser Reihenfolge.',
+  'Save as PDF': 'Als PDF speichern', 'Add to an existing PDF…': 'An ein vorhandenes PDF anhängen…', 'Save as JPG': 'Als JPG speichern', 'Remove all pages': 'Alle Seiten entfernen',
+  'Scans are saved as new files with no camera or location data. A PDF you add to is never changed: the result is a new file.': 'Scans werden als neue Dateien ohne Kamera- oder Standortdaten gespeichert. Ein PDF, an das du anhängst, wird nie verändert: Das Ergebnis ist eine neue Datei.',
+  '← Back': '← Zurück', 'Drag the four corners onto the corners of the page.': 'Ziehe die vier Ecken auf die Ecken der Seite.', 'Reset corners': 'Ecken zurücksetzen',
+  'Put the corners back inside the photo\'s edges': 'Ecken wieder an den Fotorand setzen', 'Result': 'Ergebnis', 'Placing the corners…': 'Ecken werden gesetzt…', 'Look': 'Aussehen',
+  'Original colour': 'Originalfarbe', 'Grayscale': 'Graustufen', 'Black & white': 'Schwarzweiß', 'Turn': 'Drehen', 'Turn left': 'Nach links drehen', 'Turn right': 'Nach rechts drehen',
+  'Add page to scan': 'Seite zum Scan hinzufügen', 'Save this page as JPG': 'Diese Seite als JPG speichern', 'Page added': 'Seite hinzugefügt', 'New photo from your phone': 'Neues Foto von deinem Handy',
+  'Move the corners until the result looks right first.': 'Verschiebe zuerst die Ecken, bis das Ergebnis passt.', 'PDF saved': 'PDF gespeichert', 'New PDF saved': 'Neues PDF gespeichert',
+  'Move earlier': 'Früher', 'Move later': 'Später', 'Remove this page': 'Diese Seite entfernen', 'Photo with four draggable corners': 'Foto mit vier ziehbaren Ecken',
+  'Keys 1 to 4 pick a corner, the arrow keys move it (Shift for bigger steps).': 'Tasten 1 bis 4 wählen eine Ecke, die Pfeiltasten bewegen sie (Umschalt für größere Schritte).',
+  'Move the corners so they make a four-sided shape that doesn\'t cross over itself.': 'Verschiebe die Ecken so, dass ein Viereck ohne Überkreuzung entsteht.',
+  'That photo isn\'t there anymore.': 'Dieses Foto ist nicht mehr da.', 'There are no pages to save.': 'Es gibt keine Seiten zum Speichern.',
+});
+Object.assign(I18N.pl, {
+  'Phone camera': 'Aparat telefonu', 'Photos from your phone camera, and document scans to JPG or PDF': 'Zdjęcia z aparatu telefonu i skany dokumentów do JPG lub PDF',
+  'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Zdjęcia zrobione przyciskiem Aparat / Skan na telefonie czekają tutaj. Użyj ich jako zdjęć albo wyprostuj stronę w czysty skan. Nic nie jest zapisywane, dopóki nie klikniesz.',
+  'From your phone': 'Z twojego telefonu', 'Remove all': 'Usuń wszystkie', 'No photos yet': 'Jeszcze brak zdjęć',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. It shows up here. Photos are kept in a private temporary folder and deleted when Swiftlane closes.': 'Na telefonie otwórz Swiftlane, stuknij Aparat / Skan i zrób zdjęcie. Pojawi się tutaj. Zdjęcia leżą w prywatnym folderze tymczasowym i są usuwane po zamknięciu Swiftlane.',
+  'Use as photo': 'Zapisz jako zdjęcie', 'Scan document': 'Skanuj dokument', 'Remove this photo': 'Usuń to zdjęcie', 'Scanned pages': 'Zeskanowane strony',
+  'Drag a page or use the arrows to put them in order. The PDF follows this order.': 'Przeciągnij stronę lub użyj strzałek, aby ustawić kolejność. PDF zachowa tę kolejność.',
+  'Save as PDF': 'Zapisz jako PDF', 'Add to an existing PDF…': 'Dodaj do istniejącego PDF…', 'Save as JPG': 'Zapisz jako JPG', 'Remove all pages': 'Usuń wszystkie strony',
+  'Scans are saved as new files with no camera or location data. A PDF you add to is never changed: the result is a new file.': 'Skany są zapisywane jako nowe pliki bez danych o aparacie i lokalizacji. PDF, do którego dodajesz, nigdy się nie zmienia: wynik to nowy plik.',
+  '← Back': '← Wstecz', 'Drag the four corners onto the corners of the page.': 'Przeciągnij cztery rogi na rogi strony.', 'Reset corners': 'Resetuj rogi',
+  'Put the corners back inside the photo\'s edges': 'Ustaw rogi z powrotem przy krawędziach zdjęcia', 'Result': 'Wynik', 'Placing the corners…': 'Ustawianie rogów…', 'Look': 'Wygląd',
+  'Original colour': 'Oryginalne kolory', 'Grayscale': 'Skala szarości', 'Black & white': 'Czarno-biały', 'Turn': 'Obróć', 'Turn left': 'Obróć w lewo', 'Turn right': 'Obróć w prawo',
+  'Add page to scan': 'Dodaj stronę do skanu', 'Save this page as JPG': 'Zapisz tę stronę jako JPG', 'Page added': 'Strona dodana', 'New photo from your phone': 'Nowe zdjęcie z telefonu',
+  'Move the corners until the result looks right first.': 'Najpierw przesuń rogi, aż wynik będzie dobry.', 'PDF saved': 'PDF zapisany', 'New PDF saved': 'Nowy PDF zapisany',
+  'Move earlier': 'Przesuń wcześniej', 'Move later': 'Przesuń później', 'Remove this page': 'Usuń tę stronę', 'Photo with four draggable corners': 'Zdjęcie z czterema przeciąganymi rogami',
+  'Keys 1 to 4 pick a corner, the arrow keys move it (Shift for bigger steps).': 'Klawisze 1 do 4 wybierają róg, strzałki go przesuwają (Shift: większe kroki).',
+  'Move the corners so they make a four-sided shape that doesn\'t cross over itself.': 'Ustaw rogi tak, aby tworzyły czworokąt bez przecinania się.',
+  'That photo isn\'t there anymore.': 'Tego zdjęcia już nie ma.', 'There are no pages to save.': 'Brak stron do zapisania.',
+});
+Object.assign(I18N.it, {
+  'Phone camera': 'Fotocamera del telefono', 'Photos from your phone camera, and document scans to JPG or PDF': 'Foto della fotocamera del telefono e scansioni di documenti in JPG o PDF',
+  'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Le foto scattate con Fotocamera / Scansione sul telefono aspettano qui. Usane una come foto oppure raddrizza una pagina in una scansione pulita. Nulla viene salvato finché non clicchi.',
+  'From your phone': 'Dal tuo telefono', 'Remove all': 'Rimuovi tutto', 'No photos yet': 'Ancora nessuna foto',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. It shows up here. Photos are kept in a private temporary folder and deleted when Swiftlane closes.': 'Sul telefono apri Swiftlane, tocca Fotocamera / Scansione e scatta una foto. Compare qui. Le foto restano in una cartella temporanea privata e vengono eliminate alla chiusura di Swiftlane.',
+  'Use as photo': 'Usa come foto', 'Scan document': 'Scansiona documento', 'Remove this photo': 'Rimuovi questa foto', 'Scanned pages': 'Pagine scansionate',
+  'Drag a page or use the arrows to put them in order. The PDF follows this order.': 'Trascina una pagina o usa le frecce per ordinarle. Il PDF segue questo ordine.',
+  'Save as PDF': 'Salva come PDF', 'Add to an existing PDF…': 'Aggiungi a un PDF esistente…', 'Save as JPG': 'Salva come JPG', 'Remove all pages': 'Rimuovi tutte le pagine',
+  'Scans are saved as new files with no camera or location data. A PDF you add to is never changed: the result is a new file.': 'Le scansioni sono salvate come nuovi file senza dati della fotocamera o della posizione. Un PDF a cui aggiungi non viene mai modificato: il risultato è un nuovo file.',
+  '← Back': '← Indietro', 'Drag the four corners onto the corners of the page.': 'Trascina i quattro angoli sugli angoli della pagina.', 'Reset corners': 'Reimposta angoli',
+  'Put the corners back inside the photo\'s edges': 'Riporta gli angoli ai bordi della foto', 'Result': 'Risultato', 'Placing the corners…': 'Posizionamento degli angoli…', 'Look': 'Aspetto',
+  'Original colour': 'Colore originale', 'Grayscale': 'Scala di grigi', 'Black & white': 'Bianco e nero', 'Turn': 'Ruota', 'Turn left': 'Ruota a sinistra', 'Turn right': 'Ruota a destra',
+  'Add page to scan': 'Aggiungi pagina alla scansione', 'Save this page as JPG': 'Salva questa pagina come JPG', 'Page added': 'Pagina aggiunta', 'New photo from your phone': 'Nuova foto dal telefono',
+  'Move the corners until the result looks right first.': 'Prima sposta gli angoli finché il risultato è giusto.', 'PDF saved': 'PDF salvato', 'New PDF saved': 'Nuovo PDF salvato',
+  'Move earlier': 'Sposta prima', 'Move later': 'Sposta dopo', 'Remove this page': 'Rimuovi questa pagina', 'Photo with four draggable corners': 'Foto con quattro angoli trascinabili',
+  'Keys 1 to 4 pick a corner, the arrow keys move it (Shift for bigger steps).': 'I tasti da 1 a 4 scelgono un angolo, le frecce lo spostano (Maiusc per passi più grandi).',
+  'Move the corners so they make a four-sided shape that doesn\'t cross over itself.': 'Sposta gli angoli in modo da formare un quadrilatero senza incroci.',
+  'That photo isn\'t there anymore.': 'Questa foto non c\'è più.', 'There are no pages to save.': 'Non ci sono pagine da salvare.',
+});
+// "Photo 3" names come from the PC side.
+I18N_PATTERNS.de.push([/^Photo (\d+)$/, 'Foto $1']);
+I18N_PATTERNS.pl.push([/^Photo (\d+)$/, 'Zdjęcie $1']);
+I18N_PATTERNS.it.push([/^Photo (\d+)$/, 'Foto $1']);

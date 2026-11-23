@@ -22,6 +22,7 @@ pub mod images;
 mod webp;
 mod convert;
 mod trimmer;
+pub mod shrink;
 mod downloader;
 mod currency;
 mod speedtest;
@@ -34,6 +35,7 @@ pub mod calc;
 pub mod explorer;
 pub mod uninstall;
 pub mod peers;
+pub mod phonecam;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -49,6 +51,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         images::dispatch,
         convert::dispatch,
         trimmer::dispatch,
+        shrink::dispatch,
         downloader::dispatch,
         currency::dispatch,
         speedtest::dispatch,
@@ -60,6 +63,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         calc::dispatch,
         explorer::dispatch,
         peers::dispatch,
+        phonecam::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

@@ -781,6 +781,12 @@ input.trim-range::-webkit-slider-thumb { pointer-events: auto; width: 12px; heig
 .trim-times { display: grid; grid-template-columns: 140px 1fr 140px; gap: 12px; align-items: end; margin-top: 10px; }
 .trim-times b { text-align: center; padding-bottom: 9px; }
 
+/* ---------- shrink to size */
+.shrink-prog { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.shrink-prog .bar { height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+.shrink-prog .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+#shrinkWarn[data-level="bad"] { background: color-mix(in srgb, #e5484d 14%, transparent); }
+
 /* ---------- vault */
 .vault-form { display: grid; grid-template-columns: minmax(0, 360px) auto; gap: 8px 14px; align-items: end; }
 .vault-form .field { grid-column: 1; }
@@ -1194,3 +1200,12 @@ body.on-home #page-home { max-width: none; height: 100%; flex: 1; display: flex;
 .cl-row .sub { white-space: normal; }
 .cl-size { font: 600 12.5px var(--mono); color: var(--text); white-space: nowrap; min-width: 72px; text-align: right; }
 .cl-acts { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ---------- phone camera & document scan */
+.cam-stage { background: var(--sunken); touch-action: none; }
+.cam-stage canvas { outline: none; cursor: default; }
+.cam-stage canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.cam-result { min-height: 120px; max-height: 300px; display: grid; place-items: center; border-radius: 8px; background: var(--sunken); border: 1px solid var(--line); overflow: hidden; padding: 6px; text-align: center; }
+.cam-result img { display: block; max-width: 100%; max-height: 286px; object-fit: contain; background: #fff; border-radius: 4px; }
+#camLook { width: 100%; }
+#camLook button { flex: 1; }

@@ -10,6 +10,7 @@
     download: 'Video downloader',
     trimmer: 'Video trimmer',
     trim: 'Video trimmer',
+    shrink: 'Shrink to size',
     pdf: 'PDF tools',
   };
   const CURRENT_NOTES = [

@@ -95,6 +95,17 @@
   .orb svg { width: 36px; height: 36px; stroke: var(--on-accent); }
   .drop strong { display: block; font-size: 20px; letter-spacing: -.01em; }
   .drop span { color: var(--muted); font-size: 14px; }
+  .cam { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 14px; cursor: pointer; min-height: 64px; }
+  .cam:active { transform: scale(.98); }
+  .cam input { display: none; }
+  .camicon { flex: none; width: 52px; height: 52px; border-radius: 18px; background: var(--accent); display: grid; place-items: center; }
+  .camicon svg { width: 26px; height: 26px; stroke: var(--on-accent); }
+  .cam strong { display: block; font-size: 17px; letter-spacing: -.01em; }
+  .cam span { color: var(--muted); font-size: 13px; }
+  .camnext { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .camnext span { flex: 1; font-size: 14px; }
+  .camnext .btn { width: auto; margin: 0; padding: 12px 16px; font-size: 15px; }
+  .camnext .btn.ghost { background: transparent; color: var(--muted); }
 
   .list { margin-top: 14px; padding: 6px 14px; }
   .list:empty { display: none; }
@@ -164,6 +175,16 @@
     </nav>
 
     <div id="send">
+      <label class="cam glass">
+        <input type="file" id="cam" accept="image/*" capture="environment">
+        <div class="camicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg></div>
+        <div><strong>Camera / Scan</strong><span>Take a photo or scan a page. It appears in Swiftlane on your PC.</span></div>
+      </label>
+      <div class="camnext glass" id="camNext" hidden>
+        <span id="camCount">Sent</span>
+        <button class="btn" id="camAgain">Take another</button>
+        <button class="btn ghost" id="camDone">Done</button>
+      </div>
       <label class="drop glass">
         <input type="file" id="files" multiple>
         <div class="orb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
@@ -318,11 +339,12 @@ document.querySelectorAll('.rbtn').forEach(b => b.onclick = async () => {
 $('cancelShutdown').onclick = async () => { if (await press('shutdown_cancel')) { $('cancelBar').hidden = true; $('remoteMsg').textContent = tr('Shutdown cancelled'); } };
 
 // ---------- send to PC
-function upload(file, ui) {
+function upload(file, ui, capture) {
   return new Promise(resolve => {
     const x = new XMLHttpRequest();
     x.open('POST', '/upload?name=' + encodeURIComponent(file.name));
     x.setRequestHeader('X-Token', code);
+    if (capture) x.setRequestHeader('X-Capture', '1');  // a camera shot: waits in the PC's Phone camera page
     x.upload.onprogress = e => {
       if (!e.lengthComputable) return;
       ui.fill.style.width = (100 * e.loaded / e.total) + '%';
@@ -346,6 +368,24 @@ $('files').onchange = async e => {
   });
   for (let i = 0; i < files.length; i++) await upload(files[i], rows[i]);
 };
+
+// ---------- camera / scan: the phone's own camera app, one shot after another
+let camSent = 0;
+$('cam').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  for (const f of files) {
+    const ui = itemRow(f.name || 'Photo.jpg'); ui.sub.textContent = 'Waiting…';
+    ui.bar = el('div', 'bar'); ui.fill = el('i'); ui.bar.append(ui.fill); ui.meta.append(ui.bar);
+    $('sendList').prepend(ui.row);
+    if (await upload(f, ui, true)) camSent++;
+  }
+  if (camSent) {
+    $('camCount').textContent = camSent + (camSent === 1 ? ' photo sent' : ' photos sent');
+    $('camNext').hidden = false;
+  }
+};
+$('camAgain').onclick = () => $('cam').click();
+$('camDone').onclick = () => { $('camNext').hidden = true; camSent = 0; };
 
 // ---------- from PC
 async function poll() {
@@ -457,7 +497,10 @@ const L = {
         'Pair with a different code': 'Associa con un altro codice', 'Waiting…': 'In attesa…', 'Failed': 'Non riuscito', 'Connection lost': 'Connessione persa', 'Save': 'Salva',
         'Wrong pairing code.': 'Codice errato.', 'Can’t reach your PC. Is Swiftlane open, and are you on the same Wi-Fi?': 'PC non raggiungibile. Swiftlane è aperto e sei sulla stessa rete Wi-Fi?' },
 };
-Object.assign(L.de, { 'Loading…': 'Wird geladen…', 'Ready. Tap Save again.': 'Bereit. Tippe nochmal auf Sichern.', 'Saved': 'Gesichert' });
+Object.assign(L.de, { 'Camera / Scan': 'Kamera / Scan', 'Take a photo or scan a page. It appears in Swiftlane on your PC.': 'Foto aufnehmen oder Seite scannen. Es erscheint in Swiftlane am PC.', 'Take another': 'Noch eins', 'Done': 'Fertig', 'photo sent': 'Foto gesendet', 'photos sent': 'Fotos gesendet' });
+Object.assign(L.pl, { 'Camera / Scan': 'Aparat / Skan', 'Take a photo or scan a page. It appears in Swiftlane on your PC.': 'Zrób zdjęcie lub zeskanuj stronę. Pojawi się w Swiftlane na komputerze.', 'Take another': 'Zrób kolejne', 'Done': 'Gotowe', 'photo sent': 'zdjęcie wysłane', 'photos sent': 'zdjęcia wysłane' });
+Object.assign(L.it, { 'Camera / Scan': 'Fotocamera / Scansione', 'Take a photo or scan a page. It appears in Swiftlane on your PC.': 'Scatta una foto o scansiona una pagina. Compare in Swiftlane sul PC.', 'Take another': 'Scattane un’altra', 'Done': 'Fine', 'photo sent': 'foto inviata', 'photos sent': 'foto inviate' });
+Object.assign(L.de, { 'Loading…':'Wird geladen…', 'Ready. Tap Save again.': 'Bereit. Tippe nochmal auf Sichern.', 'Saved': 'Gesichert' });
 Object.assign(L.pl, { 'Loading…': 'Wczytywanie…', 'Ready. Tap Save again.': 'Gotowe. Stuknij Zapisz jeszcze raz.', 'Saved': 'Zapisano' });
 Object.assign(L.it, { 'Loading…': 'Caricamento…', 'Ready. Tap Save again.': 'Pronto. Tocca di nuovo Salva.', 'Saved': 'Salvato' });
 Object.assign(L.de, { 'Encrypt this connection': 'Verbindung verschlüsseln', "Your phone and PC aren't talking over an encrypted connection yet. Tap to set it up (once).": 'Handy und PC sind noch nicht verschlüsselt verbunden. Tippe, um es einmalig einzurichten.' });

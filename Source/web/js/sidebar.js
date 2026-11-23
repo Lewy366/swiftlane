@@ -9,6 +9,7 @@ const TOOLS = [
   { id: 'converter', name: 'File converter', icon: 'convert', feature: 'converter', cat: 'files', desc: 'Images, video, audio and PDF', keys: 'convert jpg png mp4 mp3 heic' },
   { id: 'pdf', name: 'PDF tools', icon: 'pdf', feature: 'pdf', cat: 'files', desc: 'Merge, split, reorder, rotate, sign, make smaller', keys: 'pdf merge split sign compress pages', home: 'Files & media' },
   { id: 'trimmer', name: 'Video trimmer', icon: 'scissors', feature: 'trimmer', cat: 'files', desc: 'Cut clips, shrink them to send, keep the sound', keys: 'video cut trim clip discord whatsapp mp3', home: 'Files & media' },
+  { id: 'shrink', name: 'Shrink to size', icon: 'shrink', feature: 'trimmer', cat: 'files', desc: 'Make a video or picture fit Discord, WhatsApp or email', keys: 'shrink compress smaller size discord whatsapp email 10mb 25mb video picture photo reduce', home: 'Files & media' },
   { id: 'vault', name: 'Vault', icon: 'lock', feature: 'vault', cat: 'security', desc: 'Files only your password opens', keys: 'vault encrypt password private safe secret lock', home: 'Security' },
   { id: 'diskmap', name: 'Storage & Cleanup', icon: 'disk', feature: 'diskmap', cat: 'files', desc: 'Drive map, quick cache cleaner, Downloads tidy & Steam games', keys: 'storage cleanup disk space cleaner drive treemap steam downloads cache free', home: 'Files & media' },
   { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', cat: 'security', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
@@ -24,6 +25,7 @@ const TOOLS = [
   { id: 'calculator', name: 'Calculator', icon: 'calc', feature: 'calculator', cat: 'everyday', desc: 'Scientific, ClassWiz style', keys: 'math casio maths' },
   { id: 'speedtest', name: 'Speed test', icon: 'gauge', feature: 'speedtest', cat: 'network', desc: 'Download, upload and ping', keys: 'internet speed mbps ping' },
   { id: 'adblock', name: 'Ad blocker test', icon: 'shield', feature: 'adblock', cat: 'network', desc: 'Are ads and trackers blocked?', keys: 'ads tracker dns' },
+  { id: 'phonecam', name: 'Phone camera', icon: 'camera', feature: 'transfer', cat: 'transfer', desc: 'Photos from your phone camera, and document scans to JPG or PDF', keys: 'phone camera scan document photo pdf flatten perspective page', home: 'Files & media' },
 ];
 const DEFAULT_LAYOUT = {
   pinned: ['transfer', 'share', 'contacts'],

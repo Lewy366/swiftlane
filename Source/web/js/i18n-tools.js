@@ -388,3 +388,53 @@ Object.assign(I18N.it, {
   "Already setting it up.": "Configurazione già in corso.", "Windows couldn't install Wireless Display. Try Settings > System > Optional features.": "Windows non è riuscito a installare Schermo wireless. Prova Impostazioni > Sistema > Funzionalità facoltative.",
   "Wireless Display isn't installed yet.": "Schermo wireless non è ancora installato.",
 });
+
+// Shrink to size
+Object.assign(I18N.de, {
+  'Shrink to size': 'Auf Größe bringen', 'Make a video or picture fit Discord, WhatsApp or email': 'Video oder Bild passend für Discord, WhatsApp oder E-Mail machen',
+  'Make a video or picture small enough to send. When it\'s ready it\'s on your clipboard: press Ctrl+V in Discord, WhatsApp or Explorer. The original stays as it is.': 'Mach ein Video oder Bild klein genug zum Senden. Fertig liegt es in der Zwischenablage: Strg+V in Discord, WhatsApp oder im Explorer. Das Original bleibt unverändert.',
+  'Drop a video or picture here': 'Video oder Bild hier ablegen', 'or click to choose · you can also right-click a file in Explorer': 'oder klicken zum Auswählen · oder Rechtsklick auf eine Datei im Explorer',
+  'Other file…': 'Andere Datei…', 'Make it fit': 'Passend machen', 'Custom': 'Eigene', 'Shrink': 'Verkleinern', 'Trim it first…': 'Erst kürzen…', 'Shrink anyway': 'Trotzdem verkleinern',
+  'Copy file': 'Datei kopieren', 'Save as…': 'Speichern unter…', 'Show in folder': 'Im Ordner zeigen', 'Ready': 'Fertig', 'Copied: press Ctrl+V to paste': 'Kopiert: mit Strg+V einfügen', 'Saved': 'Gespeichert',
+  'The shrunk file is kept in a private folder that Swiftlane empties when it closes. Use Save as… to keep it.': 'Die verkleinerte Datei liegt in einem privaten Ordner, den Swiftlane beim Schließen leert. Mit „Speichern unter…“ behältst du sie.',
+  'Saved as a JPEG. Swiftlane lowers the quality first and the size only if it has to.': 'Wird als JPEG gespeichert. Swiftlane senkt zuerst die Qualität und die Größe nur wenn nötig.',
+  'Shrink to size works on videos and pictures.': 'Auf Größe bringen funktioniert mit Videos und Bildern.', 'Wait for the current file, or cancel it first.': 'Warte auf die aktuelle Datei oder brich sie ab.',
+  'Looking at the video (1 of 2)…': 'Video wird analysiert (1 von 2)…', 'Encoding (2 of 2)…': 'Kodierung (2 von 2)…', 'A little over, trying again…': 'Etwas zu groß, neuer Versuch…', 'Shrinking the picture…': 'Bild wird verkleinert…',
+});
+Object.assign(I18N.pl, {
+  'Shrink to size': 'Zmniejsz do rozmiaru', 'Make a video or picture fit Discord, WhatsApp or email': 'Dopasuj wideo lub zdjęcie do Discorda, WhatsAppa lub e-maila',
+  'Make a video or picture small enough to send. When it\'s ready it\'s on your clipboard: press Ctrl+V in Discord, WhatsApp or Explorer. The original stays as it is.': 'Zmniejsz wideo lub zdjęcie, aby dało się je wysłać. Gotowy plik trafia do schowka: naciśnij Ctrl+V w Discordzie, WhatsAppie lub Eksploratorze. Oryginał się nie zmienia.',
+  'Drop a video or picture here': 'Upuść tu wideo lub zdjęcie', 'or click to choose · you can also right-click a file in Explorer': 'lub kliknij, aby wybrać · możesz też kliknąć plik prawym przyciskiem w Eksploratorze',
+  'Other file…': 'Inny plik…', 'Make it fit': 'Dopasuj do limitu', 'Custom': 'Własny', 'Shrink': 'Zmniejsz', 'Trim it first…': 'Najpierw przytnij…', 'Shrink anyway': 'Zmniejsz mimo to',
+  'Copy file': 'Kopiuj plik', 'Save as…': 'Zapisz jako…', 'Show in folder': 'Pokaż w folderze', 'Ready': 'Gotowe', 'Copied: press Ctrl+V to paste': 'Skopiowano: wklej przez Ctrl+V', 'Saved': 'Zapisano',
+  'The shrunk file is kept in a private folder that Swiftlane empties when it closes. Use Save as… to keep it.': 'Zmniejszony plik leży w prywatnym folderze, który Swiftlane opróżnia przy zamknięciu. Użyj „Zapisz jako…”, aby go zachować.',
+  'Saved as a JPEG. Swiftlane lowers the quality first and the size only if it has to.': 'Zapisane jako JPEG. Swiftlane najpierw obniża jakość, a rozmiar tylko gdy musi.',
+  'Shrink to size works on videos and pictures.': 'Ta funkcja działa na wideo i zdjęciach.', 'Wait for the current file, or cancel it first.': 'Poczekaj na bieżący plik lub go anuluj.',
+  'Looking at the video (1 of 2)…': 'Analiza wideo (1 z 2)…', 'Encoding (2 of 2)…': 'Kodowanie (2 z 2)…', 'A little over, trying again…': 'Trochę za duży, próbuję ponownie…', 'Shrinking the picture…': 'Zmniejszanie zdjęcia…',
+});
+Object.assign(I18N.it, {
+  'Shrink to size': 'Riduci alla dimensione', 'Make a video or picture fit Discord, WhatsApp or email': 'Adatta un video o una foto a Discord, WhatsApp o email',
+  'Make a video or picture small enough to send. When it\'s ready it\'s on your clipboard: press Ctrl+V in Discord, WhatsApp or Explorer. The original stays as it is.': 'Rendi un video o una foto abbastanza piccolo da inviare. Quando è pronto è negli appunti: premi Ctrl+V in Discord, WhatsApp o Esplora file. L\'originale resta com\'è.',
+  'Drop a video or picture here': 'Trascina qui un video o una foto', 'or click to choose · you can also right-click a file in Explorer': 'o clicca per scegliere · oppure clic destro su un file in Esplora file',
+  'Other file…': 'Altro file…', 'Make it fit': 'Adatta a', 'Custom': 'Personalizzato', 'Shrink': 'Riduci', 'Trim it first…': 'Prima accorcia…', 'Shrink anyway': 'Riduci comunque',
+  'Copy file': 'Copia file', 'Save as…': 'Salva come…', 'Show in folder': 'Mostra nella cartella', 'Ready': 'Pronto', 'Copied: press Ctrl+V to paste': 'Copiato: incolla con Ctrl+V', 'Saved': 'Salvato',
+  'The shrunk file is kept in a private folder that Swiftlane empties when it closes. Use Save as… to keep it.': 'Il file ridotto resta in una cartella privata che Swiftlane svuota alla chiusura. Usa Salva come… per tenerlo.',
+  'Saved as a JPEG. Swiftlane lowers the quality first and the size only if it has to.': 'Salvata come JPEG. Swiftlane abbassa prima la qualità e le dimensioni solo se serve.',
+  'Shrink to size works on videos and pictures.': 'Questa funzione lavora con video e foto.', 'Wait for the current file, or cancel it first.': 'Aspetta il file attuale o annullalo.',
+  'Looking at the video (1 of 2)…': 'Analisi del video (1 di 2)…', 'Encoding (2 of 2)…': 'Codifica (2 di 2)…', 'A little over, trying again…': 'Un po\' troppo grande, riprovo…', 'Shrinking the picture…': 'Riduzione della foto…',
+});
+I18N_PATTERNS.de.push([/^Already under (.+), so Swiftlane passes it on unchanged\.$/, 'Schon unter $1, daher unverändert weitergegeben.'], [/^Video at about (\d+) kbps, (\d+×\d+)\.$/, 'Video mit etwa $1 kbit/s, $2.'],
+  [/^Video at about (\d+) kbps, (\d+×\d+) \(smaller than the original so it keeps looking sharp\)\.$/, 'Video mit etwa $1 kbit/s, $2 (kleiner als das Original, damit es scharf bleibt).'],
+  [/^At (.+) this (.+) video will look (very rough|soft)\.$/, (m, a, b, c) => `Bei ${a} sieht dieses ${b}-Video ${c === 'soft' ? 'weich' : 'sehr grob'} aus.`], [/^Trimming it to about (.+) would keep it sharp\.$/, 'Auf etwa $1 gekürzt bliebe es scharf.'],
+  [/^(.+), under the (.+) limit \(it was (.+)\)\.$/, '$1, unter dem Limit von $2 (vorher $3).'], [/^(.+), already under the (.+) limit, so nothing was changed\.$/, '$1, schon unter dem Limit von $2, daher nichts geändert.'],
+  [/^Shrink to (.+) · (.+)$/, 'Verkleinern auf $1 · $2']);
+I18N_PATTERNS.pl.push([/^Already under (.+), so Swiftlane passes it on unchanged\.$/, 'Już poniżej $1, więc plik został przekazany bez zmian.'], [/^Video at about (\d+) kbps, (\d+×\d+)\.$/, 'Wideo ok. $1 kb/s, $2.'],
+  [/^Video at about (\d+) kbps, (\d+×\d+) \(smaller than the original so it keeps looking sharp\)\.$/, 'Wideo ok. $1 kb/s, $2 (mniejsze niż oryginał, aby było ostre).'],
+  [/^At (.+) this (.+) video will look (very rough|soft)\.$/, (m, a, b, c) => `Przy ${a} to wideo (${b}) będzie wyglądać ${c === 'soft' ? 'miękko' : 'bardzo grubo'}.`], [/^Trimming it to about (.+) would keep it sharp\.$/, 'Przycięcie do ok. $1 zachowa ostrość.'],
+  [/^(.+), under the (.+) limit \(it was (.+)\)\.$/, '$1, poniżej limitu $2 (było $3).'], [/^(.+), already under the (.+) limit, so nothing was changed\.$/, '$1, już poniżej limitu $2, więc nic nie zmieniono.'],
+  [/^Shrink to (.+) · (.+)$/, 'Zmniejsz do $1 · $2']);
+I18N_PATTERNS.it.push([/^Already under (.+), so Swiftlane passes it on unchanged\.$/, 'Già sotto $1, quindi passa invariato.'], [/^Video at about (\d+) kbps, (\d+×\d+)\.$/, 'Video a circa $1 kbps, $2.'],
+  [/^Video at about (\d+) kbps, (\d+×\d+) \(smaller than the original so it keeps looking sharp\)\.$/, 'Video a circa $1 kbps, $2 (più piccolo dell\'originale per restare nitido).'],
+  [/^At (.+) this (.+) video will look (very rough|soft)\.$/, (m, a, b, c) => `Con ${a} questo video (${b}) apparirà ${c === 'soft' ? 'sfocato' : 'molto sgranato'}.`], [/^Trimming it to about (.+) would keep it sharp\.$/, 'Accorciandolo a circa $1 resterebbe nitido.'],
+  [/^(.+), under the (.+) limit \(it was (.+)\)\.$/, '$1, sotto il limite di $2 (era $3).'], [/^(.+), already under the (.+) limit, so nothing was changed\.$/, '$1, già sotto il limite di $2, quindi nulla è cambiato.'],
+  [/^Shrink to (.+) · (.+)$/, 'Riduci a $1 · $2']);

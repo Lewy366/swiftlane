@@ -52,6 +52,7 @@ fn main() {
                     let _ = w.minimize();
                 }
             }
+            tools::shrink::wipe(); // leftovers of an earlier run (Shrink to size's private folder)
             tools::explorer::start(&handle, initial_explorer);
             if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
                 let _ = transfer::start(&handle);
@@ -89,7 +90,9 @@ fn main() {
             if let tauri::RunEvent::Exit = event {
                 tools::peers::shutdown();
                 tools::explorer::shutdown();
+                tools::shrink::wipe();
                 tools::vault::shutdown();
+                tools::phonecam::shutdown();
                 tools::casting::shutdown(app);
                 sharing::shutdown(app);
             }

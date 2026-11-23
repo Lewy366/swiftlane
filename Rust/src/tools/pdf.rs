@@ -792,6 +792,66 @@ fn make_smaller(path: &Path, out: &Path, progress: &dyn Fn(f64) -> Result<(), Jo
     Ok(vec![out.to_path_buf()])
 }
 
+// ------------------------------------------------------------------ scanned pages (Phone camera)
+
+/// Scanned pages are drawn at this many pixels per inch on the PDF page.
+const SCAN_DPI: f32 = 200.0;
+
+/// A new PDF with one page per picture (JPEG bytes, width, height), in the order given. Used by
+/// Phone camera's "Scan document"; the pictures are stored as they are, so the page has no
+/// camera or location data.
+pub(super) fn pdf_from_jpegs(pages: &[(Vec<u8>, u32, u32)], out: &Path) -> Result<(), JobError> {
+    if pages.is_empty() {
+        return Err(JobError::Failed("There are no pages to save.".into()));
+    }
+    if pages.len() > MAX_PAGES {
+        return Err(JobError::Failed("That's more than 10,000 pages, which is too many for one PDF.".into()));
+    }
+    let mut doc = Document::with_version("1.5");
+    let pages_id = doc.new_object_id();
+    let mut kids = Vec::new();
+    for (jpeg, w, h) in pages {
+        let mut img = Dictionary::new();
+        img.set("Type", Object::Name(b"XObject".to_vec()));
+        img.set("Subtype", Object::Name(b"Image".to_vec()));
+        img.set("Width", *w as i64);
+        img.set("Height", *h as i64);
+        img.set("ColorSpace", Object::Name(b"DeviceRGB".to_vec()));
+        img.set("BitsPerComponent", 8);
+        img.set("Filter", Object::Name(b"DCTDecode".to_vec()));
+        let img_id = doc.add_object(Stream::new(img, jpeg.clone()));
+        let (pw, ph) = (*w as f32 * 72.0 / SCAN_DPI, *h as f32 * 72.0 / SCAN_DPI);
+        let content = format!("q {pw:.2} 0 0 {ph:.2} 0 0 cm /Im0 Do Q");
+        let content_id = doc.add_object(Stream::new(Dictionary::new(), content.into_bytes()));
+        let mut xobjects = Dictionary::new();
+        xobjects.set("Im0", img_id);
+        let mut res = Dictionary::new();
+        res.set("XObject", xobjects);
+        let mut page = Dictionary::new();
+        page.set("Type", Object::Name(b"Page".to_vec()));
+        page.set("Parent", pages_id);
+        page.set("MediaBox", vec![Object::Integer(0), Object::Integer(0), Object::Real(pw), Object::Real(ph)]);
+        page.set("Resources", res);
+        page.set("Contents", content_id);
+        kids.push(Object::Reference(doc.add_object(page)));
+    }
+    let mut doc = finish(doc, pages_id, kids);
+    write_pdf(&mut doc, out)
+}
+
+/// A new PDF: every page of `existing`, then every page of `extra`. Neither file is changed, and
+/// `out` may not be `existing`.
+pub(super) fn pdf_append(existing: &Path, extra: &Path, out: &Path, check: &dyn Fn() -> Result<(), JobError>) -> Result<(), JobError> {
+    if same_file(existing, out) || same_file(extra, out) {
+        return Err(JobError::Failed("That's the original PDF, and it's never changed. Pick a new name.".into()));
+    }
+    let a = load(existing).map_err(|e| format!("{}: {e}", file_name(existing)))?.pages.len();
+    let b = load(extra)?.pages.len();
+    let mut plan: Vec<Item> = (0..a).map(|page| Item { src: 0, page, rotate: 0 }).collect();
+    plan.extend((0..b).map(|page| Item { src: 1, page, rotate: 0 }));
+    build(&[existing.to_path_buf(), extra.to_path_buf()], &plan, &[], out, check).map(|_| ())
+}
+
 // ------------------------------------------------------------------ tests
 
 #[cfg(test)]
@@ -1077,5 +1137,44 @@ mod tests {
         let out = dir.0.join("small.pdf");
         ok(make_smaller(&a, &out, &|_| Ok(())));
         assert_eq!(reopen(&out).1.len(), 2);
+    }
+
+    fn jpeg_page(w: u32, h: u32) -> (Vec<u8>, u32, u32) {
+        let img = image::RgbaImage::from_pixel(w, h, image::Rgba([200, 200, 200, 255]));
+        (super::super::images::encode(&img, false, super::super::images::Fmt::Jpeg, 80, None, None).unwrap(), w, h)
+    }
+
+    /// Page widths in points, in page order.
+    fn widths(path: &Path) -> Vec<i32> {
+        let (doc, pages) = reopen(path);
+        pages.iter().map(|p| rect(&doc, doc.get_dictionary(*p).unwrap().get(b"MediaBox").unwrap()).map(|r| (r[2] - r[0]).round() as i32).unwrap()).collect()
+    }
+
+    #[test]
+    fn scanned_pages_keep_their_order_and_append_after_the_original() {
+        let dir = TempDir::new();
+        // three scans of different widths, so their order can be read back
+        let pages = [jpeg_page(1000, 1400), jpeg_page(500, 700), jpeg_page(750, 900)];
+        let scans = dir.0.join("scans.pdf");
+        ok(pdf_from_jpegs(&pages, &scans));
+        assert_eq!(widths(&scans), vec![360, 180, 270]);
+        // reordered input gives reordered pages
+        let swapped = dir.0.join("swapped.pdf");
+        ok(pdf_from_jpegs(&[pages[2].clone(), pages[0].clone(), pages[1].clone()], &swapped));
+        assert_eq!(widths(&swapped), vec![270, 360, 180]);
+        assert!(pdf_from_jpegs(&[], &dir.0.join("none.pdf")).is_err());
+        // appended after the pages of an existing PDF, which stays as it was
+        let old = dir.0.join("old.pdf");
+        make_pdf(&old, "OLD", 2);
+        let before = std::fs::read(&old).unwrap();
+        let out = dir.0.join("combined.pdf");
+        ok(pdf_append(&old, &scans, &out, &|| Ok(())));
+        assert_eq!(widths(&out), vec![595, 595, 360, 180, 270]);
+        let (doc, pages) = reopen(&out);
+        assert!(page_text(&doc, pages[1]).contains("Page 2 of OLD"));
+        assert_eq!(std::fs::read(&old).unwrap(), before);
+        // the original can't be the output
+        assert!(pdf_append(&old, &scans, &old, &|| Ok(())).is_err());
+        assert_eq!(std::fs::read(&old).unwrap(), before);
     }
 }

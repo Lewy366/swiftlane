@@ -6,7 +6,7 @@
 //! - When Explorer launches a second Swiftlane.exe with --share / --send / --convert, it hands
 //!   the paths to the running instance over loopback IPC using a random 32-byte per-account key
 //!   (%APPDATA%\Swiftlane\ipc.key) verified via HMAC-SHA256 challenge-response (constant time).
-//! - Only ("share", "send", "convert") with existing paths (max 500, each < 1024 chars) are accepted.
+//! - Only ("share", "send", "convert", "shrink") with existing paths (max 500, each < 1024 chars) are accepted.
 
 use hmac::{Hmac, Mac};
 use serde_json::{json, Value};
@@ -24,7 +24,7 @@ use crate::config;
 
 type HmacSha256 = Hmac<Sha256>;
 
-const COMMANDS: &[&str] = &["share", "send", "convert"];
+const COMMANDS: &[&str] = &["share", "send", "convert", "shrink"];
 const MAX_PATHS: usize = 500;
 const MAX_BODY: usize = 256 * 1024;
 const BATCH_DELAY: Duration = Duration::from_millis(800);
@@ -63,7 +63,7 @@ pub fn parse_args<I: IntoIterator<Item = String>>(args: I) -> CliArgs {
                 }
                 active_cmd = None;
             }
-            "--share" | "--send" | "--convert" => {
+            "--share" | "--send" | "--convert" | "--shrink" => {
                 if active_cmd.is_none() {
                     active_cmd = Some(a.trim_start_matches("--").to_string());
                 }
@@ -99,6 +99,9 @@ mod win_menu {
         (r"Directory\shell\SwiftlaneShare", "Share with Swiftlane", "--share"),
         (r"*\shell\SwiftlaneSend", "Send to phone with Swiftlane", "--send"),
         (r"*\shell\SwiftlaneConvert", "Convert with Swiftlane", "--convert"),
+        // only on videos and pictures (Windows' own "perceived type" groups)
+        (r"SystemFileAssociations\video\shell\SwiftlaneShrink", "Shrink to size with Swiftlane", "--shrink"),
+        (r"SystemFileAssociations\image\shell\SwiftlaneShrink", "Shrink to size with Swiftlane", "--shrink"),
     ];
 
     pub fn enable() -> Result<(), String> {
@@ -512,6 +515,9 @@ mod tests {
 
         let c = parse_args(["swiftlane.exe", "--uninstall"].map(String::from));
         assert!(c.uninstall);
+
+        let d = parse_args(["swiftlane.exe", "--shrink", "C:\\a.mp4"].map(String::from));
+        assert_eq!(d.explorer, Some(("shrink".into(), vec!["C:\\a.mp4".into()])));
     }
 
     #[test]

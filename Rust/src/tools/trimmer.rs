@@ -121,8 +121,8 @@ pub(super) fn stream(mut cmd: Command, ctx: &Ctx, tree: bool, mut on_line: impl 
                 if is_err {
                     tail.push_str(&line);
                     tail.push('\n');
-                    if tail.len() > 16_000 {
-                        let cut = tail.len() - 8_000;
+                    if tail.len() > 8_192 {
+                        let cut = tail.len() - 4_096;
                         let cut = (cut..tail.len()).find(|i| tail.is_char_boundary(*i)).unwrap_or(0);
                         tail.drain(..cut);
                     }
@@ -151,13 +151,13 @@ pub(super) fn stream(mut cmd: Command, ctx: &Ctx, tree: bool, mut on_line: impl 
 }
 
 /// "file:" stops FFmpeg from reading a name as an option or a network address.
-fn file_arg(path: &Path) -> std::ffi::OsString {
+pub(super) fn file_arg(path: &Path) -> std::ffi::OsString {
     let mut s = std::ffi::OsString::from("file:");
     s.push(path.as_os_str());
     s
 }
 
-fn ffmpeg(ff: &Path) -> Command {
+pub(super) fn ffmpeg(ff: &Path) -> Command {
     let mut c = command(ff);
     c.args(["-hide_banner", "-nostdin"]);
     c
@@ -225,7 +225,7 @@ fn parse_size(text: &str) -> Option<(u32, u32)> {
 }
 
 /// (duration, width, height, has sound) from what `ffmpeg -i` prints.
-fn parse_probe(text: &str) -> Option<(f64, u32, u32, bool)> {
+pub(super) fn parse_probe(text: &str) -> Option<(f64, u32, u32, bool)> {
     let duration = parse_duration(text)?;
     if !text.contains("Video:") {
         return None;
@@ -319,7 +319,7 @@ fn trim_args(input: &Path, start: f64, length: f64, mode: &str, target_mb: f64, 
 }
 
 /// "out_time_us=1234567" from FFmpeg's -progress output, in seconds.
-fn parse_out_time(line: &str) -> Option<f64> {
+pub(super) fn parse_out_time(line: &str) -> Option<f64> {
     let (d, _) = digits(line.strip_prefix("out_time_us=")?, usize::MAX);
     if d.is_empty() { None } else { d.parse::<f64>().ok().map(|us| us / 1e6) }
 }
