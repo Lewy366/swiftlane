@@ -21,3 +21,11 @@ Swiftlane is a Windows toolkit app (Python + pywebview, HTML/CSS/JS in `Source/w
 ## Cloud sessions (Linux)
 
 They can't run the app window, Windows APIs, Tailscale or the two-PC tests. Check JavaScript with `node --check`, keep Python importable, and don't claim window or network behaviour was verified.
+
+## Rust version (in progress)
+
+The owner decided to rebuild Swiftlane in Rust (Tauri) and stop releasing the Python version; the calculator stays a Python helper. The Rust app lives in `Rust/`, shows the same interface (`Source/web`, via `js/bridge.js`) and keeps the same settings files. GitHub builds and tests it on Windows (`.github/workflows/windows-rust.yml`); Linux can `cargo test` locally.
+
+- Done: window and settings, background picture, start with Windows, updater (same signing key), phone transfer incl. encrypted connections (reuses the Python CA), share list model (`share.rs`).
+- Next: share server + Tailscale Funnel + Share links page calls (see `share.py`), then the tools, PC remote and casting, then setup/uninstall/Explorer menu and the release pipeline.
+- Tests must never create or delete files outside a fresh temp folder.
