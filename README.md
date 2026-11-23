@@ -25,7 +25,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network) and **Is my PC exposed?**
 - **World clock:** live times on a world map with the night side shaded from the sun's real position, analog clocks for your cities, and a planner to see any moment in every time zone.
 - **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Disk space** map, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
-- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link* or *Convert*.
+- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Send to contacts* or *Convert*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
 - Works in a small window too. Make it as narrow as you like (down to 400 px) and the pages stack into one column; below about 860 px the sidebar tucks away behind a ☰ menu button.
 
@@ -241,12 +241,15 @@ The first time you run it, iOS asks whether to let Shortcuts find devices on you
 - Network devices only pings your own home /24 network. Is my PC exposed? only reads, and talks to nothing except your router (and only at its own address).
 - Share links run on a separate small server that listens on this PC only (127.0.0.1:8766). It's reachable from outside only through Tailscale Funnel, and only while something is shared. It's download only, links are random 128-bit IDs and never contain file paths, pages have no scripts and every file is sent as a download. Passwords are stored as scrypt hashes, and 5 wrong tries from one address (40 on one link) means a 15-minute wait. There's a limit of 48 connections at once. Keep in mind that anyone who downloads a file can pass it on: the limits control the link, not the file.
 
-## For developers: the Source folder
+## For developers: the `Rust` and `Source` folders
 
-Double-click **Build Setup.cmd** to rebuild `Swiftlane Setup.exe` after you change anything in `Source`. It takes a couple of minutes and installs the Python libraries it needs plus the newest yt-dlp.
+The upcoming Rust (Tauri 2) version lives in `Rust/` and embeds the same `Source/web` interface while keeping the scientific calculator as a Python helper (`Source/toolkit/calc.py`). `.github/workflows/windows-rust.yml` runs JS checks and `cargo test --locked`, fetches pinned and SHA-256-verified `ffmpeg`/`ffprobe`, `pdfium.dll` and `yt-dlp`, and uploads a complete runnable Windows folder as a build artifact. See [TESTING-RUST.md](TESTING-RUST.md) for the hands-on test checklist.
+
+For the legacy Python build, double-click **Build Setup.cmd** to rebuild `Swiftlane Setup.exe` after you change anything in `Source`. It takes a couple of minutes and installs the Python libraries it needs plus the newest yt-dlp.
 
 | Path | What it is |
 |---|---|
+| `Rust/` | The Rust/Tauri 2 app (`src/main.rs`, `src/api.rs`, `src/transfer.rs`, `src/share*.rs`, `src/tls.rs`, `src/updater.rs`, `src/tools/*`) compiling `Source/web` directly into `Swiftlane.exe`. |
 | `swiftlane.py` | The app itself: window, features, background jobs and the uninstaller (`--uninstall`). `--page <name>` opens a page, `--selftest <file>` checks every tool, and `--headless` runs only the phone server. |
 | `server.py` | The local server the phone talks to, plus settings and sorting. |
 | `share.py` | Share links: what may be shared, the list of shares, the download server and Tailscale Funnel on/off. |

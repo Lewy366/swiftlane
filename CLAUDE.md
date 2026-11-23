@@ -22,11 +22,12 @@ Swiftlane is a Windows toolkit app (Python + pywebview, HTML/CSS/JS in `Source/w
 
 They can't run the app window, Windows APIs, Tailscale or the two-PC tests. Check JavaScript with `node --check`, keep Python importable, and don't claim window or network behaviour was verified.
 
-## Rust version (in progress)
+## Rust version
 
-The owner decided to rebuild Swiftlane in Rust (Tauri) and stop releasing the Python version; the calculator stays a Python helper. The Rust app lives in `Rust/`, shows the same interface (`Source/web`, via `js/bridge.js`) and keeps the same settings files. GitHub builds and tests it on Windows (`.github/workflows/windows-rust.yml`); Linux can `cargo test` locally.
+The owner decided to rebuild Swiftlane in Rust (Tauri) and stop releasing the Python version; the calculator stays a Python helper (`Source/toolkit/calc.py`). The Rust app lives in `Rust/`, compiles the same interface (`Source/web`, via `js/bridge.js`) into `Swiftlane.exe`, and keeps the same settings files. GitHub builds, tests and packs a complete runnable folder on Windows (`.github/workflows/windows-rust.yml`); Linux/local Windows can `cargo test --locked`.
 
-- Done: window and settings, background picture, start with Windows, updater (same signing key), phone transfer incl. encrypted connections (reuses the Python CA), share links incl. request links, previews and Tailscale Funnel.
-- Tools done: disk space, vault (file-compatible with Python vaults), PDF tools (page drawing needs pdfium.dll shipped next to the exe), image editor, file converter, video trimmer + downloader, currency, speed test, ad blocker, network devices, PC exposed, screen mirroring. Shared helpers: `jobs.rs`, `tools/mod.rs`.
-- Next: PC remote, send to contacts, calculator helper, then setup/uninstall/Explorer menu, shipping ffmpeg, pdfium.dll and airplay-install.ps1, and the release pipeline.
+- Done: window and settings, background picture, start with Windows, `setup-choices.json` first-launch import, updater (same signing key), phone transfer incl. encrypted connections (reuses the Python CA) and `/api/remote`, share links incl. request links, previews and Tailscale Funnel, Explorer right-click menu + authenticated loopback IPC (`--page`/`--share`/`--send`/`--convert`), and built-in uninstaller (`--uninstall`).
+- Tools done: disk space, vault (file-compatible with Python vaults), PDF tools (`pdfium.dll` next to exe), image editor, file converter, video trimmer + downloader (`ffmpeg.exe`/`ffprobe.exe` + `yt-dlp.exe`), currency, speed test, ad blocker, network devices, PC exposed, screen mirroring (AirPlay, Miracast, browser cast), PC remote, send to contacts (iroh, DPAPI-compatible with Python), and calculator helper + pop-out window. Shared helpers: `jobs.rs`, `tools/mod.rs`.
+- CI bundle (`.github/workflows/windows-rust.yml`): checks `Source/web` JS syntax, downloads and SHA-256-verifies pinned `ffmpeg.exe`/`ffprobe.exe`, `pdfium.dll` and `yt-dlp.exe`, runs `cargo test --locked` and `cargo build --release --locked`, packs `Swiftlane.exe`, helpers, `toolkit/calc.py`, `uninstall.ps1`, `airplay-install.ps1` and licences, and smoke-checks the runnable folder.
+- Next: hands-on test run on Windows (`TESTING-RUST.md`), then wiring the Rust folder into the owner's signed setup/release pipeline (signed locally with the USB key).
 - Tests must never create or delete files outside a fresh temp folder.
