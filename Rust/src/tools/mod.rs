@@ -12,6 +12,8 @@ use tauri_plugin_dialog::DialogExt;
 pub mod diskmap;
 pub mod duplicates;
 pub mod findfiles;
+pub mod startup;
+pub mod qrstudio;
 pub mod vault;
 mod pdf;
 mod exif;
@@ -38,6 +40,8 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         diskmap::dispatch,
         duplicates::dispatch,
         findfiles::dispatch,
+        startup::dispatch,
+        qrstudio::dispatch,
         vault::dispatch,
         pdf::dispatch,
         images::dispatch,

@@ -13,6 +13,8 @@ const TOOLS = [
   { id: 'diskmap', name: 'Disk space', icon: 'disk', feature: 'diskmap', cat: 'files', desc: 'See what fills up your drives', keys: 'disk space storage full drive clean big files treemap', home: 'Files & media' },
   { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', cat: 'security', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
   { id: 'exposure', name: 'Is my PC exposed?', icon: 'radar', feature: 'exposure', cat: 'security', desc: 'Firewall, open ports, remote access, router', keys: 'security exposed firewall ports upnp remote desktop safe check hacker', home: 'Security' },
+  { id: 'startup', name: 'Startup check', icon: 'bolt', feature: 'startup', cat: 'security', desc: 'See and toggle apps that start with Windows', keys: 'startup boot autostart launch task manager registry scheduled tasks background', home: 'Security' },
+  { id: 'qrstudio', name: 'QR Studio', icon: 'qr', feature: 'qrstudio', cat: 'everyday', desc: 'Make Wi-Fi or link QR codes and decode screenshots offline', keys: 'qr code barcode wifi scan decode screenshot generate png svg', home: 'Everyday' },
   { id: 'worldclock', name: 'World clock', icon: 'globe', feature: 'worldclock', cat: 'everyday', desc: 'Live times on a map, plan across time zones', keys: 'time zone clock world map city convert meeting utc', home: 'Everyday' },
   { id: 'airplay', name: 'Screen mirroring', icon: 'airplay', feature: 'airplay', cat: 'everyday', desc: 'Phone or laptop screen on this PC: AirPlay, Miracast, browser', keys: 'airplay miracast mirror mirroring screen iphone ipad mac android samsung smart view laptop browser cast stream tv project', home: 'Everyday' },
   { id: 'remote', name: 'PC remote', icon: 'remote', cat: 'everyday', desc: 'Music, volume and slides from your phone', keys: 'remote control phone volume music play pause slides presentation', home: 'Everyday' },
@@ -27,9 +29,9 @@ const DEFAULT_LAYOUT = {
   pinned: ['transfer', 'share', 'contacts'],
   folders: [
     { name: 'Files & media', items: ['findfiles', 'duplicates', 'converter', 'images', 'pdf', 'trimmer', 'diskmap', 'downloader'], open: true },
-    { name: 'Everyday', items: ['worldclock', 'airplay', 'remote', 'currency', 'calculator'], open: true },
+    { name: 'Everyday', items: ['qrstudio', 'worldclock', 'airplay', 'remote', 'currency', 'calculator'], open: true },
     { name: 'Network', items: ['speedtest', 'adblock'], open: true },
-    { name: 'Security', items: ['vault', 'netscan', 'exposure'], open: true },
+    { name: 'Security', items: ['vault', 'startup', 'netscan', 'exposure'], open: true },
   ],
 };
 

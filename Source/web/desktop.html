@@ -106,6 +106,8 @@
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5zM12 14v6"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M18 19h3v2"/></symbol>
 </svg>
 
 <div class="app">
@@ -331,6 +333,99 @@
       <section class="card">
         <div class="list ff-list" id="findList"></div>
       </section>
+    </section>
+
+    <!-- ============ Startup & background check ============ -->
+    <section class="page" id="page-startup" hidden>
+      <div class="page-head">
+        <div><h1>Startup check</h1><p>Everything that runs automatically when Windows starts. Toggles are reversible and match Task Manager — nothing is deleted.</p></div>
+        <button class="btn primary" id="stRefresh"><svg class="i"><use href="#i-refresh"/></svg> Refresh</button>
+      </div>
+      <div class="dup-stats">
+        <div class="card dup-stat"><small>Total entries</small><b id="stTotal">0</b></div>
+        <div class="card dup-stat"><small>Enabled</small><b id="stEnabled">0</b></div>
+        <div class="card dup-stat"><small>Disabled</small><b id="stDisabled">0</b></div>
+      </div>
+      <section class="card">
+        <div class="ff-bar">
+          <div class="ff-input-wrap">
+            <svg class="i"><use href="#i-search"/></svg>
+            <input class="input" id="stSearch" placeholder="Filter by app, publisher, or path…" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="seg" id="stFilter">
+            <button data-v="all" class="on">All</button>
+            <button data-v="enabled">Enabled</button>
+            <button data-v="disabled">Disabled</button>
+            <button data-v="user">User</button>
+            <button data-v="system">System</button>
+          </div>
+        </div>
+        <label class="check small" style="margin-top:12px"><input type="checkbox" id="stShowWin"> Show Windows built-in scheduled tasks</label>
+        <div class="list st-list" id="stList" style="margin-top:12px"></div>
+        <div class="empty" id="stEmpty" hidden>No matching startup entries.</div>
+      </section>
+    </section>
+
+    <!-- ============ QR Studio ============ -->
+    <section class="page" id="page-qrstudio" hidden>
+      <div class="page-head">
+        <div><h1>QR Studio</h1><p>Create offline Wi-Fi, link, and contact QR codes — or drop or paste a screenshot to decode any QR locally.</p></div>
+        <div class="seg" id="qrTab"><button data-v="make" class="on">Make QR</button><button data-v="scan">Decode image</button></div>
+      </div>
+      <div id="qrMakePanel">
+        <div class="grid-side">
+          <section class="card">
+            <div class="seg" id="qrKind" style="margin-bottom:16px">
+              <button data-v="wifi" class="on">Wi-Fi</button>
+              <button data-v="url">Link</button>
+              <button data-v="text">Text</button>
+              <button data-v="vcard">Contact</button>
+              <button data-v="email">Email</button>
+            </div>
+            <div id="qrFields" class="qr-fields"></div>
+            <div class="row-fields" style="margin-top:16px">
+              <div class="field"><span>Error correction</span>
+                <select class="input" id="qrEc">
+                  <option value="L">Low (7%)</option>
+                  <option value="M" selected>Medium (15%)</option>
+                  <option value="Q">Quartile (25%)</option>
+                  <option value="H">High (30%)</option>
+                </select>
+              </div>
+              <div class="field"><span>Foreground</span><input class="input qr-color" id="qrFg" type="color" value="#0e121c"></div>
+              <div class="field"><span>Background</span><input class="input qr-color" id="qrBg" type="color" value="#ffffff"></div>
+            </div>
+          </section>
+          <section class="card qr-studio-side">
+            <div class="qr-stage" id="qrPreview"></div>
+            <code class="qr-raw" id="qrRaw" translate="no"></code>
+            <div class="qr-actions">
+              <button class="btn primary" id="qrSavePng"><svg class="i"><use href="#i-download"/></svg> Save PNG</button>
+              <button class="btn" id="qrCopyImg"><svg class="i"><use href="#i-copy"/></svg> Copy image</button>
+              <button class="btn" id="qrSaveSvg">Save SVG</button>
+              <button class="btn ghost" id="qrCopyText">Copy text</button>
+            </div>
+          </section>
+        </div>
+      </div>
+      <div id="qrScanPanel" hidden>
+        <section class="card">
+          <div class="drop" id="qrDrop">
+            <div class="orb"><svg class="i"><use href="#i-qr"/></svg></div>
+            <strong>Drop an image or click to choose</strong>
+            <span>or press Ctrl+V anywhere on this page to decode a screenshot offline</span>
+          </div>
+          <div class="pdf-bar" style="margin-top:12px">
+            <button class="btn primary" id="qrPasteClip"><svg class="i"><use href="#i-paste"/></svg> Paste screenshot from clipboard</button>
+            <span class="muted small">100% local — nothing leaves your PC</span>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Decoded results</h2>
+          <div id="qrScanResults" class="qr-results"></div>
+          <div class="empty" id="qrScanEmpty">Take a screenshot (Win+Shift+S) and paste it here, or drop any image containing a QR code.</div>
+        </section>
+      </div>
     </section>
 
     <!-- ============ Network scanner ============ -->
@@ -856,6 +951,8 @@
 <script src="js/diskmap.js"></script>
 <script src="js/duplicates.js"></script>
 <script src="js/findfiles.js"></script>
+<script src="js/startup.js"></script>
+<script src="js/qrstudio.js"></script>
 <script src="js/netscan.js"></script>
 <script src="js/exposure.js"></script>
 <script src="js/remote.js"></script>

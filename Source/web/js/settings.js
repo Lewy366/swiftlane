@@ -15,6 +15,8 @@
     ['duplicates', 'copy', 'Duplicate finder', 'Find exact duplicate files and clean them safely'],
     ['netscan', 'wifi', 'Network devices', 'Who is on your home network'],
     ['exposure', 'radar', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
+    ['startup', 'bolt', 'Startup check', 'See and toggle apps that start with Windows'],
+    ['qrstudio', 'qr', 'QR Studio', 'Make Wi-Fi or link QR codes and decode screenshots offline'],
     ['converter', 'convert', 'File converter', 'Images, video, audio and PDF'],
     ['images', 'image', 'Image editor', 'Crop, resize, straighten, adjust colours, compress'],
     ['downloader', 'download', 'Video downloader', 'YouTube and other sites'],
