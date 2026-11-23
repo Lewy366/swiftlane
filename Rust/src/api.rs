@@ -9,7 +9,7 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::{config, share, sharing, transfer, updater, winapi};
+use crate::{config, jobs, share, sharing, tools, transfer, updater, winapi};
 
 pub struct AppState {
     pub cfg: Mutex<Value>,
@@ -18,11 +18,12 @@ pub struct AppState {
     pub transfer: transfer::Transfer,
     pub shares: share::Shares,
     pub sharing: sharing::Sharing,
+    pub jobs: jobs::Jobs,
 }
 
 impl AppState {
     pub fn load() -> Self {
-        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false), transfer: transfer::Transfer::new(), shares: share::Shares::load(), sharing: sharing::Sharing::default() }
+        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false), transfer: transfer::Transfer::new(), shares: share::Shares::load(), sharing: sharing::Sharing::default(), jobs: jobs::Jobs::default() }
     }
 }
 
@@ -46,7 +47,7 @@ fn arg(args: &[Value], i: usize) -> &Value {
 }
 
 fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Value {
-    if let Some(r) = sharing::dispatch(app, method, args) {
+    if let Some(r) = sharing::dispatch(app, method, args).or_else(|| tools::dispatch(app, method, args)) {
         return r;
     }
     let st = app.state::<AppState>();
@@ -94,6 +95,10 @@ fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Value {
             edit(&st, |c| c["code"] = json!(config::new_code()));
             config::log("Pairing code reset");
             get_state(&st)
+        }
+        "cancel_job" => {
+            st.jobs.cancel(&id_arg(arg(args, 0)));
+            Value::Null
         }
         // ---- updates
         "check_update" => check_update(app, &st),

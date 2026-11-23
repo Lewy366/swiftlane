@@ -196,7 +196,7 @@ impl Transfer {
 }
 
 /// Files Swiftlane made, so the uninstaller can offer to delete only those (same list as before).
-fn record_created(path: &Path) {
+pub fn record_created(path: &Path) {
     use std::io::Write;
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(config::config_dir().join("created-files.txt")) {
         let _ = writeln!(f, "{}", path.display());

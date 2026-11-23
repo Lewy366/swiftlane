@@ -6,9 +6,13 @@ mod api;
 mod config;
 mod notify;
 mod funnel;
+#[allow(dead_code)] // used by the tools as they are ported
+mod jobs;
 mod share;
 mod share_server;
 mod sharing;
+#[allow(dead_code)]
+mod tools;
 mod tls;
 mod transfer;
 mod updater;
