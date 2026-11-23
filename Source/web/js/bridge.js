@@ -10,5 +10,10 @@
   });
   window.pywebview = { api };
   T.event.listen('core', e => window.onCore && window.onCore(e.payload.event, e.payload.data));
+  // Windows hands dropped files to Rust (with their full paths); the page only shows the drop highlight.
+  const dragging = on => document.body.classList.toggle('dragging', on);
+  T.event.listen('tauri://drag-enter', () => dragging(true));
+  T.event.listen('tauri://drag-leave', () => dragging(false));
+  T.event.listen('tauri://drag-drop', () => dragging(false));
   window.addEventListener('DOMContentLoaded', () => window.dispatchEvent(new Event('pywebviewready')));
 })();

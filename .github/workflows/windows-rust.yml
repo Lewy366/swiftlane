@@ -25,6 +25,10 @@ jobs:
         with:
           workspaces: Rust
 
+      - name: Tests
+        working-directory: Rust
+        run: cargo test --locked
+
       - name: Build
         working-directory: Rust
         run: cargo build --release --locked

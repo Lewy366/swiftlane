@@ -9,17 +9,18 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::{config, updater, winapi};
+use crate::{config, transfer, updater, winapi};
 
 pub struct AppState {
     pub cfg: Mutex<Value>,
     pub update: Mutex<Option<updater::Update>>,
     pub updating: Mutex<bool>,
+    pub transfer: transfer::Transfer,
 }
 
 impl AppState {
     pub fn load() -> Self {
-        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false) }
+        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false), transfer: transfer::Transfer::new() }
     }
 }
 
@@ -50,7 +51,7 @@ fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Value {
         // ---- settings
         "set_option" => json!(set_option(&st, arg(args, 0).as_str().unwrap_or(""), arg(args, 1))),
         "set_theme" => set_theme(&st, arg(args, 0)),
-        "set_feature" => set_feature(&st, arg(args, 0).as_str().unwrap_or(""), arg(args, 1).as_bool().unwrap_or(false)),
+        "set_feature" => set_feature(app, &st, arg(args, 0).as_str().unwrap_or(""), arg(args, 1).as_bool().unwrap_or(false)),
         "set_notify" => edit(&st, |c| c["notify"] = json!(arg(args, 0).as_bool().unwrap_or(true))),
         "set_autostart" => json!(winapi::set_autostart(arg(args, 0).as_bool().unwrap_or(false))),
         "set_sidebar" => json!(set_sidebar(&st, arg(args, 0))),
@@ -63,6 +64,31 @@ fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Value {
         "open_folder" => {
             let dir = st.cfg.lock().unwrap()["save_dir"].as_str().map(std::path::PathBuf::from);
             json!(dir.map(|d| winapi::open_folder(&d)).unwrap_or(false))
+        }
+        // ---- phone transfer
+        "add_outbox" => {
+            st.transfer.outbox_add(&paths(arg(args, 0)));
+            st.transfer.outbox_list()
+        }
+        "get_outbox" => st.transfer.outbox_list(),
+        "remove_outbox" => {
+            st.transfer.outbox_remove(&id_arg(arg(args, 0)));
+            st.transfer.outbox_list()
+        }
+        "clear_outbox" => {
+            st.transfer.outbox_clear();
+            json!([])
+        }
+        "open_received" => json!(st.transfer.find_received(&id_arg(arg(args, 0))).is_some_and(|p| winapi::shell_open(std::path::Path::new(&p)))),
+        "reveal_received" => json!(st.transfer.find_received(&id_arg(arg(args, 0))).is_some_and(|p| winapi::reveal(std::path::Path::new(&p)))),
+        "open_path" => json!(arg(args, 0).as_str().is_some_and(|p| winapi::shell_open(std::path::Path::new(p)))),
+        "reveal_path" => json!(arg(args, 0).as_str().is_some_and(|p| winapi::reveal(std::path::Path::new(p)))),
+        "pick_files" => pick_files(app),
+        "choose_folder" => choose_save_dir(app, &st),
+        "new_code" => {
+            edit(&st, |c| c["code"] = json!(config::new_code()));
+            config::log("Pairing code reset");
+            get_state(&st)
         }
         // ---- updates
         "check_update" => check_update(app, &st),
@@ -89,22 +115,30 @@ fn clean_name(s: &str, max: usize) -> String {
 pub fn get_state(st: &AppState) -> Value {
     let cfg = st.cfg.lock().unwrap().clone();
     let update = st.update.lock().unwrap().as_ref().filter(|u| u.available).map(|u| u.public());
+    let running = st.transfer.running.lock().unwrap().is_some();
+    let code = cfg["code"].as_str().unwrap_or("").to_string();
+    let port = cfg["port"].as_u64().unwrap_or(8765);
+    let addrs = transfer::local_addresses();
+    let addresses: Vec<Value> = addrs.iter().map(|(label, ip)| json!({
+        "label": label, "host": format!("{ip}:{port}"), "shortcut": format!("http://{ip}:{port}/upload?name=")
+    })).collect();
+    let qr = transfer::qr_svg(&format!("http://{}:{port}/#{code}", addrs[0].1));
     let mut s = json!({
         "version": VERSION,
         "rust": true,
         "features": cfg["features"],
-        "server_running": false,
-        "server_error": "Phone transfer isn't in the Rust version yet.",
-        "code_pretty": "",
-        "qr": null,
+        "server_running": running,
+        "server_error": *st.transfer.error.lock().unwrap(),
+        "code_pretty": config::pretty_code(&code),
+        "qr": qr,
         "tls": { "ready": false, "https_only": false, "fingerprint": "", "cert_qr": null, "secure_qr": null },
-        "addresses": [],
+        "addresses": addresses,
         "save_dir": cfg.get("save_dir").cloned().unwrap_or(json!("")),
         "notify": cfg["notify"],
         "autostart": winapi::autostart_enabled(),
         "config_dir": config::config_dir().to_string_lossy(),
-        "outbox": [],
-        "received": [],
+        "outbox": st.transfer.outbox_list(),
+        "received": st.transfer.received_list(),
         "clocks": cfg.get("clocks").cloned().unwrap_or(Value::Null),
         "sort_files": cfg["sort_files"],
         "download_dir": cfg["download_dir"],
@@ -176,11 +210,63 @@ const FEATURES: &[&str] = &[
     "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock",
 ];
 
-fn set_feature(st: &AppState, name: &str, on: bool) -> Value {
+fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {
     if FEATURES.contains(&name) {
         edit(st, |c| c["features"][name] = json!(on));
+        if name == "transfer" {
+            if on {
+                let _ = transfer::start(app);
+            } else {
+                transfer::stop(app);
+            }
+        }
     }
     get_state(st)
+}
+
+fn paths(v: &Value) -> Vec<std::path::PathBuf> {
+    v.as_array().map(|a| a.iter().filter_map(|p| p.as_str()).map(std::path::PathBuf::from).collect()).unwrap_or_default()
+}
+
+fn id_arg(v: &Value) -> String {
+    v.as_str().map(String::from).or_else(|| v.as_u64().map(|n| n.to_string())).unwrap_or_default()
+}
+
+/// What the page needs to know about a file: name, size, and what it can be converted to.
+pub fn file_info(path: &std::path::Path) -> Value {
+    let lists: Value = serde_json::from_str(TOOL_LISTS).unwrap_or(Value::Null);
+    let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    let kind = ["image", "video", "audio", "pdf"].into_iter().find(|k| {
+        lists["formats"][*k]["in"].as_array().is_some_and(|a| a.iter().any(|x| x.as_str() == Some(ext.as_str())))
+    });
+    json!({
+        "path": path.to_string_lossy(),
+        "name": path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default(),
+        "size": std::fs::metadata(path).map(|m| if m.is_file() { m.len() } else { 0 }).unwrap_or(0),
+        "kind": kind,
+        "targets": kind.map(|k| lists["formats"][k]["out"].clone()).unwrap_or(json!([])),
+    })
+}
+
+fn pick_files(app: &AppHandle) -> Value {
+    let picked = app.dialog().file().blocking_pick_files().unwrap_or_default();
+    json!(picked.into_iter().filter_map(|p| p.into_path().ok()).map(|p| file_info(&p)).collect::<Vec<_>>())
+}
+
+fn choose_save_dir(app: &AppHandle, st: &AppState) -> Value {
+    let start = st.cfg.lock().unwrap()["save_dir"].as_str().map(String::from);
+    let mut d = app.dialog().file();
+    if let Some(s) = start {
+        d = d.set_directory(s);
+    }
+    let Some(path) = d.blocking_pick_folder().and_then(|p| p.into_path().ok()) else { return Value::Null };
+    if std::fs::create_dir_all(&path).is_err() {
+        return json!({ "error": "Can't use that folder." });
+    }
+    let s = path.to_string_lossy().to_string();
+    edit(st, |c| c["save_dir"] = json!(s.clone()));
+    config::log(&format!("Save folder changed to {s}"));
+    json!(s)
 }
 
 fn set_sidebar(st: &AppState, layout: &Value) -> bool {

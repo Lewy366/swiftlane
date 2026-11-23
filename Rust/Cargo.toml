@@ -19,11 +19,28 @@ ed25519-dalek = "2"
 sha2 = "0.10"
 hex = "0.4"
 getrandom = "0.2"
+tauri-plugin-notification = "2"
+axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio", "service"] }
+tokio = { version = "1", features = ["fs", "io-util", "time", "net", "sync", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.7", features = ["io"] }
+futures-util = "0.3"
+socket2 = "0.5"
+hmac = "0.12"
+constant_time_eq = "0.3"
+percent-encoding = "2"
+mime_guess = "2"
+fs4 = { version = "0.13", features = ["sync"] }
+if-addrs = "0.13"
+qrcode = { version = "0.14", default-features = false }
+dirs = "6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Networking_WinSock"] }
 
 [profile.release]
 codegen-units = 1

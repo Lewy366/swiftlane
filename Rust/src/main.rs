@@ -4,15 +4,19 @@
 
 mod api;
 mod config;
+mod notify;
+mod transfer;
 mod updater;
 mod winapi;
 
-use tauri::Manager;
+use serde_json::json;
+use tauri::{DragDropEvent, Manager, WindowEvent};
 
 fn main() {
     let minimized = std::env::args().any(|a| a == "--minimized");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(api::AppState::load())
         .invoke_handler(tauri::generate_handler![api::call])
         .setup(move |app| {
@@ -22,9 +26,25 @@ fn main() {
                 }
             }
             let handle = app.handle().clone();
+            if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
+                let _ = transfer::start(&handle);
+            }
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Files dropped on the window: their full paths only ever go to Rust, never into the page.
+            if let WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) = event {
+                let app = window.app_handle();
+                let files: Vec<_> = paths.iter().filter(|p| p.is_file()).map(|p| api::file_info(p)).collect();
+                let folders: Vec<_> = paths.iter().filter(|p| p.is_dir()).map(|p| p.to_string_lossy().to_string()).collect();
+                if !folders.is_empty() {
+                    api::push(app, "dropped-all", json!({ "files": files, "folders": folders }));
+                } else if !files.is_empty() {
+                    api::push(app, "dropped", json!(files));
+                }
+            }
         })
         .run(tauri::generate_context!())
         .expect("Swiftlane couldn't start");

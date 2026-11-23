@@ -34,6 +34,7 @@ fn defaults() -> Value {
             "accent": "cyan", "custom": "#14b8e0", "background": false, "blur": 14, "dim": 30,
             "blur_on": true, "mode": "dark", "bg_file": ""
         },
+        "max_file_gb": 20,
         "share": { "hours": 24, "mode": "open", "count": null, "people": 1, "keep_awake": true },
         "update_check": true
     })
@@ -64,7 +65,47 @@ pub fn load() -> Value {
             merge(&mut cfg, &saved);
         }
     }
+    let mut changed = false;
+    if cfg["save_dir"].as_str().map_or(true, str::is_empty) {
+        let docs = dirs::document_dir().unwrap_or_else(|| config_dir().join(".."));
+        cfg["save_dir"] = json!(docs.join("Swiftlane").to_string_lossy());
+        changed = true;
+    }
+    if cfg["code"].as_str().map_or(true, str::is_empty) {
+        cfg["code"] = json!(new_code());
+        changed = true;
+    }
+    if changed {
+        save(&cfg);
+    }
     cfg
+}
+
+/// A new pairing code: 16 characters without look-alikes (0/O, 1/I/L), about 79 bits.
+pub fn new_code() -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let mut out = String::new();
+    while out.len() < 16 {
+        let mut b = [0u8; 32];
+        getrandom::getrandom(&mut b).expect("Windows' random number source failed");
+        for x in b {
+            // 31 symbols; reject the top of the byte range so every symbol is equally likely
+            if (x as usize) < 248 && out.len() < 16 {
+                out.push(ALPHABET[x as usize % 31] as char);
+            }
+        }
+    }
+    out
+}
+
+/// "ABCD-EFGH-JKMN-PQRS"
+pub fn pretty_code(code: &str) -> String {
+    code.as_bytes().chunks(4).map(|c| String::from_utf8_lossy(c).into_owned()).collect::<Vec<_>>().join("-")
+}
+
+/// Codes typed or pasted with spaces/dashes or in lower case still match.
+pub fn normalize_code(code: &str) -> String {
+    code.chars().filter(|c| !c.is_whitespace() && *c != '-').collect::<String>().to_uppercase()
 }
 
 /// Saves the settings: written to a temporary file first and then swapped in, so a crash
@@ -96,6 +137,11 @@ pub fn log(msg: &str) {
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = writeln!(f, "[{}] {}", format_utc(secs), msg);
     }
+}
+
+/// "2026-11-23 14.05.09" in local time, for names of files that arrive without one.
+pub fn stamp_now() -> String {
+    chrono::Local::now().format("%Y-%m-%d %H.%M.%S").to_string()
 }
 
 /// "2026-11-23 14:05:09 UTC" without pulling in a date library.

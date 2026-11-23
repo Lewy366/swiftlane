@@ -69,6 +69,37 @@ mod imp {
 
 pub use imp::*;
 
+/// Opens a file or folder with its usual program (only things that exist).
+pub fn shell_open(path: &std::path::Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        let wide: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+        let verb: Vec<u16> = "open".encode_utf16().chain(std::iter::once(0)).collect();
+        let r = unsafe {
+            windows_sys::Win32::UI::Shell::ShellExecuteW(std::ptr::null_mut(), verb.as_ptr(), wide.as_ptr(), std::ptr::null(), std::ptr::null(), 1)
+        };
+        r as usize > 32
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new("xdg-open").arg(path).spawn().is_ok()
+    }
+}
+
+/// Shows a file selected in File Explorer.
+pub fn reveal(path: &std::path::Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    let mut arg = std::ffi::OsString::from("/select,");
+    arg.push(path.as_os_str());
+    std::process::Command::new("explorer").arg(arg).spawn().is_ok()
+}
+
 /// Opens a folder in File Explorer (only folders that exist).
 pub fn open_folder(path: &std::path::Path) -> bool {
     if !path.is_dir() {
