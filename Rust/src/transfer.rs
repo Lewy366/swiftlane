@@ -247,7 +247,7 @@ pub fn category_for(name: &str) -> &'static str {
 }
 
 /// Moves `src` into `folder` as `name`, adding (1), (2)... instead of overwriting anything.
-fn place_file(src: &Path, folder: &Path, name: &str) -> std::io::Result<PathBuf> {
+pub fn place_file(src: &Path, folder: &Path, name: &str) -> std::io::Result<PathBuf> {
     std::fs::create_dir_all(folder)?;
     let (stem, ext) = match name.rfind('.') {
         Some(i) if i > 0 => (&name[..i], &name[i..]),
@@ -732,6 +732,10 @@ fn router(app: AppHandle) -> Router {
 /// Claims the port exclusively: on Windows, ordinary address reuse would let another program
 /// bind the same port and intercept uploads.
 fn bind_exclusive(port: u16) -> std::io::Result<std::net::TcpListener> {
+    bind_exclusive_on([0, 0, 0, 0], port)
+}
+
+pub fn bind_exclusive_on(ip: [u8; 4], port: u16) -> std::io::Result<std::net::TcpListener> {
     let sock = socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::STREAM, Some(socket2::Protocol::TCP))?;
     #[cfg(windows)]
     {
@@ -745,7 +749,7 @@ fn bind_exclusive(port: u16) -> std::io::Result<std::net::TcpListener> {
             return Err(std::io::Error::last_os_error());
         }
     }
-    sock.bind(&SocketAddr::from(([0, 0, 0, 0], port)).into())?;
+    sock.bind(&SocketAddr::from((ip, port)).into())?;
     sock.listen(128)?;
     sock.set_nonblocking(true)?;
     Ok(sock.into())

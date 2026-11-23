@@ -5,8 +5,10 @@
 mod api;
 mod config;
 mod notify;
-#[allow(dead_code)] // the share server that uses it comes next
+mod funnel;
 mod share;
+mod share_server;
+mod sharing;
 mod tls;
 mod transfer;
 mod updater;
@@ -34,6 +36,8 @@ fn main() {
             }
             let watcher = handle.clone();
             std::thread::spawn(move || transfer::watch_addresses(watcher));
+            let sharer = handle.clone();
+            std::thread::spawn(move || sharing::share_loop(sharer));
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())
@@ -51,6 +55,12 @@ fn main() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("Swiftlane couldn't start");
+        .build(tauri::generate_context!())
+        .expect("Swiftlane couldn't start")
+        .run(|app, event| {
+            // Closing: links stop working until Swiftlane runs again, so Funnel closes too.
+            if let tauri::RunEvent::Exit = event {
+                sharing::shutdown(app);
+            }
+        });
 }

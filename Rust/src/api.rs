@@ -9,18 +9,20 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::{config, transfer, updater, winapi};
+use crate::{config, share, sharing, transfer, updater, winapi};
 
 pub struct AppState {
     pub cfg: Mutex<Value>,
     pub update: Mutex<Option<updater::Update>>,
     pub updating: Mutex<bool>,
     pub transfer: transfer::Transfer,
+    pub shares: share::Shares,
+    pub sharing: sharing::Sharing,
 }
 
 impl AppState {
     pub fn load() -> Self {
-        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false), transfer: transfer::Transfer::new() }
+        AppState { cfg: Mutex::new(config::load()), update: Mutex::new(None), updating: Mutex::new(false), transfer: transfer::Transfer::new(), shares: share::Shares::load(), sharing: sharing::Sharing::default() }
     }
 }
 
@@ -44,6 +46,9 @@ fn arg(args: &[Value], i: usize) -> &Value {
 }
 
 fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Value {
+    if let Some(r) = sharing::dispatch(app, method, args) {
+        return r;
+    }
     let st = app.state::<AppState>();
     match method {
         "get_state" => get_state(&st),
@@ -224,6 +229,9 @@ const FEATURES: &[&str] = &[
 fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {
     if FEATURES.contains(&name) {
         edit(st, |c| c["features"][name] = json!(on));
+        if name == "share" {
+            sharing::feature_switched(app, on);
+        }
         if name == "transfer" {
             if on {
                 let _ = transfer::start(app);
