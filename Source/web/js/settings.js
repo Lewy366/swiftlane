@@ -10,7 +10,7 @@
     ['pdf', 'pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
     ['trimmer', 'scissors', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
     ['vault', 'lock', 'Vault', 'Files only your password opens'],
-    ['diskmap', 'disk', 'Disk space', 'See what fills up your drives'],
+    ['diskmap', 'disk', 'Storage & Cleanup', 'Drive map, quick cache cleaner, Downloads tidy and Steam games'],
     ['findfiles', 'search', 'Find files', 'Instant file search with optional NTFS MFT scan'],
     ['duplicates', 'copy', 'Duplicate finder', 'Find exact duplicate files and clean them safely'],
     ['netscan', 'wifi', 'Network devices', 'Who is on your home network'],

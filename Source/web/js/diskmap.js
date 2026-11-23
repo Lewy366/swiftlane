@@ -1,6 +1,30 @@
 // Disk space map: pick a drive or folder, scan it, then click through a treemap of what takes the room.
 (() => {
-  let view = null, scanning = null;
+  const ADV_LABELS = {
+    safe: 'Safe to remove',
+    consider: 'Consider removing',
+    keep: 'Should stay',
+  };
+  const ADV_BADGES = {
+    safe: 'Safe',
+    consider: 'Consider',
+    keep: 'Keep',
+  };
+
+  let view = null, scanning = null, advTab = 'safe';
+
+  function setBusy(jobId) {
+    scanning = jobId || null;
+    const busy = !!scanning;
+    const status = $('diskStatus');
+    if (status) status.hidden = !busy;
+    const folderBtn = $('diskFolder');
+    if (folderBtn) folderBtn.disabled = busy;
+    const mftBtn = $('diskMftBtn');
+    const mftSel = $('diskMftDrive');
+    if (mftBtn) mftBtn.disabled = busy || !(mftSel && mftSel.options.length);
+    if (busy && $('diskStatusText')) $('diskStatusText').textContent = t('Starting…');
+  }
 
   // Squarified treemap: lays out sizes (biggest first) in a w×h box, rows that keep tiles close to square.
   function squarify(items, x, y, w, h) {
@@ -69,6 +93,67 @@
     return row;
   }
 
+  function advisorRow(item, tier) {
+    const { row, sub } = fileRow(item.name);
+    if (item.kind === 'dir') row.querySelector('.kind').replaceChildren(icon('folder'));
+    const meta = row.querySelector('.meta');
+    if (meta) { meta.style.flex = '1'; meta.style.minWidth = '0'; }
+    sub.textContent = `${fmtSize(item.size)} · ${t(item.reason)}`;
+    sub.title = item.path || '';
+    row.title = item.path || '';
+
+    const acts = el('div', 'acts');
+    Object.assign(acts.style, { display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' });
+    acts.append(el('span', `dm-adv-tag dm-adv-${tier}`, t(ADV_BADGES[tier] || tier)));
+    if (item.path) {
+      acts.append(miniBtn('open', 'Show in File Explorer', () => App.api.disk_reveal(item.path)));
+      // Never offer a Recycle Bin button on `keep` items or any protected path.
+      if (tier !== 'keep' && !item.protected) {
+        acts.append(miniBtn('trash', 'Move to the Recycle Bin', () => trash(item)));
+      }
+      if (item.kind === 'dir') {
+        row.style.cursor = 'pointer';
+        row.onclick = () => open(item.path);
+      }
+    }
+    row.append(acts);
+    return row;
+  }
+
+  function renderAdvisor() {
+    const card = $('diskAdvisorCard');
+    if (!card) return;
+    const advice = view && view.advice;
+    const safe = (advice && Array.isArray(advice.safe)) ? advice.safe : [];
+    const consider = (advice && Array.isArray(advice.consider)) ? advice.consider : [];
+    const keep = (advice && Array.isArray(advice.keep)) ? advice.keep : [];
+    const tiers = { safe, consider, keep };
+
+    if (!safe.length && !consider.length && !keep.length) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+
+    const tabs = $('diskAdvTabs');
+    if (tabs) {
+      tabs.querySelectorAll('button[data-v]').forEach(btn => {
+        const key = btn.dataset.v;
+        const list = tiers[key] || [];
+        const totalBytes = list.reduce((a, x) => a + (x.size || 0), 0);
+        const base = t(ADV_LABELS[key] || key);
+        btn.textContent = list.length ? `${base} (${list.length} · ${fmtSize(totalBytes)})` : `${base} (0)`;
+        btn.classList.toggle('on', key === advTab);
+      });
+    }
+
+    const active = tiers[advTab] || [];
+    const empty = $('diskAdvEmpty');
+    if (empty) empty.hidden = active.length > 0;
+    const listEl = $('diskAdvList');
+    if (listEl) listEl.replaceChildren(...active.map(item => advisorRow(item, advTab)));
+  }
+
   function render(v) {
     if (v !== undefined) view = v;
     $('diskResult').hidden = !view;
@@ -81,6 +166,7 @@
     $('diskTotal').textContent = `${fmtSize(view.size)} · ${view.files.toLocaleString()} ${t('files')}`;
     $('diskUp').disabled = view.crumbs.length < 2;
     drawMap();
+    renderAdvisor();
     $('diskList').replaceChildren(...view.items.slice(0, 40).map(i => itemRow(i, view.size)));
     $('diskTopCard').hidden = !view.top.length;
     $('diskTop').replaceChildren(...view.top.map(i => itemRow({ ...i, kind: 'file' }, 0)));
@@ -97,35 +183,76 @@
     if (scanning) return;
     const r = await App.api.disk_scan(path);
     if (r && r.error) { toast(r.error); return; }
-    if (r) { scanning = r; $('diskStatus').hidden = false; $('diskStatusText').textContent = t('Starting…'); }
+    if (r) setBusy(r);
+  }
+  async function scanMft() {
+    if (scanning) return;
+    const sel = $('diskMftDrive');
+    const drive = sel ? sel.value : '';
+    if (!drive) { toast(t('No NTFS drive selected')); return; }
+    const r = await App.api.disk_scan_mft(drive);
+    if (r && r.error) { toast(r.error); return; }
+    if (r) setBusy(r);
+  }
+
+  function populateMftDrives(ds) {
+    const sel = $('diskMftDrive');
+    if (!sel) return;
+    const prev = sel.value;
+    const fixed = ds.filter(d => !d.removable);
+    const choices = fixed.length ? fixed : ds;
+    sel.replaceChildren();
+    for (const d of choices) {
+      const opt = el('option');
+      const letter = String(d.path || '').replace(/[\\/]+$/, '');
+      opt.value = d.path || letter;
+      opt.setAttribute('translate', 'no');
+      opt.textContent = d.label ? `${letter} · ${d.label}` : letter;
+      sel.append(opt);
+    }
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+    const mftBtn = $('diskMftBtn');
+    if (mftBtn && !scanning) mftBtn.disabled = !sel.options.length;
   }
 
   async function loadDrives() {
-    const ds = await App.api.disk_drives();
+    const raw = await App.api.disk_drives();
+    const ds = Array.isArray(raw) ? raw : [];
     $('diskDrives').replaceChildren(...ds.map(d => {
       const c = el('button', 'dm-drive');
-      const used = d.used / d.total;
+      const used = d.total ? d.used / d.total : 0;
       const head = el('div', 'dm-drive-head'); head.append(el('b', null, d.path.replace('\\', '')), el('span', null, d.label));
       const bar = el('div', 'dm-bar big' + (used > .9 ? ' full' : '')); bar.style.setProperty('--p', used);
       c.append(head, bar, el('small', null, `${fmtSize(d.free)} ${t('free of')} ${fmtSize(d.total)}`));
       c.onclick = () => scan(d.path);
       return c;
     }));
+    populateMftDrives(ds);
   }
 
   App.on('disk', render);
   App.on('job', job => {
     if (job.kind !== 'disk' || job.id !== scanning) return;
     if (job.status === 'running') $('diskStatusText').textContent = job.text || '';
-    else { scanning = null; $('diskStatus').hidden = true; if (job.status === 'error') toast(job.text); }
+    else { setBusy(null); if (job.status === 'error') toast(job.text); }
   });
 
   App.pages.diskmap = {
     init() {
       $('diskFolder').onclick = async () => { const f = await App.api.disk_pick(); if (f) scan(f); };
+      if ($('diskMftBtn')) $('diskMftBtn').onclick = scanMft;
       $('diskCancel').onclick = () => scanning && App.api.cancel_job(scanning);
       $('diskUp').onclick = () => view && view.crumbs.length > 1 && open(view.crumbs[view.crumbs.length - 2].path);
       $('diskRescan').onclick = () => view && scan(view.root);
+      const tabs = $('diskAdvTabs');
+      if (tabs) {
+        tabs.querySelectorAll('button[data-v]').forEach(btn => {
+          btn.onclick = () => {
+            advTab = btn.dataset.v || 'safe';
+            renderAdvisor();
+          };
+        });
+      }
       new ResizeObserver(() => drawMap()).observe($('diskMap'));
     },
     show() { loadDrives(); },

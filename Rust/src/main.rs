@@ -21,7 +21,9 @@ use serde_json::json;
 use tauri::{DragDropEvent, Manager, WindowEvent};
 
 fn main() {
-    if tools::findfiles::run_mft_cli_if_requested() {
+    if tools::findfiles::run_mft_cli_if_requested()
+        || tools::diskmap::run_mft_disk_cli_if_requested()
+    {
         return;
     }
     let cli = tools::explorer::parse_args(std::env::args());

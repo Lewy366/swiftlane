@@ -101,8 +101,10 @@ function showPage(name) {
   if (navBtn && navBtn.dataset.feature && !f[navBtn.dataset.feature]) name = firstPage();
   App.page = name;
   setNav(false);
+  document.body.classList.toggle('on-home', name === 'home');
   document.querySelectorAll('.page').forEach(p => p.hidden = p.id !== 'page-' + name);
   document.querySelectorAll('.nav').forEach(n => n.classList.toggle('on', n.dataset.page === name));
+  if (App.recordToolVisit) App.recordToolVisit(name);
   try { localStorage.setItem('swiftlane-page', name); } catch (e) {}
   const page = App.pages[name];
   if (page && page.show) page.show();
@@ -330,7 +332,7 @@ async function init() {
   for (const page of Object.values(App.pages)) if (page.init) page.init();
   let start = App.state.start_page;
   try { start = start || localStorage.getItem('swiftlane-page'); } catch (e) {}
-  showPage(start || firstPage());
+  showPage(start || 'home');
   fromExplorer(App.state.explorer);
 }
 window.addEventListener('pywebviewready', init);

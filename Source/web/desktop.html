@@ -108,6 +108,7 @@
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
   <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M18 19h3v2"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5M5 9.5V20h5v-5h4v5h5V9.5"/></symbol>
 </svg>
 
 <div class="app">
@@ -127,6 +128,7 @@
       </div>
     </div>
     <button class="search-btn" id="searchBtn"><svg class="i"><use href="#i-search"/></svg><span>Search</span><kbd translate="no">Ctrl K</kbd></button>
+    <button class="nav" data-page="home"><svg class="i"><use href="#i-home"/></svg>Home</button>
     <div class="nav-tools" id="navTools"></div>
     <div class="spacer"></div>
     <button class="nav" data-page="alltools"><svg class="i"><use href="#i-grid"/></svg>All tools</button>
@@ -137,6 +139,64 @@
   </aside>
 
   <main class="main" id="main">
+
+    <!-- ============ Home / Greeting screen ============ -->
+    <section class="page" id="page-home" hidden>
+      <div class="home-shell">
+        <div class="home-topbar">
+          <button class="btn home-menu-btn" id="homeMenuBtn" title="Open menu" aria-label="Open menu"><svg class="i"><use href="#i-menu"/></svg></button>
+          <div class="home-status-pill"><i class="dot" id="homeStatusDot"></i><span id="homeStatusText">Ready</span></div>
+        </div>
+        <div class="home-grid">
+          <aside class="card home-left">
+            <div class="home-sec">
+              <div class="home-sec-head">
+                <span class="label" style="margin:0">Recent tools</span>
+                <button class="btn ghost small" id="homeAllTools">All →</button>
+              </div>
+              <div class="home-recent-tools" id="homeRecentTools"></div>
+            </div>
+            <div class="home-sec home-sec-files">
+              <div class="home-sec-head">
+                <span class="label" style="margin:0">Recent files</span>
+              </div>
+              <div class="home-recent-files" id="homeRecentFiles"></div>
+            </div>
+          </aside>
+
+          <div class="home-center">
+            <svg class="home-logo" viewBox="0 0 256 256" role="img" aria-label="Swiftlane">
+              <rect x="8" y="8" width="240" height="240" rx="54" fill="#0e121c" stroke="rgba(255,255,255,.18)" stroke-width="5"/>
+              <path class="wm-l" d="M 152 60 H 178 V 166 H 218 L 205 194 H 152 Z"/>
+              <rect x="142" y="122" width="44" height="44" rx="4" fill="#0e121c"/>
+              <path fill="#f3f5f8" d="M 136 60 H 82 C 52 60 38 76 38 98 C 38 120 52 134 82 138 L 120 143 C 130 145 134 150 134 157 C 134 165 126 168 112 168 H 50 L 38 194 H 114 C 146 194 162 178 162 155 C 162 131 146 119 114 115 L 80 110 C 70 108 66 104 66 97 C 66 90 72 86 86 86 H 126 Z"/>
+            </svg>
+            <div class="home-wordmark" translate="no"><b>SWIFT</b><span>LANE</span></div>
+            <p class="home-greeting muted" id="homeGreeting">Welcome</p>
+            <button class="home-search-pill" id="homeSearchBtn">
+              <svg class="i"><use href="#i-search"/></svg>
+              <span>Jump to a tool…</span>
+              <kbd translate="no">Ctrl K</kbd>
+            </button>
+          </div>
+
+          <div class="home-right">
+            <section class="card home-upd-card" id="homeUpdCard">
+              <div class="home-upd-head">
+                <div>
+                  <b id="homeUpdTitle">Up to date</b>
+                  <small class="muted mono" id="homeUpdSub"></small>
+                </div>
+                <i class="home-upd-dot ok" id="homeUpdDot"></i>
+              </div>
+              <span class="label" id="homeUpdHead" style="margin:10px 0 6px">Patch notes</span>
+              <ul class="home-upd-notes" id="homeUpdNotes"></ul>
+              <button class="btn" id="homeUpdBtn" style="width:100%;margin-top:12px">Check for updates</button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ============ Phone transfer ============ -->
     <section class="page" id="page-transfer" hidden>
@@ -242,22 +302,101 @@
       <section class="card"><h2>Vault jobs<span class="spacer"></span><button class="btn ghost" data-clear-jobs="vault">Clear</button></h2><div class="list" id="jobs-vault"></div><div class="empty" data-jobs-empty="vault">Adding and taking out files shows up here.</div></section>
     </section>
 
-    <!-- ============ Disk space map ============ -->
+    <!-- ============ Storage & Cleanup (Drive map + Quick clean + Downloads + Games) ============ -->
     <section class="page" id="page-diskmap" hidden>
-      <div class="page-head"><div><h1>Disk space</h1><p>See what takes up the room. Click a block to look inside. Nothing is deleted unless you choose it, and then only into the Recycle Bin.</p></div></div>
-      <section class="card"><h2>Choose what to look at</h2>
-        <div class="dm-drives" id="diskDrives"></div>
-        <div class="pdf-bar" style="margin-top:12px"><button class="btn" id="diskFolder"><svg class="i"><use href="#i-folder"/></svg> Scan a folder…</button><span class="muted small">or drop a folder here</span></div>
-        <div class="dm-status" id="diskStatus" hidden><span class="spinner"></span><span class="muted small" id="diskStatusText" translate="no"></span><span class="spacer"></span><button class="btn small ghost" id="diskCancel">Stop</button></div>
+      <div class="page-head">
+        <div><h1>Storage &amp; Cleanup</h1><p>Explore what fills up your drives, clear safe caches, tidy Downloads, and manage Steam games. Nothing is deleted until you confirm.</p></div>
+        <div class="seg" id="stModeTabs">
+          <button data-v="map" class="on">Drive map</button>
+          <button data-v="quick">Quick clean</button>
+          <button data-v="downloads">Downloads</button>
+          <button data-v="games">Games</button>
+        </div>
+      </div>
+
+      <section class="card cl-space-card" id="clSpaceCard" hidden>
+        <div class="cl-space-head">
+          <b id="clFreeText">Measuring…</b>
+          <span class="cl-after" id="clAfterText"></span>
+        </div>
+        <div class="cl-bar" aria-hidden="true">
+          <i class="cl-bar-used" id="clBarUsed"></i>
+          <i class="cl-bar-sel" id="clBarSel"></i>
+          <i class="cl-bar-free" id="clBarFree"></i>
+        </div>
+        <div class="pdf-bar" style="margin-top:12px">
+          <button class="btn small" id="clRefresh"><svg class="i"><use href="#i-refresh"/></svg> Re-measure</button>
+          <span class="spacer"></span>
+          <button class="btn danger" id="clRemoveBtn" disabled><svg class="i"><use href="#i-trash"/></svg> Remove ticked</button>
+        </div>
       </section>
-      <div id="diskResult" hidden>
-        <section class="card">
-          <div class="pdf-bar"><button class="btn small ghost" id="diskUp">↑ Up</button><div class="dm-crumbs" id="diskCrumbs"></div><span class="spacer"></span><span class="muted small" id="diskTotal"></span><button class="btn small ghost" id="diskRescan">Scan again</button></div>
-          <div class="dm-map" id="diskMap"></div>
-          <div class="dm-legend muted small"><span><i class="dm-dir"></i>Folders</span><span><i class="dm-k-vid"></i>Videos</span><span><i class="dm-k-img"></i>Pictures</span><span><i class="dm-k-aud"></i>Audio</span><span><i class="dm-k-zip"></i>Archives</span><span><i class="dm-k-other"></i>Other files</span><span><i class="dm-small"></i>Small files</span></div>
+
+      <div id="diskTabMap">
+        <section class="card"><h2>Choose what to look at</h2>
+          <div class="dm-drives" id="diskDrives"></div>
+          <div class="pdf-bar" style="margin-top:12px">
+            <button class="btn" id="diskFolder"><svg class="i"><use href="#i-folder"/></svg> Scan a folder…</button>
+            <span class="muted small">or drop a folder here</span>
+            <span class="spacer"></span>
+            <select class="input" id="diskMftDrive" style="width:auto;padding:6px 28px 6px 10px" title="NTFS drive for fast MFT scan"></select>
+            <button class="btn" id="diskMftBtn" title="Reads the NTFS Master File Table sequentially for a 2–5 second full-drive scan (Windows asks for admin)"><svg class="i"><use href="#i-bolt"/></svg> Fast NTFS scan (Admin)</button>
+          </div>
+          <div class="dm-status" id="diskStatus" hidden><span class="spinner"></span><span class="muted small" id="diskStatusText" translate="no"></span><span class="spacer"></span><button class="btn small ghost" id="diskCancel">Stop</button></div>
         </section>
-        <section class="card"><h2>In this folder</h2><div class="list" id="diskList"></div></section>
-        <section class="card" id="diskTopCard"><h2>Biggest files</h2><div class="list" id="diskTop"></div></section>
+        <div id="diskResult" hidden>
+          <section class="card">
+            <div class="pdf-bar"><button class="btn small ghost" id="diskUp">↑ Up</button><div class="dm-crumbs" id="diskCrumbs"></div><span class="spacer"></span><span class="muted small" id="diskTotal"></span><button class="btn small ghost" id="diskRescan">Scan again</button></div>
+            <div class="dm-map" id="diskMap"></div>
+            <div class="dm-legend muted small"><span><i class="dm-dir"></i>Folders</span><span><i class="dm-k-vid"></i>Videos</span><span><i class="dm-k-img"></i>Pictures</span><span><i class="dm-k-aud"></i>Audio</span><span><i class="dm-k-zip"></i>Archives</span><span><i class="dm-k-other"></i>Other files</span><span><i class="dm-small"></i>Small files</span></div>
+          </section>
+          <section class="card" id="diskAdvisorCard" hidden>
+            <div class="pdf-bar" style="margin-bottom:10px">
+              <h2 style="margin:0">Cleanup advisor</h2>
+              <span class="spacer"></span>
+              <div class="seg" id="diskAdvTabs">
+                <button data-v="safe" class="on">Safe to remove</button>
+                <button data-v="consider">Consider removing</button>
+                <button data-v="keep">Should stay</button>
+              </div>
+            </div>
+            <div class="list" id="diskAdvList"></div>
+            <div class="empty" id="diskAdvEmpty" hidden>Nothing flagged in this category.</div>
+          </section>
+          <section class="card"><h2>In this folder</h2><div class="list" id="diskList"></div></section>
+          <section class="card" id="diskTopCard"><h2>Biggest files</h2><div class="list" id="diskTop"></div></section>
+        </div>
+      </div>
+
+      <div id="diskTabQuick" hidden>
+        <section class="card">
+          <div class="pdf-bar" style="margin-bottom:12px">
+            <button class="btn small" id="clSelSafe">Tick all “Safe to clear”</button>
+            <button class="btn small ghost" id="clSelNoneQ">Untick all</button>
+            <span class="muted small">Items with an action button open Windows or Steam's own tool.</span>
+          </div>
+          <div id="clQuickList"></div>
+        </section>
+      </div>
+
+      <div id="diskTabDownloads" hidden>
+        <section class="card">
+          <div class="pdf-bar" style="margin-bottom:12px">
+            <button class="btn small" id="clSelArch">Tick archives (.zip .7z .rar)</button>
+            <button class="btn small" id="clSelInst">Tick installers (.exe .msi .iso)</button>
+            <button class="btn small ghost" id="clSelNoneD">Untick all</button>
+            <span class="muted small">Double-click a row to show in File Explorer · deleted items go to Recycle Bin.</span>
+          </div>
+          <div class="list" id="clDlList"></div>
+        </section>
+      </div>
+
+      <div id="diskTabGames" hidden>
+        <section class="card">
+          <h2>Installed Steam games</h2>
+          <p class="muted small" style="margin-top:-6px">Discovered across all your Steam libraries. Uninstall opens Steam's own uninstall dialog and keeps your cloud saves.</p>
+          <div class="list" id="clGamesList"></div>
+          <div class="empty" id="clGamesEmpty" hidden>No Steam libraries found on this PC.</div>
+        </section>
       </div>
     </section>
 
@@ -935,6 +1074,7 @@
 <script src="js/i18n-share.js"></script>
 <script src="js/core.js"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/home.js"></script>
 <script src="js/transfer.js"></script>
 <script src="js/share.js"></script>
 <script src="js/converter.js"></script>
@@ -949,6 +1089,7 @@
 <script src="js/trimmer.js"></script>
 <script src="js/vault.js"></script>
 <script src="js/diskmap.js"></script>
+<script src="js/cleaner.js"></script>
 <script src="js/duplicates.js"></script>
 <script src="js/findfiles.js"></script>
 <script src="js/startup.js"></script>
