@@ -27,7 +27,7 @@ use tauri::{AppHandle, Manager};
 use tokio::io::AsyncWriteExt;
 
 use crate::api::{push, AppState};
-use crate::config;
+use crate::{config, tls};
 
 const FAIL_LIMIT: u32 = 10;
 const LOCKOUT: Duration = Duration::from_secs(15 * 60);
@@ -67,6 +67,9 @@ pub struct Transfer {
     pub running: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
     pub error: Mutex<Option<String>>,
     notify: Mutex<(Vec<String>, u64)>,
+    pub ca: Mutex<Option<std::sync::Arc<tls::Authority>>>,
+    acceptor: Mutex<Option<tokio_rustls::TlsAcceptor>>,
+    tls_addrs: Mutex<Vec<String>>,
 }
 
 impl Transfer {
@@ -83,6 +86,9 @@ impl Transfer {
             running: Mutex::new(None),
             error: Mutex::new(None),
             notify: Mutex::new((Vec::new(), 0)),
+            ca: Mutex::new(None),
+            acceptor: Mutex::new(None),
+            tls_addrs: Mutex::new(Vec::new()),
         }
     }
 
@@ -398,6 +404,34 @@ fn notify_received(app: &AppHandle, name: String) {
 #[derive(Clone, Copy)]
 struct Conn {
     ip: IpAddr,
+    secure: bool,
+    local: SocketAddr,
+}
+
+const CERT_PATHS: &[&str] = &["/cert", "/swiftlane.mobileconfig", "/swiftlane-ca.cer"];
+const PAGES: &[&str] = &["/", "/manifest.webmanifest", "/icon-180.png", "/icon-512.png", "/cast"];
+
+/// Checks every request goes through first: the address, the lockout, and "only encrypted
+/// connections" (plain pages are sent to the encrypted address; the certificate pages stay reachable).
+async fn guard(State(app): State<AppHandle>, Extension(c): Extension<Conn>, req: Request, next: axum::middleware::Next) -> Response {
+    if let Some(r) = client_ok(&app, c.ip) {
+        return r;
+    }
+    let path = req.uri().path().to_string();
+    let st = app.state::<AppState>();
+    let https_only = st.cfg.lock().unwrap()["https_only"].as_bool().unwrap_or(false);
+    if !c.secure && https_only && st.transfer.ca.lock().unwrap().is_some() && !CERT_PATHS.contains(&path.as_str()) {
+        if req.method() == axum::http::Method::GET && PAGES.contains(&path.as_str()) {
+            let to = format!("https://{}:{}{}", c.local.ip(), c.local.port(), path);
+            let mut r = StatusCode::MOVED_PERMANENTLY.into_response();
+            if let Ok(v) = HeaderValue::from_str(&to) {
+                r.headers_mut().insert(header::LOCATION, v);
+            }
+            return r;
+        }
+        return json_resp(StatusCode::FORBIDDEN, json!({ "error": "This PC only accepts encrypted connections. Open Swiftlane through its secure link (https://)." }));
+    }
+    next.run(req).await
 }
 
 fn json_resp(code: StatusCode, v: Value) -> Response {
@@ -455,26 +489,45 @@ fn static_file(app: &AppHandle, name: &str, content_type: &'static str) -> Respo
     r
 }
 
-async fn page(State(app): State<AppHandle>, Extension(c): Extension<Conn>, req: Request) -> Response {
-    if let Some(r) = client_ok(&app, c.ip) {
-        return r;
-    }
+async fn page(State(app): State<AppHandle>, req: Request) -> Response {
     match req.uri().path() {
         "/" => static_file(&app, "phone.html", "text/html; charset=utf-8"),
         "/manifest.webmanifest" => static_file(&app, "manifest.webmanifest", "application/manifest+json"),
         "/icon-180.png" => static_file(&app, "icon-180.png", "image/png"),
         "/icon-512.png" => static_file(&app, "icon-512.png", "image/png"),
-        "/cert" | "/swiftlane.mobileconfig" | "/swiftlane-ca.cer" => {
-            json_resp(StatusCode::NOT_FOUND, json!({ "error": "Encrypted connections aren't available on this PC." }))
-        }
+        "/cert" | "/swiftlane.mobileconfig" | "/swiftlane-ca.cer" => cert_file(&app, req.uri().path()),
         _ => json_resp(StatusCode::NOT_FOUND, json!({ "error": "Not found." })),
     }
 }
 
-async fn not_yet(State(app): State<AppHandle>, Extension(c): Extension<Conn>) -> Response {
-    if let Some(r) = client_ok(&app, c.ip) {
-        return r;
+/// The certificate pages: how to trust Swiftlane's CA on the phone.
+fn cert_file(app: &AppHandle, path: &str) -> Response {
+    let Some(ca) = app.state::<AppState>().transfer.ca.lock().unwrap().clone() else {
+        return json_resp(StatusCode::NOT_FOUND, json!({ "error": "Encrypted connections aren't available on this PC." }));
+    };
+    let (body, ctype, disposition): (Vec<u8>, &'static str, Option<&'static str>) = match path {
+        "/cert" => {
+            let Some(page) = app.asset_resolver().get("cert.html".to_string()) else {
+                return json_resp(StatusCode::NOT_FOUND, json!({ "error": "Not found." }));
+            };
+            let html = String::from_utf8_lossy(&page.bytes).replace("{{FINGERPRINT}}", &ca.fingerprint());
+            (html.into_bytes(), "text/html; charset=utf-8", None)
+        }
+        "/swiftlane.mobileconfig" => (ca.mobileconfig(), "application/x-apple-aspen-config", Some("attachment; filename=\"Swiftlane.mobileconfig\"")),
+        _ => (ca.der.clone(), "application/x-x509-ca-cert", Some("attachment; filename=\"Swiftlane.cer\"")),
+    };
+    let mut r = Response::new(Body::from(body));
+    r.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static(ctype));
+    if let Some(d) = disposition {
+        r.headers_mut().insert(header::CONTENT_DISPOSITION, HeaderValue::from_static(d));
+    } else {
+        r.headers_mut().insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(PAGE_CSP));
     }
+    common_headers(r.headers_mut());
+    r
+}
+
+async fn not_yet() -> Response {
     json_resp(StatusCode::FORBIDDEN, json!({ "error": "That isn't in the Rust version of Swiftlane yet." }))
 }
 
@@ -483,19 +536,19 @@ fn pc_name() -> String {
 }
 
 async fn ping(State(app): State<AppHandle>, Extension(c): Extension<Conn>, headers: HeaderMap) -> Response {
-    if let Some(r) = client_ok(&app, c.ip).or_else(|| authorized(&app, c.ip, &headers)) {
+    if let Some(r) = authorized(&app, c.ip, &headers) {
         return r;
     }
     let cfg = app.state::<AppState>().cfg.lock().unwrap().clone();
     json_resp(StatusCode::OK, json!({
         "ok": true, "app": "Swiftlane", "pc": pc_name(), "lang": cfg["language"],
         "remote": cfg["features"]["remote"].as_bool().unwrap_or(false), "power": cfg["remote_power"].as_bool().unwrap_or(false),
-        "secure": false, "tls": false,
+        "secure": c.secure, "tls": app.state::<AppState>().transfer.ca.lock().unwrap().is_some(),
     }))
 }
 
 async fn outbox(State(app): State<AppHandle>, Extension(c): Extension<Conn>, headers: HeaderMap) -> Response {
-    if let Some(r) = client_ok(&app, c.ip).or_else(|| authorized(&app, c.ip, &headers)) {
+    if let Some(r) = authorized(&app, c.ip, &headers) {
         return r;
     }
     let st = app.state::<AppState>();
@@ -514,9 +567,6 @@ struct DlQuery {
 
 /// A queued file. Links are signed and expire, so they work in a plain <a href>.
 async fn download(State(app): State<AppHandle>, Extension(c): Extension<Conn>, UrlPath((id, _name)): UrlPath<(String, String)>, Query(q): Query<DlQuery>) -> Response {
-    if let Some(r) = client_ok(&app, c.ip) {
-        return r;
-    }
     let st = app.state::<AppState>();
     let exp = q.exp.unwrap_or_default();
     let valid = exp.parse::<u64>().ok().filter(|e| (*e as f64) > now_secs()).is_some_and(|e| {
@@ -572,7 +622,7 @@ struct UploadQuery {
 
 /// A file from the phone: streamed to a hidden temporary file, then moved into place.
 async fn upload(State(app): State<AppHandle>, Extension(c): Extension<Conn>, Query(q): Query<UploadQuery>, req: Request) -> Response {
-    if let Some(r) = client_ok(&app, c.ip).or_else(|| authorized(&app, c.ip, req.headers())) {
+    if let Some(r) = authorized(&app, c.ip, req.headers()) {
         return r;
     }
     let headers = req.headers().clone();
@@ -675,6 +725,7 @@ fn router(app: AppHandle) -> Router {
         .route("/api/cast/answer", get(not_yet))
         .fallback(page)
         .layer(axum::extract::DefaultBodyLimit::disable()) // uploads check their own size limit
+        .layer(axum::middleware::from_fn_with_state(app.clone(), guard))
         .with_state(app)
 }
 
@@ -744,15 +795,21 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
                 _ = &mut stop_rx => break,
                 accepted = listener.accept() => {
                     let Ok((stream, peer)) = accepted else { continue };
-                    let svc = svc.clone().layer(Extension(Conn { ip: peer.ip() }));
+                    let Ok(local) = stream.local_addr() else { continue };
+                    let svc = svc.clone();
+                    let acceptor = app2.state::<AppState>().transfer.acceptor.lock().unwrap().clone();
                     tokio::spawn(async move {
-                        let io = hyper_util::rt::TokioIo::new(stream);
-                        let service = hyper_util::service::TowerToHyperService::new(svc);
-                        let _ = hyper::server::conn::http1::Builder::new()
-                            .timer(hyper_util::rt::TokioTimer::new())
-                            .header_read_timeout(Duration::from_secs(30))
-                            .serve_connection(io, service)
-                            .await;
+                        // Encrypted and plain connections share the port: a TLS connection starts with byte 0x16.
+                        if let Some(acceptor) = acceptor {
+                            let mut first = [0u8; 1];
+                            let peeked = tokio::time::timeout(Duration::from_secs(15), stream.peek(&mut first)).await;
+                            if matches!(peeked, Ok(Ok(1))) && first[0] == 0x16 {
+                                let Ok(Ok(tls)) = tokio::time::timeout(Duration::from_secs(15), acceptor.accept(stream)).await else { return };
+                                serve(tls, svc.layer(Extension(Conn { ip: peer.ip(), secure: true, local }))).await;
+                                return;
+                            }
+                        }
+                        serve(stream, svc.layer(Extension(Conn { ip: peer.ip(), secure: false, local }))).await;
                     });
                 }
             }
@@ -760,7 +817,57 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
         config::log("Phone transfer switched off; no longer listening on the network");
     });
     config::log(&format!("Swiftlane {} listening on port {port}, saving to {}", crate::api::VERSION, save_dir.display()));
+    setup_tls(app);
     Ok(())
+}
+
+async fn serve<I>(io: I, svc: Router)
+where
+    I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    let service = hyper_util::service::TowerToHyperService::new(svc);
+    let _ = hyper::server::conn::http1::Builder::new()
+        .timer(hyper_util::rt::TokioTimer::new())
+        .header_read_timeout(Duration::from_secs(30))
+        .serve_connection(hyper_util::rt::TokioIo::new(io), service)
+        .await;
+}
+
+/// Encrypted phone transfer: load (or make) Swiftlane's CA and a certificate for today's addresses.
+pub fn setup_tls(app: &AppHandle) {
+    let st = app.state::<AppState>();
+    let addrs: Vec<String> = local_addresses().into_iter().map(|(_, ip)| ip).collect();
+    let ca = match st.transfer.ca.lock().unwrap().clone() {
+        Some(ca) => Ok(ca),
+        None => tls::Authority::load_or_create().map(std::sync::Arc::new),
+    };
+    match ca.and_then(|ca| ca.acceptor(&addrs).map(|a| (ca, a))) {
+        Ok((ca, acceptor)) => {
+            *st.transfer.ca.lock().unwrap() = Some(ca);
+            *st.transfer.acceptor.lock().unwrap() = Some(acceptor);
+            *st.transfer.tls_addrs.lock().unwrap() = addrs;
+        }
+        Err(e) => {
+            config::log(&format!("Encrypted phone transfer unavailable: {e}"));
+            *st.transfer.ca.lock().unwrap() = None;
+            *st.transfer.acceptor.lock().unwrap() = None;
+        }
+    }
+}
+
+/// A new network address (other Wi-Fi, Tailscale on/off) needs a new certificate.
+pub fn watch_addresses(app: AppHandle) {
+    loop {
+        std::thread::sleep(Duration::from_secs(60));
+        let st = app.state::<AppState>();
+        if st.transfer.running.lock().unwrap().is_none() {
+            continue;
+        }
+        let now: Vec<String> = local_addresses().into_iter().map(|(_, ip)| ip).collect();
+        if *st.transfer.tls_addrs.lock().unwrap() != now {
+            setup_tls(&app);
+        }
+    }
 }
 
 pub fn stop(app: &AppHandle) {

@@ -5,6 +5,7 @@
 mod api;
 mod config;
 mod notify;
+mod tls;
 mod transfer;
 mod updater;
 mod winapi;
@@ -29,6 +30,8 @@ fn main() {
             if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
                 let _ = transfer::start(&handle);
             }
+            let watcher = handle.clone();
+            std::thread::spawn(move || transfer::watch_addresses(watcher));
             std::thread::spawn(move || api::update_loop(handle));
             config::log(&format!("Swiftlane {} (Rust) started", api::VERSION));
             Ok(())

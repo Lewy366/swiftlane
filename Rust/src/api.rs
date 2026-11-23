@@ -119,10 +119,21 @@ pub fn get_state(st: &AppState) -> Value {
     let code = cfg["code"].as_str().unwrap_or("").to_string();
     let port = cfg["port"].as_u64().unwrap_or(8765);
     let addrs = transfer::local_addresses();
+    let ca = st.transfer.ca.lock().unwrap().clone();
+    let https = cfg["https_only"].as_bool().unwrap_or(false) && ca.is_some();
+    let scheme = if https { "https" } else { "http" };
     let addresses: Vec<Value> = addrs.iter().map(|(label, ip)| json!({
-        "label": label, "host": format!("{ip}:{port}"), "shortcut": format!("http://{ip}:{port}/upload?name=")
+        "label": label, "host": format!("{ip}:{port}"), "shortcut": format!("{scheme}://{ip}:{port}/upload?name=")
     })).collect();
-    let qr = transfer::qr_svg(&format!("http://{}:{port}/#{code}", addrs[0].1));
+    let qr = transfer::qr_svg(&format!("{scheme}://{}:{port}/#{code}", addrs[0].1));
+    let tls_info = match &ca {
+        Some(ca) => json!({
+            "ready": true, "https_only": cfg["https_only"], "fingerprint": ca.fingerprint(),
+            "cert_qr": transfer::qr_svg(&format!("http://{}:{port}/cert", addrs[0].1)),
+            "secure_qr": transfer::qr_svg(&format!("https://{}:{port}/#{code}", addrs[0].1)),
+        }),
+        None => json!({ "ready": false, "https_only": false, "fingerprint": "", "cert_qr": null, "secure_qr": null }),
+    };
     let mut s = json!({
         "version": VERSION,
         "rust": true,
@@ -131,7 +142,7 @@ pub fn get_state(st: &AppState) -> Value {
         "server_error": *st.transfer.error.lock().unwrap(),
         "code_pretty": config::pretty_code(&code),
         "qr": qr,
-        "tls": { "ready": false, "https_only": false, "fingerprint": "", "cert_qr": null, "secure_qr": null },
+        "tls": tls_info,
         "addresses": addresses,
         "save_dir": cfg.get("save_dir").cloned().unwrap_or(json!("")),
         "notify": cfg["notify"],
