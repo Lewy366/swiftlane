@@ -50,6 +50,11 @@ pub fn is_allowed_method(method: &str) -> bool {
 /// Embedded stdin/stdout JSON-lines driver around unmodified Source/toolkit/calc.py.
 const PY_BRIDGE: &str = r#"
 import json, sys
+for s in (sys.stdin, sys.stdout):
+    try:
+        s.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 if sys.platform == "win32":
     try:
         import ctypes
@@ -290,10 +295,8 @@ fn spawn_helper(angle: &str) -> Result<(HelperProc, Option<Value>), String> {
             .or_else(|| program("python3"))
             .ok_or_else(|| "The scientific calculator needs Python with SymPy (or swiftlane-calc.exe next to Swiftlane).".to_string())?;
         let mut c = command(&py);
-        c.env("PYTHONUTF8", "1")
-            .env("PYTHONIOENCODING", "utf-8")
-            .arg("-u")
-            .arg("-c")
+        c.current_dir(&calc_dir)
+            .args(["-P", "-E", "-u", "-c"])
             .arg(PY_BRIDGE)
             .arg(&calc_dir)
             .arg(angle);
