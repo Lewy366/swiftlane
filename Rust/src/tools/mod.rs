@@ -20,6 +20,9 @@ mod trimmer;
 mod downloader;
 mod currency;
 mod speedtest;
+mod adblock;
+mod netscan;
+mod exposure;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -33,6 +36,9 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         downloader::dispatch,
         currency::dispatch,
         speedtest::dispatch,
+        adblock::dispatch,
+        netscan::dispatch,
+        exposure::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }
