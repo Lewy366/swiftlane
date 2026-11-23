@@ -25,6 +25,7 @@ mod adblock;
 mod netscan;
 mod exposure;
 pub mod remote;
+pub mod calc;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -43,6 +44,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         netscan::dispatch,
         exposure::dispatch,
         remote::dispatch,
+        calc::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

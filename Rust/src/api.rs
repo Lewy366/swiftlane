@@ -27,7 +27,7 @@ impl AppState {
     }
 }
 
-const TOOL_LISTS: &str = include_str!("tool_lists.json");
+pub(crate) const TOOL_LISTS: &str = include_str!("tool_lists.json");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sends a live event to the page (window.onCore(event, data)).
@@ -37,12 +37,14 @@ pub fn push(app: &AppHandle, event: &str, data: Value) {
 
 #[tauri::command]
 pub async fn call(app: AppHandle, window: tauri::WebviewWindow, method: String, args: Vec<Value>) -> Value {
-    // Only the main window reaches Swiftlane's methods. Other windows (a laptop's screen) get just
-    // their own few methods, like the Python version's separate js_api per window.
+    // Only the main window reaches Swiftlane's methods. Other windows (a laptop's screen or the
+    // pop-out calculator) get just their own few methods, like the Python version's separate js_api.
     let label = window.label().to_string();
     tauri::async_runtime::spawn_blocking(move || {
         if label == "main" {
             dispatch(&app, &method, &args)
+        } else if label == "calculator" {
+            tools::calc::popout_call(&app, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
         } else {
             tools::casting::viewer_call(&app, &label, &method, &args).unwrap_or_else(|| json!({ "error": "Not allowed." }))
         }
@@ -372,7 +374,7 @@ fn choose_download_dir(app: &AppHandle, st: &AppState) -> Value {
 
 const BG_MAX: u64 = 60 * 1024 * 1024;
 
-fn get_background(st: &AppState) -> Value {
+pub(crate) fn get_background(st: &AppState) -> Value {
     let (on, name) = {
         let cfg = st.cfg.lock().unwrap();
         let name = cfg["theme"]["bg_file"].as_str().filter(|n| !n.is_empty()).unwrap_or("background.jpg").to_string();
