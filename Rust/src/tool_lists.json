@@ -1,0 +1,491 @@
+{
+ "formats": {
+  "image": {
+   "in": [
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "bmp",
+    "tif",
+    "tiff",
+    "ico",
+    "avif",
+    "heic",
+    "heif"
+   ],
+   "out": [
+    "jpg",
+    "png",
+    "webp",
+    "gif",
+    "bmp",
+    "tiff",
+    "ico",
+    "avif",
+    "pdf"
+   ]
+  },
+  "video": {
+   "in": [
+    "mp4",
+    "mov",
+    "mkv",
+    "avi",
+    "webm",
+    "m4v",
+    "wmv",
+    "flv",
+    "3gp",
+    "mpg",
+    "mpeg",
+    "ts"
+   ],
+   "out": [
+    "mp4",
+    "mov",
+    "mkv",
+    "avi",
+    "webm",
+    "gif",
+    "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "flac",
+    "ogg",
+    "opus"
+   ]
+  },
+  "audio": {
+   "in": [
+    "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "flac",
+    "ogg",
+    "opus",
+    "wma",
+    "aiff",
+    "aif"
+   ],
+   "out": [
+    "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "flac",
+    "ogg",
+    "opus"
+   ]
+  },
+  "pdf": {
+   "in": [
+    "pdf"
+   ],
+   "out": [
+    "jpg",
+    "png"
+   ]
+  }
+ },
+ "download_choices": {
+  "best": "Best quality video",
+  "1080": "1080p video",
+  "720": "720p video",
+  "480": "480p video",
+  "mp3": "Audio only (MP3)",
+  "m4a": "Audio only (M4A)"
+ },
+ "image_ratios": [
+  "1:1",
+  "4:3",
+  "3:2",
+  "16:9",
+  "9:16",
+  "3:4",
+  "4:5"
+ ],
+ "constants": [
+  [
+   "Universal",
+   "c",
+   "speed of light in vacuum",
+   299792458,
+   "m/s"
+  ],
+  [
+   "Universal",
+   "h",
+   "Planck constant",
+   6.62607015e-34,
+   "J·s"
+  ],
+  [
+   "Universal",
+   "ħ",
+   "reduced Planck constant",
+   1.054571817e-34,
+   "J·s"
+  ],
+  [
+   "Universal",
+   "G",
+   "Newtonian constant of gravitation",
+   6.6743e-11,
+   "m³/(kg·s²)"
+  ],
+  [
+   "Universal",
+   "μ₀",
+   "magnetic constant",
+   1.25663706212e-06,
+   "N/A²"
+  ],
+  [
+   "Universal",
+   "ε₀",
+   "electric constant",
+   8.8541878128e-12,
+   "F/m"
+  ],
+  [
+   "Universal",
+   "Z₀",
+   "characteristic impedance of vacuum",
+   376.730313668,
+   "Ω"
+  ],
+  [
+   "Universal",
+   "mₚ",
+   "proton mass",
+   1.67262192369e-27,
+   "kg"
+  ],
+  [
+   "Universal",
+   "mₙ",
+   "neutron mass",
+   1.67492749804e-27,
+   "kg"
+  ],
+  [
+   "Universal",
+   "mₑ",
+   "electron mass",
+   9.1093837015e-31,
+   "kg"
+  ],
+  [
+   "Universal",
+   "mμ",
+   "muon mass",
+   1.883531627e-28,
+   "kg"
+  ],
+  [
+   "Electromagnetic",
+   "e",
+   "elementary charge",
+   1.602176634e-19,
+   "C"
+  ],
+  [
+   "Electromagnetic",
+   "Φ₀",
+   "magnetic flux quantum",
+   2.067833848e-15,
+   "Wb"
+  ],
+  [
+   "Electromagnetic",
+   "G₀",
+   "conductance quantum",
+   7.748091729e-05,
+   "S"
+  ],
+  [
+   "Electromagnetic",
+   "μB",
+   "Bohr magneton",
+   9.2740100783e-24,
+   "J/T"
+  ],
+  [
+   "Electromagnetic",
+   "μN",
+   "nuclear magneton",
+   5.0507837461e-27,
+   "J/T"
+  ],
+  [
+   "Electromagnetic",
+   "μₑ",
+   "electron magnetic moment",
+   -9.2847647043e-24,
+   "J/T"
+  ],
+  [
+   "Electromagnetic",
+   "μₚ",
+   "proton magnetic moment",
+   1.41060679736e-26,
+   "J/T"
+  ],
+  [
+   "Electromagnetic",
+   "μₙ",
+   "neutron magnetic moment",
+   -9.6623651e-27,
+   "J/T"
+  ],
+  [
+   "Atomic & nuclear",
+   "a₀",
+   "Bohr radius",
+   5.29177210903e-11,
+   "m"
+  ],
+  [
+   "Atomic & nuclear",
+   "α",
+   "fine-structure constant",
+   0.0072973525693,
+   ""
+  ],
+  [
+   "Atomic & nuclear",
+   "rₑ",
+   "classical electron radius",
+   2.8179403262e-15,
+   "m"
+  ],
+  [
+   "Atomic & nuclear",
+   "λc",
+   "Compton wavelength",
+   2.42631023867e-12,
+   "m"
+  ],
+  [
+   "Atomic & nuclear",
+   "R∞",
+   "Rydberg constant",
+   10973731.56816,
+   "1/m"
+  ],
+  [
+   "Atomic & nuclear",
+   "γₚ",
+   "proton gyromagnetic ratio",
+   267522187.44,
+   "1/(s·T)"
+  ],
+  [
+   "Physico-chemical",
+   "u",
+   "atomic mass constant",
+   1.6605390666e-27,
+   "kg"
+  ],
+  [
+   "Physico-chemical",
+   "Nᴀ",
+   "Avogadro constant",
+   6.02214076e+23,
+   "1/mol"
+  ],
+  [
+   "Physico-chemical",
+   "k",
+   "Boltzmann constant",
+   1.380649e-23,
+   "J/K"
+  ],
+  [
+   "Physico-chemical",
+   "R",
+   "molar gas constant",
+   8.314462618,
+   "J/(mol·K)"
+  ],
+  [
+   "Physico-chemical",
+   "F",
+   "Faraday constant",
+   96485.33212,
+   "C/mol"
+  ],
+  [
+   "Physico-chemical",
+   "σ",
+   "Stefan–Boltzmann constant",
+   5.670374419e-08,
+   "W/(m²·K⁴)"
+  ],
+  [
+   "Physico-chemical",
+   "Vm",
+   "molar volume of ideal gas (273.15 K, 100 kPa)",
+   0.02271095464,
+   "m³/mol"
+  ],
+  [
+   "Adopted values",
+   "g",
+   "standard acceleration of gravity",
+   9.80665,
+   "m/s²"
+  ],
+  [
+   "Adopted values",
+   "atm",
+   "standard atmosphere",
+   101325,
+   "Pa"
+  ],
+  [
+   "Adopted values",
+   "t",
+   "Celsius temperature (0 °C in K)",
+   273.15,
+   "K"
+  ]
+ ],
+ "conversions": [
+  [
+   "in_cm",
+   "in",
+   "cm"
+  ],
+  [
+   "ft_m",
+   "ft",
+   "m"
+  ],
+  [
+   "yd_m",
+   "yd",
+   "m"
+  ],
+  [
+   "mile_km",
+   "mile",
+   "km"
+  ],
+  [
+   "nmile_m",
+   "n mile",
+   "m"
+  ],
+  [
+   "pc_km",
+   "pc",
+   "km"
+  ],
+  [
+   "acre_m2",
+   "acre",
+   "m²"
+  ],
+  [
+   "galUS_L",
+   "gal (US)",
+   "L"
+  ],
+  [
+   "galUK_L",
+   "gal (UK)",
+   "L"
+  ],
+  [
+   "kmh_ms",
+   "km/h",
+   "m/s"
+  ],
+  [
+   "oz_g",
+   "oz",
+   "g"
+  ],
+  [
+   "lb_kg",
+   "lb",
+   "kg"
+  ],
+  [
+   "atm_Pa",
+   "atm",
+   "Pa"
+  ],
+  [
+   "mmHg_Pa",
+   "mmHg",
+   "Pa"
+  ],
+  [
+   "hp_kW",
+   "hp",
+   "kW"
+  ],
+  [
+   "kgfcm2_Pa",
+   "kgf/cm²",
+   "Pa"
+  ],
+  [
+   "kgfm_J",
+   "kgf·m",
+   "J"
+  ],
+  [
+   "lbfin2_kPa",
+   "lbf/in²",
+   "kPa"
+  ],
+  [
+   "J_cal",
+   "J",
+   "cal"
+  ],
+  [
+   "kWh_MJ",
+   "kWh",
+   "MJ"
+  ],
+  [
+   "F_C",
+   "°F",
+   "°C"
+  ]
+ ],
+ "regressions": {
+  "lin": "y = a + bx",
+  "quad": "y = a + bx + cx²",
+  "log": "y = a + b·ln x",
+  "exp": "y = a·eᵇˣ",
+  "abx": "y = a·bˣ",
+  "pow": "y = a·xᵇ",
+  "inv": "y = a + b/x"
+ },
+ "calc": {
+  "angle": "deg",
+  "fmt": "norm1",
+  "digits": 10,
+  "vars": {
+   "A": "0",
+   "B": "0",
+   "C": "0",
+   "D": "0",
+   "E": "0",
+   "F": "0",
+   "M": "0",
+   "x": "0",
+   "y": "0"
+  },
+  "ans": "0"
+ }
+}

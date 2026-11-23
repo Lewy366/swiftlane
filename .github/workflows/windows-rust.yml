@@ -1,0 +1,44 @@
+# Builds the Rust version of Swiftlane (Rust/) on one of GitHub's Windows machines.
+# The result is Swiftlane.exe under the run's "Artifacts". It is NOT a release: it isn't signed
+# with the update key, and installed copies never see it. No secrets are used; read-only access.
+name: Windows app (Rust)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["Rust/**", "Source/web/**", ".github/workflows/windows-rust.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Rust
+
+      - name: Build
+        working-directory: Rust
+        run: cargo build --release --locked
+
+      - name: Collect
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory out | Out-Null
+          Copy-Item Rust/target/release/swiftlane.exe out/Swiftlane.exe
+          (Get-FileHash out/Swiftlane.exe -Algorithm SHA256).Hash.ToLower() + "  Swiftlane.exe" | Set-Content out/Swiftlane.exe.sha256
+          Get-Item out/Swiftlane.exe | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swiftlane-Rust-Windows
+          path: out/
+          retention-days: 30
