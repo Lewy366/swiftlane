@@ -8,34 +8,58 @@
 <body>
 <div class="wall" aria-hidden="true">
   <svg class="night" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-    <rect width="1440" height="900" fill="#27305a"/><rect width="1440" height="160" fill="#1f2750"/><rect y="160" width="1440" height="120" fill="#2f3866"/>
-    <rect y="280" width="1440" height="90" fill="#3d4a7c"/><rect y="370" width="1440" height="70" fill="#4f6596"/><rect y="440" width="1440" height="60" fill="#5f86ad"/>
-    <circle cx="1040" cy="470" r="120" fill="#7fd3ea"/><circle cx="1040" cy="470" r="86" fill="#b5ecf7"/>
-    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#2f3a66"/>
-    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#232b52"/>
-    <path d="M0 640 H1440 V900 H0Z" fill="#171d3b"/>
-    <g fill="#7fd3ea" opacity=".5"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/><rect x="1025" y="738" width="30" height="2"/></g>
-    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#10142c"/>
-    <g fill="#fff" opacity=".8"><circle cx="120" cy="60" r="1.6"/><circle cx="330" cy="120" r="1.2"/><circle cx="560" cy="40" r="1.4"/><circle cx="760" cy="150" r="1"/><circle cx="1240" cy="80" r="1.6"/><circle cx="1380" cy="190" r="1.2"/><circle cx="900" cy="60" r="1.1"/></g>
+    <defs>
+      <radialGradient id="topoGlowDark" cx="76%" cy="22%" r="60%">
+        <stop offset="0%" stop-color="#1a9fff" stop-opacity="0.13"/>
+        <stop offset="100%" stop-color="#0f131c" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="#0f131c"/>
+    <rect width="1440" height="900" fill="url(#topoGlowDark)"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.22">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <path d="M-100 525 C230 355, 440 585, 725 405 C965 250, 1190 320, 1540 110"/>
+      <path d="M-100 460 C240 285, 455 515, 745 335 C985 180, 1200 245, 1540 25"/>
+      <path d="M145 950 C410 745, 670 850, 935 670 C1150 525, 1320 580, 1540 475"/>
+      <path d="M290 950 C530 785, 770 875, 1020 720 C1210 605, 1355 645, 1540 565"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="120" ry="58" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="55" ry="24" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="385" cy="695" rx="216" ry="116" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="138" ry="70" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="66" ry="31" transform="rotate(12 385 695)"/>
+    </g>
   </svg>
   <svg class="day" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-    <rect width="1440" height="900" fill="#cfe6f7"/><rect width="1440" height="200" fill="#bcdcf4"/><rect y="200" width="1440" height="160" fill="#c7e2f6"/><rect y="360" width="1440" height="140" fill="#dcecf8"/>
-    <circle cx="1060" cy="300" r="90" fill="#fff6d8"/><circle cx="1060" cy="300" r="62" fill="#fffbea"/>
-    <g fill="#fff" opacity=".85"><ellipse cx="260" cy="170" rx="120" ry="26"/><ellipse cx="330" cy="150" rx="70" ry="30"/><ellipse cx="760" cy="110" rx="90" ry="20"/></g>
-    <path d="M0 520 L140 400 L250 470 L380 330 L520 470 L640 390 L760 480 L900 380 L1040 500 L1180 360 L1320 470 L1440 410 V900 H0Z" fill="#9fc2dd"/>
-    <path d="M0 600 L180 470 L300 540 L460 430 L620 560 L780 470 L930 580 L1090 480 L1260 590 L1440 500 V900 H0Z" fill="#7fa9c9"/>
-    <path d="M0 640 H1440 V900 H0Z" fill="#5fb3cf"/>
-    <g fill="#fff" opacity=".55"><rect x="960" y="660" width="160" height="4"/><rect x="990" y="690" width="100" height="3"/><rect x="1010" y="716" width="60" height="3"/></g>
-    <path d="M0 760 L220 700 L420 760 L640 690 L860 770 L1100 710 L1440 780 V900 H0Z" fill="#4c9a6e"/>
+    <defs>
+      <radialGradient id="topoGlowLight" cx="76%" cy="22%" r="60%">
+        <stop offset="0%" stop-color="#1a9fff" stop-opacity="0.11"/>
+        <stop offset="100%" stop-color="#e9eef6" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="#e9eef6"/>
+    <rect width="1440" height="900" fill="url(#topoGlowLight)"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.16">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <path d="M-100 525 C230 355, 440 585, 725 405 C965 250, 1190 320, 1540 110"/>
+      <path d="M-100 460 C240 285, 455 515, 745 335 C985 180, 1200 245, 1540 25"/>
+      <path d="M145 950 C410 745, 670 850, 935 670 C1150 525, 1320 580, 1540 475"/>
+      <path d="M290 950 C530 785, 770 875, 1020 720 C1210 605, 1355 645, 1540 565"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="120" ry="58" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="55" ry="24" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="385" cy="695" rx="216" ry="116" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="138" ry="70" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="66" ry="31" transform="rotate(12 385 695)"/>
+    </g>
   </svg>
 </div>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <filter id="lens" x="0" y="0" width="100%" height="100%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="4" result="n"/>
-    <feGaussianBlur in="n" stdDeviation="2" result="nb"/>
-    <feDisplacementMap in="SourceGraphic" in2="nb" scale="38" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</defs></svg>
 <div class="bg-image" id="bgImage" hidden><div class="bg-pic" id="bgPic"></div><video class="bg-pic" id="bgVid" muted loop playsinline hidden></video><div class="bg-dim" id="bgDim2"></div></div>
 
 <svg width="0" height="0" style="position:absolute">
@@ -88,11 +112,18 @@
   <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
   <div class="nav-scrim" id="navScrim"></div>
   <aside class="sidebar">
-    <div class="brand"><svg class="wordmark" viewBox="0 0 640 150" role="img" aria-label="Swiftlane">
-      <line x1="36.5" y1="20" x2="596.5" y2="20" class="wm-line" stroke-width="5" stroke-linecap="round"/><line x1="19.2" y1="118" x2="579.2" y2="118" class="wm-line" stroke-width="5" stroke-linecap="round"/>
-      <g class="wm-swift" style="font-family:Bahnschrift;font-weight:700;font-style:italic;font-size:86px"><text x="34" y="98" opacity=".12">SWIFT</text><text x="46" y="98" opacity=".28">SWIFT</text><text x="60" y="98">SWIFT</text></g>
-      <text x="338" y="98" class="wm-ink" style="font-family:Bahnschrift;font-weight:700;font-style:italic;font-size:86px;letter-spacing:2px" translate="no">LANE</text>
-    </svg><small id="version"></small></div>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 256 256" role="img" aria-label="Swiftlane">
+        <rect x="8" y="8" width="240" height="240" rx="54" fill="#0e121c" stroke="rgba(255,255,255,.16)" stroke-width="5"/>
+        <path class="wm-l" d="M 152 60 H 178 V 166 H 218 L 205 194 H 152 Z"/>
+        <rect x="142" y="122" width="44" height="44" rx="4" fill="#0e121c"/>
+        <path fill="#f3f5f8" d="M 136 60 H 82 C 52 60 38 76 38 98 C 38 120 52 134 82 138 L 120 143 C 130 145 134 150 134 157 C 134 165 126 168 112 168 H 50 L 38 194 H 114 C 146 194 162 178 162 155 C 162 131 146 119 114 115 L 80 110 C 70 108 66 104 66 97 C 66 90 72 86 86 86 H 126 Z"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-word" translate="no"><b>SWIFT</b><span>LANE</span></span>
+        <small id="version"></small>
+      </div>
+    </div>
     <button class="search-btn" id="searchBtn"><svg class="i"><use href="#i-search"/></svg><span>Search</span><kbd translate="no">Ctrl K</kbd></button>
     <div class="nav-tools" id="navTools"></div>
     <div class="spacer"></div>
@@ -226,6 +257,80 @@
         <section class="card"><h2>In this folder</h2><div class="list" id="diskList"></div></section>
         <section class="card" id="diskTopCard"><h2>Biggest files</h2><div class="list" id="diskTop"></div></section>
       </div>
+    </section>
+
+    <!-- ============ Duplicate file finder ============ -->
+    <section class="page" id="page-duplicates" hidden>
+      <div class="page-head"><div><h1>Duplicate finder</h1><p>Find exact byte-for-byte duplicate files using multi-core SHA-256 hashing. Nothing is touched until you choose it, and deleted copies only go to the Recycle Bin.</p></div></div>
+      <section class="card">
+        <h2>Choose where to scan</h2>
+        <div class="dm-drives" id="dupDrives"></div>
+        <div class="pdf-bar" style="margin-top:12px">
+          <button class="btn" id="dupPick"><svg class="i"><use href="#i-folder"/></svg> Scan a folder…</button>
+          <span class="muted small">or drop a folder here</span>
+          <span class="spacer"></span>
+          <label class="dup-min muted small">Min size
+            <select class="input" id="dupMinSize" style="width:auto;padding:5px 28px 5px 10px">
+              <option value="0">Any</option>
+              <option value="1048576" selected>1 MB</option>
+              <option value="10485760">10 MB</option>
+              <option value="104857600">100 MB</option>
+            </select>
+          </label>
+        </div>
+        <div class="dm-status" id="dupStatus" hidden><span class="spinner"></span><span class="muted small" id="dupStatusText" translate="no"></span><span class="spacer"></span><button class="btn small ghost" id="dupCancel">Stop</button></div>
+      </section>
+      <div id="dupResult" hidden>
+        <div class="dup-stats">
+          <div class="card dup-stat"><small>Reclaimable space</small><b id="dupReclaimable">0 B</b></div>
+          <div class="card dup-stat"><small>Duplicate sets</small><b id="dupGroupCount">0</b></div>
+          <div class="card dup-stat"><small>Extra copies</small><b id="dupExtraCount">0</b></div>
+        </div>
+        <section class="card">
+          <div class="pdf-bar dup-toolbar">
+            <button class="btn small" id="dupKeepNewest">Keep newest</button>
+            <button class="btn small" id="dupKeepOldest">Keep oldest</button>
+            <button class="btn small" id="dupKeepShortest">Keep shortest path</button>
+            <button class="btn small ghost" id="dupClearSel">Clear selection</button>
+            <span class="spacer"></span>
+            <button class="btn danger" id="dupTrashBtn" disabled><svg class="i"><use href="#i-trash"/></svg> Move to Recycle Bin</button>
+          </div>
+          <div class="dup-groups" id="dupGroups"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ Instant file search ============ -->
+    <section class="page" id="page-findfiles" hidden>
+      <div class="page-head"><div><h1>Find files</h1><p>Search hundreds of thousands of files in milliseconds. Scans your folders with zero elevation, or run an optional read-only NTFS MFT scan as admin.</p></div></div>
+      <section class="card">
+        <div class="ff-bar">
+          <div class="ff-input-wrap">
+            <svg class="i"><use href="#i-search"/></svg>
+            <input class="input" id="findQuery" placeholder="Type part of a file name, ext:pdf, file:, folder:…" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="seg" id="findFilter">
+            <button data-v="all" class="on">All</button>
+            <button data-v="files">Files</button>
+            <button data-v="folders">Folders</button>
+            <button data-v="images">Images</button>
+            <button data-v="video">Video</button>
+            <button data-v="docs">Docs</button>
+          </div>
+        </div>
+        <div class="pdf-bar" style="margin-top:12px">
+          <button class="btn primary" id="findIndexHome"><svg class="i"><use href="#i-refresh"/></svg> Index my files</button>
+          <button class="btn" id="findPick"><svg class="i"><use href="#i-folder"/></svg> Index folder…</button>
+          <span class="spacer"></span>
+          <select class="input" id="findMftDrive" style="width:auto;padding:6px 28px 6px 10px" title="NTFS drive for full MFT scan"></select>
+          <button class="btn" id="findMftBtn" title="Runs a short-lived read-only Windows admin prompt to read the NTFS Master File Table"><svg class="i"><use href="#i-shield"/></svg> NTFS MFT scan (Admin)</button>
+        </div>
+        <div class="dm-status" id="findStatus" hidden><span class="spinner"></span><span class="muted small" id="findStatusText" translate="no"></span><span class="spacer"></span><button class="btn small ghost" id="findCancel">Stop</button></div>
+        <div class="ff-meta muted small" id="findMeta"></div>
+      </section>
+      <section class="card">
+        <div class="list ff-list" id="findList"></div>
+      </section>
     </section>
 
     <!-- ============ Network scanner ============ -->
@@ -644,7 +749,7 @@
             <div class="setting"><div><b>Background</b><small id="bgInfo">Swiftlane wallpaper</small></div>
               <button class="btn" id="bgChoose">Choose…</button><button class="btn ghost" id="bgClear" hidden>Remove</button></div>
             <div id="bgControls" hidden>
-              <div class="setting"><div><b>Blur the background</b><small>The glass always blurs what's behind it; this blurs the whole background too</small></div><label class="switch"><input type="checkbox" id="bgBlurOn"><span></span></label></div>
+              <div class="setting"><div><b>Blur the background</b><small>Soften your picture or video behind the window</small></div><label class="switch"><input type="checkbox" id="bgBlurOn"><span></span></label></div>
               <div class="slider-row" id="bgBlurRow"><span>Blur</span><input type="range" id="bgBlur" min="2" max="40" value="14"><b id="bgBlurVal">14</b></div>
               <div class="slider-row"><span>Darken</span><input type="range" id="bgDim" min="0" max="90" value="30"><b id="bgDimVal">30%</b></div>
               <p class="small" id="bgReadable" style="margin:10px 0 0" hidden></p>
@@ -749,6 +854,8 @@
 <script src="js/trimmer.js"></script>
 <script src="js/vault.js"></script>
 <script src="js/diskmap.js"></script>
+<script src="js/duplicates.js"></script>
+<script src="js/findfiles.js"></script>
 <script src="js/netscan.js"></script>
 <script src="js/exposure.js"></script>
 <script src="js/remote.js"></script>

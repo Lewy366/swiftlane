@@ -11,6 +11,8 @@
     ['trimmer', 'scissors', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
     ['vault', 'lock', 'Vault', 'Files only your password opens'],
     ['diskmap', 'disk', 'Disk space', 'See what fills up your drives'],
+    ['findfiles', 'search', 'Find files', 'Instant file search with optional NTFS MFT scan'],
+    ['duplicates', 'copy', 'Duplicate finder', 'Find exact duplicate files and clean them safely'],
     ['netscan', 'wifi', 'Network devices', 'Who is on your home network'],
     ['exposure', 'radar', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
     ['converter', 'convert', 'File converter', 'Images, video, audio and PDF'],

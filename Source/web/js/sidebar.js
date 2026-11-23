@@ -1,30 +1,32 @@
 // Sidebar with pinned tools and folders (drag to rearrange), the All tools page, and Ctrl+K.
 // Folder names are typed by the user: always shown as text (textContent), never as HTML.
 const TOOLS = [
-  { id: 'transfer', name: 'Phone transfer', icon: 'transfer', feature: 'transfer', desc: 'Send and receive files with your phone over your network', keys: 'phone iphone android send receive' },
-  { id: 'share', name: 'Share links', icon: 'link', feature: 'share', desc: 'Send files to anyone with a link, through Tailscale', keys: 'link send upload friend' },
-  { id: 'contacts', name: 'Send to contacts', icon: 'people', feature: 'contacts', desc: 'Straight to another Swiftlane, no link needed', keys: 'send friend contact p2p peer computer pc another swiftlane', pin: true },
-  { id: 'converter', name: 'File converter', icon: 'convert', feature: 'converter', desc: 'Images, video, audio and PDF', keys: 'convert jpg png mp4 mp3 heic' },
-  { id: 'pdf', name: 'PDF tools', icon: 'pdf', feature: 'pdf', desc: 'Merge, split, reorder, rotate, sign, make smaller', keys: 'pdf merge split sign compress pages', home: 'Files & media' },
-  { id: 'trimmer', name: 'Video trimmer', icon: 'scissors', feature: 'trimmer', desc: 'Cut clips, shrink them to send, keep the sound', keys: 'video cut trim clip discord whatsapp mp3', home: 'Files & media' },
-  { id: 'vault', name: 'Vault', icon: 'lock', feature: 'vault', desc: 'Files only your password opens', keys: 'vault encrypt password private safe secret lock', home: 'Security' },
-  { id: 'diskmap', name: 'Disk space', icon: 'disk', feature: 'diskmap', desc: 'See what fills up your drives', keys: 'disk space storage full drive clean big files treemap', home: 'Files & media' },
-  { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
-  { id: 'exposure', name: 'Is my PC exposed?', icon: 'radar', feature: 'exposure', desc: 'Firewall, open ports, remote access, router', keys: 'security exposed firewall ports upnp remote desktop safe check hacker', home: 'Security' },
-  { id: 'worldclock', name: 'World clock', icon: 'globe', feature: 'worldclock', desc: 'Live times on a map, plan across time zones', keys: 'time zone clock world map city convert meeting utc', home: 'Everyday' },
-  { id: 'airplay', name: 'Screen mirroring', icon: 'airplay', feature: 'airplay', desc: 'Phone or laptop screen on this PC: AirPlay, Miracast, browser', keys: 'airplay miracast mirror mirroring screen iphone ipad mac android samsung smart view laptop browser cast stream tv project', home: 'Everyday' },
-  { id: 'remote', name: 'PC remote', icon: 'remote', desc: 'Music, volume and slides from your phone', keys: 'remote control phone volume music play pause slides presentation', home: 'Everyday' },
-  { id: 'images', name: 'Image editor', icon: 'image', feature: 'images', desc: 'Crop, resize, straighten, adjust colours, compress', keys: 'photo crop resize edit picture' },
-  { id: 'downloader', name: 'Video downloader', icon: 'download', feature: 'downloader', desc: 'YouTube and other sites', keys: 'youtube video mp3 download' },
-  { id: 'currency', name: 'Currency', icon: 'currency', feature: 'currency', desc: 'Live exchange rates', keys: 'money euro dollar zloty exchange' },
-  { id: 'calculator', name: 'Calculator', icon: 'calc', feature: 'calculator', desc: 'Scientific, ClassWiz style', keys: 'math casio maths' },
-  { id: 'speedtest', name: 'Speed test', icon: 'gauge', feature: 'speedtest', desc: 'Download, upload and ping', keys: 'internet speed mbps ping' },
-  { id: 'adblock', name: 'Ad blocker test', icon: 'shield', feature: 'adblock', desc: 'Are ads and trackers blocked?', keys: 'ads tracker dns' },
+  { id: 'transfer', name: 'Phone transfer', icon: 'transfer', feature: 'transfer', cat: 'transfer', desc: 'Send and receive files with your phone over your network', keys: 'phone iphone android send receive' },
+  { id: 'share', name: 'Share links', icon: 'link', feature: 'share', cat: 'transfer', desc: 'Send files to anyone with a link, through Tailscale', keys: 'link send upload friend' },
+  { id: 'contacts', name: 'Send to contacts', icon: 'people', feature: 'contacts', cat: 'transfer', desc: 'Straight to another Swiftlane, no link needed', keys: 'send friend contact p2p peer computer pc another swiftlane', pin: true },
+  { id: 'findfiles', name: 'Find files', icon: 'search', feature: 'findfiles', cat: 'files', desc: 'Instant file search with optional NTFS MFT scan', keys: 'find search files everything locate mft ntfs fast index', home: 'Files & media' },
+  { id: 'duplicates', name: 'Duplicate finder', icon: 'copy', feature: 'duplicates', cat: 'files', desc: 'Find exact duplicate files and clean them safely', keys: 'duplicate copies cleanup sha256 identical storage disk', home: 'Files & media' },
+  { id: 'converter', name: 'File converter', icon: 'convert', feature: 'converter', cat: 'files', desc: 'Images, video, audio and PDF', keys: 'convert jpg png mp4 mp3 heic' },
+  { id: 'pdf', name: 'PDF tools', icon: 'pdf', feature: 'pdf', cat: 'files', desc: 'Merge, split, reorder, rotate, sign, make smaller', keys: 'pdf merge split sign compress pages', home: 'Files & media' },
+  { id: 'trimmer', name: 'Video trimmer', icon: 'scissors', feature: 'trimmer', cat: 'files', desc: 'Cut clips, shrink them to send, keep the sound', keys: 'video cut trim clip discord whatsapp mp3', home: 'Files & media' },
+  { id: 'vault', name: 'Vault', icon: 'lock', feature: 'vault', cat: 'security', desc: 'Files only your password opens', keys: 'vault encrypt password private safe secret lock', home: 'Security' },
+  { id: 'diskmap', name: 'Disk space', icon: 'disk', feature: 'diskmap', cat: 'files', desc: 'See what fills up your drives', keys: 'disk space storage full drive clean big files treemap', home: 'Files & media' },
+  { id: 'netscan', name: 'Network devices', icon: 'wifi', feature: 'netscan', cat: 'security', desc: 'Who is on your home network', keys: 'network devices wifi scan lan who router intruder', home: 'Security' },
+  { id: 'exposure', name: 'Is my PC exposed?', icon: 'radar', feature: 'exposure', cat: 'security', desc: 'Firewall, open ports, remote access, router', keys: 'security exposed firewall ports upnp remote desktop safe check hacker', home: 'Security' },
+  { id: 'worldclock', name: 'World clock', icon: 'globe', feature: 'worldclock', cat: 'everyday', desc: 'Live times on a map, plan across time zones', keys: 'time zone clock world map city convert meeting utc', home: 'Everyday' },
+  { id: 'airplay', name: 'Screen mirroring', icon: 'airplay', feature: 'airplay', cat: 'everyday', desc: 'Phone or laptop screen on this PC: AirPlay, Miracast, browser', keys: 'airplay miracast mirror mirroring screen iphone ipad mac android samsung smart view laptop browser cast stream tv project', home: 'Everyday' },
+  { id: 'remote', name: 'PC remote', icon: 'remote', cat: 'everyday', desc: 'Music, volume and slides from your phone', keys: 'remote control phone volume music play pause slides presentation', home: 'Everyday' },
+  { id: 'images', name: 'Image editor', icon: 'image', feature: 'images', cat: 'files', desc: 'Crop, resize, straighten, adjust colours, compress', keys: 'photo crop resize edit picture' },
+  { id: 'downloader', name: 'Video downloader', icon: 'download', feature: 'downloader', cat: 'files', desc: 'YouTube and other sites', keys: 'youtube video mp3 download' },
+  { id: 'currency', name: 'Currency', icon: 'currency', feature: 'currency', cat: 'everyday', desc: 'Live exchange rates', keys: 'money euro dollar zloty exchange' },
+  { id: 'calculator', name: 'Calculator', icon: 'calc', feature: 'calculator', cat: 'everyday', desc: 'Scientific, ClassWiz style', keys: 'math casio maths' },
+  { id: 'speedtest', name: 'Speed test', icon: 'gauge', feature: 'speedtest', cat: 'network', desc: 'Download, upload and ping', keys: 'internet speed mbps ping' },
+  { id: 'adblock', name: 'Ad blocker test', icon: 'shield', feature: 'adblock', cat: 'network', desc: 'Are ads and trackers blocked?', keys: 'ads tracker dns' },
 ];
 const DEFAULT_LAYOUT = {
   pinned: ['transfer', 'share', 'contacts'],
   folders: [
-    { name: 'Files & media', items: ['converter', 'images', 'pdf', 'trimmer', 'diskmap', 'downloader'], open: true },
+    { name: 'Files & media', items: ['findfiles', 'duplicates', 'converter', 'images', 'pdf', 'trimmer', 'diskmap', 'downloader'], open: true },
     { name: 'Everyday', items: ['worldclock', 'airplay', 'remote', 'currency', 'calculator'], open: true },
     { name: 'Network', items: ['speedtest', 'adblock'], open: true },
     { name: 'Security', items: ['vault', 'netscan', 'exposure'], open: true },
@@ -170,7 +172,7 @@ const DEFAULT_LAYOUT = {
     for (const tl of TOOLS) {
       if (q && !`${t(tl.name)} ${tl.name} ${t(tl.desc)} ${tl.keys}`.toLowerCase().includes(q)) continue;
       const on = enabled(tl), tile = el('div', 'tool-tile card' + (on ? '' : ' off'));
-      const top = el('div', 'tt-top'), ic = el('div', 'tt-icon'); ic.append(icon(tl.icon));
+      const top = el('div', 'tt-top'), ic = el('div', 'tt-icon cat-' + (tl.cat || 'files')); ic.append(icon(tl.icon));
       const pin = el('button', 'mini tt-pin' + (layout.pinned.includes(tl.id) ? ' pinned' : ''));
       pin.title = layout.pinned.includes(tl.id) ? 'Unpin from the top of the sidebar' : 'Pin to the top of the sidebar';
       pin.append(icon('star')); pin.onclick = e => { e.stopPropagation(); togglePin(tl.id); renderAllTools(); };

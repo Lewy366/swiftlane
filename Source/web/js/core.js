@@ -259,44 +259,6 @@ async function checkReadable() {
   }
 }
 
-// ---------- the glass reacts: light follows the mouse, a press ripples and bends the glass for a moment
-const GLASS = '.sidebar, .card, .drop';
-const calm = matchMedia('(prefers-reduced-motion: reduce)');  // Windows: Settings > Accessibility > Visual effects > Animation effects
-// Hovering tilts the glass a little toward the pointer (less for big panes) and slides its reflection.
-let tilted = null;
-function untilt(g) {
-  if (!g) return;
-  g.classList.remove('tilting'); ['--rx', '--ry', '--sx'].forEach(p => g.style.removeProperty(p));
-}
-document.addEventListener('pointermove', e => {
-  const g = e.target.closest && e.target.closest(GLASS);
-  if (g !== tilted) { untilt(tilted); tilted = g; }
-  if (!g || calm.matches) return;
-  const r = g.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-  const max = Math.min(3.5, 520 / Math.max(r.width, r.height) * 2);  // degrees: small panes tilt more than big ones
-  g.classList.add('tilting');
-  g.style.setProperty('--rx', (-y * max).toFixed(2) + 'deg'); g.style.setProperty('--ry', (x * max).toFixed(2) + 'deg');
-  g.style.setProperty('--sx', (50 - x * 60).toFixed(1) + '%');
-}, { passive: true });
-document.addEventListener('pointerleave', () => { untilt(tilted); tilted = null; });
-let lensAnim = 0;
-document.addEventListener('pointerdown', e => {
-  if (calm.matches || e.button !== 0) return;
-  const g = e.target.closest && e.target.closest(GLASS); if (!g) return;
-  const r = g.getBoundingClientRect();
-  let fx = g.querySelector(':scope > .fx'); if (!fx) { fx = el('span', 'fx'); g.append(fx); }
-  const d = el('i', 'ripple'), size = Math.max(r.width, r.height) * 1.1;
-  Object.assign(d.style, { left: (e.clientX - r.left) + 'px', top: (e.clientY - r.top) + 'px', width: size + 'px', height: size + 'px' });
-  fx.append(d); setTimeout(() => d.remove(), 750);
-  if (e.target.closest('input, textarea, select, .key, canvas')) return;  // no bending while typing or editing
-  const map = document.querySelector('#lens feDisplacementMap'); if (!map) return;
-  const base = 38, peak = base + 70, t0 = performance.now(), id = ++lensAnim;
-  const step = t => { if (id !== lensAnim) return; const k = Math.min(1, (t - t0) / 600);
-    map.setAttribute('scale', k < 1 ? (peak + (base - peak) * (1 - Math.exp(-6 * k) * Math.cos(10 * k))).toFixed(1) : base);
-    if (k < 1) requestAnimationFrame(step); };
-  requestAnimationFrame(step);
-});
-
 // ---------- jobs (conversions, edits, downloads)
 function jobRow(job) {
   const ui = fileRow(job.title.split(' → ')[0].replace(/^Download · /, '') || job.title);

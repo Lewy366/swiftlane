@@ -21,6 +21,9 @@ use serde_json::json;
 use tauri::{DragDropEvent, Manager, WindowEvent};
 
 fn main() {
+    if tools::findfiles::run_mft_cli_if_requested() {
+        return;
+    }
     let cli = tools::explorer::parse_args(std::env::args());
     if let Some((ref cmd, ref paths)) = cli.explorer {
         if tools::explorer::try_handoff(cmd, paths) {
