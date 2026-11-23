@@ -2,6 +2,14 @@
 
 What's new in each version of Swiftlane.
 
+## 2.0.1 (2026-11-23)
+
+- New: Full-bleed Home / Greeting screen with the centered Interlocked SL logo, slide-out menu, Recent tools, Recent files (excluding Vault), and a live Updates & Patch Notes card.
+- Upgraded Disk space into Storage & Cleanup with 4 tabs: Drive map, Quick clean, Downloads, and Steam games, plus a live before/after free-space bar.
+- Much faster Drive map: always-on multi-threaded FindFirstFileExW scanning (~5-10x faster, no admin) plus an optional Fast NTFS MFT scan (Admin) for ~2-5 second full-drive scans.
+- New: Cleanup advisor in Drive map automatically sorts findings into Safe to remove, Consider removing, and Should stay with plain-English reasons.
+- Built-in Quick clean clears safe temporary files, GPU shader caches, crash dumps, and orphaned Steam game folders; Downloads tidy offers one-click archive/installer selection to Recycle Bin; Games lists Steam libraries across all drives.
+
 ## 2.0.0 (2026-11-23)
 
 - Rebuilt Swiftlane in Rust (Tauri) for faster startup, lower memory usage, and multi-core performance — keeping all your existing settings, pairing codes, contacts, and encrypted vaults.
