@@ -6024,7 +6024,7 @@ dependencies = [
 
 [[package]]
 name = "swiftlane"
-version = "2.3.0"
+version = "2.3.1"
 dependencies = [
  "aes-gcm",
  "arboard",

@@ -1,6 +1,6 @@
 [package]
 name = "swiftlane"
-version = "2.3.0"
+version = "2.3.1"
 description = "Swiftlane: phone transfer, share links and everyday tools for Windows"
 edition = "2021"
 publish = false

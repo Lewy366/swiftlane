@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 2.3.1 (2026-11-24)
+
+- Phone camera & document scan now takes pictures already on your PC: click "Add pictures from this PC…" or drop them on the page, then scan them like phone photos. Swiftlane works on a copy, so your originals are never changed.
+
 ## 2.3.0 (2026-11-24)
 
 - New: BIOS update USB — Swiftlane recognises your motherboard, links you to its official download page, checks the file you got (zip or plain BIOS file) and puts it on a USB stick under the right name for your board, including the names BIOS Flashback buttons need. It only lists removable USB sticks, warns about BitLocker, battery power and brand-name PCs, and reads the copy back from the stick to prove it's identical before telling you to eject.
