@@ -23,7 +23,7 @@ fn defaults() -> Value {
             "calculator": true, "speedtest": true, "adblock": true, "share": true, "pdf": true,
             "trimmer": true, "vault": true, "diskmap": true, "duplicates": true, "findfiles": true,
             "startup": true, "qrstudio": true, "netscan": true, "exposure": true,
-            "contacts": true, "worldclock": true, "remote": false, "airplay": true
+            "contacts": true, "worldclock": true, "remote": false, "airplay": true, "biosusb": true
         },
         "airplay_on": false,
         "remote_power": false,

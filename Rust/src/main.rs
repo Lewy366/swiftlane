@@ -53,6 +53,7 @@ fn main() {
                 }
             }
             tools::shrink::wipe(); // leftovers of an earlier run (Shrink to size's private folder)
+            tools::biosusb::wipe_temp(); // leftovers of an earlier run (BIOS update USB staging folder)
             tools::explorer::start(&handle, initial_explorer);
             if app.state::<api::AppState>().cfg.lock().unwrap()["features"]["transfer"].as_bool().unwrap_or(true) {
                 let _ = transfer::start(&handle);
@@ -91,6 +92,7 @@ fn main() {
                 tools::peers::shutdown();
                 tools::explorer::shutdown();
                 tools::shrink::wipe();
+                tools::biosusb::wipe_temp();
                 tools::vault::shutdown();
                 tools::phonecam::shutdown();
                 tools::casting::shutdown(app);

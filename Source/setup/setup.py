@@ -22,7 +22,7 @@ VERSION = (ROOT / "version.txt").read_text("utf-8").strip() if (ROOT / "version.
 FEATURES = (
     "transfer", "share", "contacts", "findfiles", "duplicates", "diskmap",
     "converter", "images", "pdf", "trimmer", "downloader", "vault",
-    "netscan", "exposure", "startup", "qrstudio", "worldclock", "airplay",
+    "netscan", "exposure", "startup", "biosusb", "qrstudio", "worldclock", "airplay",
     "remote", "currency", "calculator", "speedtest", "adblock",
 )
 

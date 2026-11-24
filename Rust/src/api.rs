@@ -250,8 +250,9 @@ fn set_theme(st: &AppState, theme: &Value) -> Value {
 }
 
 const FEATURES: &[&str] = &[
-    "transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts",
-    "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock", "airplay",
+    "transfer", "share", "remote", "pdf", "trimmer", "vault", "diskmap", "duplicates", "findfiles",
+    "startup", "qrstudio", "netscan", "exposure", "contacts", "worldclock", "converter", "images",
+    "downloader", "currency", "calculator", "speedtest", "adblock", "airplay", "biosusb",
 ];
 
 fn set_feature(app: &AppHandle, st: &AppState, name: &str, on: bool) -> Value {

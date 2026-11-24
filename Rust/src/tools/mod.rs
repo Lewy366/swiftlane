@@ -36,6 +36,7 @@ pub mod explorer;
 pub mod uninstall;
 pub mod peers;
 pub mod phonecam;
+pub mod biosusb;
 
 pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> {
     let tools: &[fn(&AppHandle, &str, &[Value]) -> Option<Value>] = &[
@@ -64,6 +65,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         explorer::dispatch,
         peers::dispatch,
         phonecam::dispatch,
+        biosusb::dispatch,
     ];
     tools.iter().find_map(|f| f(app, method, args))
 }

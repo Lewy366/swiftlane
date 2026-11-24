@@ -47,6 +47,7 @@ const FEATURES = [
   ['netscan', 'Network devices', 'Who is on your home network'],
   ['exposure', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
   ['startup', 'Startup check', 'See and toggle apps that start with Windows'],
+  ['biosusb', 'BIOS update USB', 'Prepare and verify a FAT32 USB stick for a motherboard BIOS update'],
   ['qrstudio', 'QR Studio', 'Make Wi-Fi or link QR codes and decode screenshots offline'],
   ['worldclock', 'World clock', 'Live times on a map, plan across time zones'],
   ['airplay', 'Screen mirroring', 'Phone or laptop screen on this PC: AirPlay, Miracast, browser'],

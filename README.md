@@ -22,7 +22,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
 - **PC remote:** media keys, volume and arrow keys from your phone. It's off until you switch it on.
 - **Screen mirroring:** an iPhone, iPad or Mac (AirPlay), an Android phone (Miracast) or a laptop's browser shows its screen on this PC, in a window you can make full screen. Everything is off until you switch it on, and new devices need a PIN or your OK.
-- **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network), **Is my PC exposed?** and **Startup check** (see and toggle apps that start with Windows).
+- **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network), **Is my PC exposed?**, **Startup check** (see and toggle apps that start with Windows) and **BIOS update USB** (prepare and verify a FAT32 USB stick for a motherboard BIOS update).
 - **World clock:** live times on a world map with the night side shaded from the sun's real position, analog clocks for your cities, and a planner to see any moment in every time zone.
 - **Find files**, **Duplicate finder**, **Storage & Cleanup** (drive map, quick cache cleaner, Downloads tidy and Steam games), **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Shrink to size**, **Phone camera & document scan**, **QR Studio**, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
 - Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Send to contacts*, *Convert* or *Shrink to size*.
@@ -209,6 +209,12 @@ Scan folders for exact byte-for-byte duplicate files, review every group side by
 ### Startup check
 
 See every app configured to start when you sign in to Windows and toggle them on or off without digging through Task Manager or the registry.
+
+### BIOS update USB
+
+Prepare a FAT32 USB stick for updating your motherboard's BIOS without guesswork. Swiftlane detects your motherboard model, revision and current BIOS version (and links you to the manufacturer's support page, or lets you pick another vendor if you are preparing a stick for a different PC). Drop the BIOS zip or image you downloaded, pick **In-BIOS updater** (such as M-Flash, EZ Flash, Q-Flash or Instant Flash) or **Flashback button** (which sets the expected filename for rear-button flashing), choose your FAT32 USB stick, and Swiftlane copies the BIOS file, verifies it on the stick, and lets you safely eject it with vendor-specific steps to finish in UEFI/BIOS.
+
+**Safety:** Swiftlane never flashes your BIOS from Windows, never downloads BIOS files automatically, and never runs vendor executables (such as `BIOSRenamer.exe`) inside a zip. Only removable USB sticks are listed (never fixed or system drives), every copy is checked by reading the file back from the USB stick to verify its SHA-256 checksum, and you get clear warnings when BitLocker is active on C: (so you back up your recovery key first) as well as a reminder never to power off or unplug the PC while flashing.
 
 ### QR Studio
 
