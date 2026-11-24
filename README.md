@@ -22,10 +22,10 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **Request files:** a link that lets people send files *to* you, with size and file limits and an optional password.
 - **PC remote:** media keys, volume and arrow keys from your phone. It's off until you switch it on.
 - **Screen mirroring:** an iPhone, iPad or Mac (AirPlay), an Android phone (Miracast) or a laptop's browser shows its screen on this PC, in a window you can make full screen. Everything is off until you switch it on, and new devices need a PIN or your OK.
-- **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network) and **Is my PC exposed?**
+- **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network), **Is my PC exposed?** and **Startup check** (see and toggle apps that start with Windows).
 - **World clock:** live times on a world map with the night side shaded from the sun's real position, analog clocks for your cities, and a planner to see any moment in every time zone.
-- **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Shrink to size**, **Phone camera & document scan**, **Disk space** map, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
-- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Send to contacts* or *Convert*.
+- **Find files**, **Duplicate finder**, **Storage & Cleanup** (drive map, quick cache cleaner, Downloads tidy and Steam games), **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Shrink to size**, **Phone camera & document scan**, **QR Studio**, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
+- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Send to contacts*, *Convert* or *Shrink to size*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
 - Works in a small window too. Make it as narrow as you like (down to 400 px) and the pages stack into one column; below about 860 px the sidebar tucks away behind a ☰ menu button.
 
@@ -44,7 +44,7 @@ Download **Swiftlane-Setup.exe** from the [latest release](https://github.com/Le
 3. **Features:** pick the tools you want. It also checks for Node.js, which the video downloader needs.
 4. **Your files:** where received files go, whether they get sorted into folders (Photos, Videos, Audio, Documents, Archives, Other), and where video downloads are suggested.
 5. **Phone & network:** adds a firewall rule for Swiftlane only (port 8765, private networks only) and lets you choose which of your networks to mark as *Private*.
-6. **Personalise:** accent colour with a live preview, calculator angle unit and notifications.
+6. **Personalise:** accent colour, dark/light/auto appearance with a live preview, calculator angle unit and notifications.
 7. **Ready:** a summary of your choices, then it installs and offers to open Swiftlane and pair your phone.
 
 **Rollback:** every install step records how to undo itself. If something fails (a locked file, the firewall service, a full disk and so on), Setup reverses every step and your PC ends up exactly as it was. If you were updating, that includes the previous Swiftlane version.
@@ -113,7 +113,7 @@ A live preview you work on with the mouse. Draw and drag a **crop** box (free or
 ### Video downloader
 ![Video downloader](docs/screenshots/video-downloader.webp)
 
-Works with YouTube and the many other sites [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports. You can pick best quality, 1080p, 720p, 480p, MP3 or M4A, and download whole playlists. It asks where to save. YouTube needs Node.js for some formats. Only download things you have the right to save. Rebuilding the setup always pulls the newest yt-dlp.
+Works with YouTube and the many other sites [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports. You can pick best quality, 1080p, 720p, 480p, MP3 or M4A, and download whole playlists. It asks where to save. YouTube needs Node.js for some formats. Only download things you have the right to save.
 
 ### Currency converter
 ![Currency converter](docs/screenshots/currency.webp)
@@ -184,19 +184,35 @@ Pick the start and end on a filmstrip. Your options are *Fast cut* (instant, no 
 
 ### Shrink to size
 
-Drop a video or picture (or right-click it in Explorer and pick *Shrink to size with Swiftlane*), choose *Discord (10 MB)*, *WhatsApp (16 MB)*, *Email (25 MB)* or your own limit, and Swiftlane makes it fit. Before it starts you see what you'll get (video bitrate and size). If a long video would look rough, it says so plainly and offers to *trim it first* in the Video trimmer. Videos are encoded in two passes with a safety margin and checked afterwards; pictures become JPEGs (or stay PNG if that already fits) with the quality lowered first and the size only if needed. When it's done the file is on the clipboard, so Ctrl+V pastes it in Discord, WhatsApp Desktop or Explorer. *Save as...* and *Show in folder* are there too. The size presets live in Rust/src/tools/shrink_presets.json; MB means 1,000,000 bytes, so the result fits however the other side counts.
+Drop a video or picture (or right-click it in Explorer and pick *Shrink to size with Swiftlane*), choose *Discord (10 MB)*, *WhatsApp (16 MB)*, *Email (25 MB)* or your own limit, and Swiftlane makes it fit. Before it starts you see what you'll get (video bitrate and size). If a long video would look rough, it says so plainly and offers to *trim it first* in the Video trimmer. Videos are encoded in two passes with a safety margin and checked afterwards; pictures become JPEGs (or stay PNG if that already fits) with the quality lowered first and the size only if needed. When it's done the file is on the clipboard, so Ctrl+V pastes it in Discord, WhatsApp Desktop or Explorer. *Save as...* and *Show in folder* are there too. MB means 1,000,000 bytes, so the result fits however the other side counts.
 
-**Security:** the original is only read, never changed or replaced. Results go to a private folder (%LOCALAPPDATA%\Swiftlane\shrink) that is emptied when Swiftlane starts and closes, and only files from that folder can be copied or saved from the page. FFmpeg is started from Swiftlane's own folder with an argument list (no shell, no names read as options), its messages are capped in memory, and metadata such as GPS location is left out of the result.
+**Security:** the original is only read, never changed or replaced. Results go to a private temporary folder that is emptied when Swiftlane starts and closes, and only files from that folder can be copied or saved from the page. Metadata such as GPS location is left out of the result.
 
 ### Phone camera & document scan
 On the phone page, *Camera / Scan* opens the phone's own camera app (nothing is streamed). Each photo goes to the PC over the normal paired connection and appears in *Phone camera* as a thumbnail, with *Take another* / *Done* on the phone for several shots in a row. For each photo: *Use as photo* saves it as a JPG in your save folder (a JPG is kept exactly as it arrived, like any other transfer), or *Scan document* shows it with four draggable corners (with a magnifier while you drag, so you can place them exactly). Swiftlane flattens the page from those corners (perspective correction), and you can choose *Original colour*, *Grayscale* or *Black & white* and turn it in 90° steps. Corners are never applied automatically; they start just inside the photo's edges. Add the pages to the scan tray, put them in order, then save as JPG, as one new PDF, or as a new PDF that adds them after an existing one.
 
 **Security:** photos use the same upload route as every other file: pairing code, 15-minute lockout after 10 wrong tries, and a Content-Length check, with a smaller 40 MB limit per photo and at most 60 waiting. They only count as pictures if their first bytes say so, and their decoded size is capped (64 million pixels) so a crafted file can't use up memory. Photos wait in a private temporary folder that is deleted when Swiftlane closes (and left-overs of a crash are swept away). Nothing reaches your save folder until you click. Scans are re-encoded pictures, so they carry no camera or location data; the PDF you add to is only read and the result is always a new file you name in the Save box.
 
-### Disk space
-![Disk space](docs/screenshots/disk-space.webp)
+### Storage & Cleanup
+![Storage & Cleanup](docs/screenshots/disk-space.webp)
 
-Pick a drive or folder and see what's taking up the room as a map of blocks you can click into, plus a list of the biggest files. Junctions and links aren't followed, so nothing gets counted twice. *Move to the Recycle Bin* is the only way to remove something, so it can always be restored. It's never offered for Windows, program folders, app data or your user folders, and not on drives without a Recycle Bin (USB sticks, network drives).
+Pick a drive or folder and see what's taking up the room as an interactive map of blocks you can click into (with an optional fast NTFS scan for whole drives), plus a list of the biggest files and a **Cleanup Advisor** with quick cache cleaning, Downloads tidy-up and Steam game size overview. Junctions and links aren't followed, so nothing gets counted twice. *Move to the Recycle Bin* is used so removed files can be restored, and system or program folders are never offered for deletion.
+
+### Find files
+
+Search for files across your drives in real time by name, extension or size, with an optional fast NTFS scan (asks for admin permission once) to index a whole drive in seconds.
+
+### Duplicate finder
+
+Scan folders for exact byte-for-byte duplicate files, review every group side by side, and safely move unwanted copies to the Recycle Bin.
+
+### Startup check
+
+See every app configured to start when you sign in to Windows and toggle them on or off without digging through Task Manager or the registry.
+
+### QR Studio
+
+Create Wi-Fi, link or text QR codes and export them as PNG or SVG, or paste a screenshot / drop an image to decode a QR code completely offline.
 
 ### Vault
 ![Vault](docs/screenshots/vault.webp)
@@ -246,29 +262,9 @@ The first time you run it, iOS asks whether to let Shortcuts find devices on you
 - Request links only accept uploads, within the limits you set. Uploads are written to a temporary file and only kept once complete, and received files get Windows' "from the internet" mark.
 - Phone camera photos use the normal authorized upload (no extra route), are size- and count-limited, checked as real pictures, kept in a private temporary folder deleted on exit, and never saved anywhere until you click. Scans carry no camera or location data.
 - PC remote is off by default, needs the pairing code, only accepts a fixed list of keys and is rate-limited.
-- AirPlay uses [UxPlay](https://github.com/FDH2/UxPlay) (GPL-3.0), built from its source by `.github/workflows/airplay-receiver.yml` with one added line, so its messages arrive at once. It's a one-time download that Swiftlane only installs if it matches a SHA-256 written into the app. It goes into its own Program Files folder (admins only), and its firewall rule covers only uxplay.exe on private networks. It runs only while AirPlay is switched on and Swiftlane is open: Windows ends it together with Swiftlane, even after a crash. A new phone must type a 4-digit PIN once, and *Forget all* takes that back.
+- AirPlay uses [UxPlay](https://github.com/FDH2/UxPlay) (GPL-3.0), built from its source. It's a one-time download that Swiftlane only installs if its integrity check matches. It goes into its own Program Files folder (admins only), and its firewall rule covers only the AirPlay receiver on private networks. It runs only while AirPlay is switched on and Swiftlane is open: Windows ends it together with Swiftlane, even after a crash. A new phone must type a 4-digit PIN once, and *Forget all* takes that back.
 - Miracast is Windows' own Wireless Display receiver: Swiftlane only installs it (from Windows Update), opens it and links to its settings. It adds nothing of its own that listens on the network. Windows brings its own firewall rules for it, and phones only find the PC while its window is open.
 - Casting from a browser runs only while you have it switched on, and it switches off when Swiftlane closes. The link carries a random code that's new every time you switch it on (it's separate from the phone pairing code), and wrong codes count towards the same 15-minute lockout. Every cast waits for you to click *Allow*. At most 3 requests can wait at once, and they expire after 2 minutes. The picture goes straight from the laptop's browser to Swiftlane's window over WebRTC, which is always encrypted, with no outside servers. Swiftlane replaces the addresses in the connection details with the one the request actually came from, so the picture can't be steered anywhere else. The cast page only works over the encrypted (HTTPS) connection.
 - The vault never stores or sends your password. See *Vault* above for how files are encrypted.
 - Network devices only pings your own home /24 network. Is my PC exposed? only reads, and talks to nothing except your router (and only at its own address).
 - Share links run on a separate small server that listens on this PC only (127.0.0.1:8766). It's reachable from outside only through Tailscale Funnel, and only while something is shared. It's download only, links are random 128-bit IDs and never contain file paths, pages have no scripts and every file is sent as a download. Passwords are stored as scrypt hashes, and 5 wrong tries from one address (40 on one link) means a 15-minute wait. There's a limit of 48 connections at once. Keep in mind that anyone who downloads a file can pass it on: the limits control the link, not the file.
-
-## For developers: the `Rust` and `Source` folders
-
-The upcoming Rust (Tauri 2) version lives in `Rust/` and embeds the same `Source/web` interface while keeping the scientific calculator as a Python helper (`Source/toolkit/calc.py`). `.github/workflows/windows-rust.yml` runs JS checks and `cargo test --locked`, fetches pinned and SHA-256-verified `ffmpeg`/`ffprobe`, `pdfium.dll` and `yt-dlp`, and uploads a complete runnable Windows folder as a build artifact. See [TESTING-RUST.md](TESTING-RUST.md) for the hands-on test checklist.
-
-For the legacy Python build, double-click **Build Setup.cmd** to rebuild `Swiftlane Setup.exe` after you change anything in `Source`. It takes a couple of minutes and installs the Python libraries it needs plus the newest yt-dlp.
-
-| Path | What it is |
-|---|---|
-| `Rust/` | The Rust/Tauri 2 app (`src/main.rs`, `src/api.rs`, `src/transfer.rs`, `src/share*.rs`, `src/tls.rs`, `src/updater.rs`, `src/tools/*`) compiling `Source/web` directly into `Swiftlane.exe`. |
-| `swiftlane.py` | The app itself: window, features, background jobs and the uninstaller (`--uninstall`). `--page <name>` opens a page, `--selftest <file>` checks every tool, and `--headless` runs only the phone server. |
-| `server.py` | The local server the phone talks to, plus settings and sorting. |
-| `share.py` | Share links: what may be shared, the list of shares, the download server and Tailscale Funnel on/off. |
-| `cast.py` | Casting from a browser: the link's code, waiting requests, Allow/Deny and the address check. The laptop's page is `web\cast.html`, the picture's window `web\cast-view.html`. |
-| `airplay-install.ps1` | Installs the AirPlay receiver (as administrator) into its own Program Files folder, with its firewall rule. The receiver itself is in `toolkit\airplay.py`, Miracast in `toolkit\miracast.py`. |
-| `toolkit\` | The tools: `convert`, `images`, `downloader`, `currency`, `calc`, `speedtest`, `adblock`. |
-| `web\` | The window (`desktop.html`, `css\`, `js\` with one file per page, `i18n*.js` translations), the phone web app (`phone.html`), the setup wizard (`setup.html`, `setup\`), the uninstaller (`uninstall.html`) and icons. |
-| `setup\` | The setup wizard (`setup.py`), the install engine with rollback (`installer.py`) and packing (`make_payload.py`). |
-| `uninstall.ps1` | The admin part of uninstalling (program folder, firewall rule, Settings → Apps entry). |
-| `build.cmd`, `make_icons.py`, `rename-project.ps1` | Build script, icon drawing and a one-time project folder rename. |

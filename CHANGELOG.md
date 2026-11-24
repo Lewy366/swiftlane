@@ -6,7 +6,6 @@ What's new in each version of Swiftlane.
 
 - New: Shrink to size — right-click a video or picture (or drop it in) and pick Discord 10 MB, WhatsApp 16 MB, Email 25 MB or your own limit; the smaller file lands on your clipboard, ready to paste with Ctrl+V. It warns before a long video would look bad and offers to trim it first.
 - New: Phone camera & document scan — take photos with your phone's real camera from the phone page and they appear on the PC; drag four corners to flatten a document, choose colour, grey or black & white, and save as JPG, a new PDF or added to an existing PDF (location data removed).
-- The old Python version's code has moved to a separate archive; nothing changes for you.
 
 ## 2.0.1 (2026-11-23)
 
