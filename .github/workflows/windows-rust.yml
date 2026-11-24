@@ -150,6 +150,8 @@ jobs:
           Copy-Item _deps/pdfium.dll out/pdfium.dll
           Copy-Item _deps/yt-dlp.exe out/yt-dlp.exe
           Copy-Item _deps/licenses/* out/licenses/
+          # licences of third-party pieces kept in the repo (Fluent UI System Icons, Geist fonts)
+          Copy-Item licenses/* out/licenses/
 
           $exeHash = (Get-FileHash out/Swiftlane.exe -Algorithm SHA256).Hash.ToLower()
           "$exeHash  Swiftlane.exe" | Set-Content out/Swiftlane.exe.sha256
@@ -184,7 +186,9 @@ jobs:
             "out/toolkit/calc.py",
             "out/uninstall.ps1",
             "out/airplay-install.ps1",
-            "out/licenses/SOURCES.txt"
+            "out/licenses/SOURCES.txt",
+            "out/licenses/FluentUI-System-Icons-LICENSE.txt",
+            "out/licenses/Geist-Font-OFL.txt"
           )
           foreach ($f in $required) {
             if (-not (Test-Path $f) -or (Get-Item $f).Length -eq 0) {

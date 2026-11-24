@@ -23,3 +23,6 @@ Source/release/
 
 # local test helpers (not part of the app)
 Dev tools/
+
+# design screenshots (local only)
+screenshots/
