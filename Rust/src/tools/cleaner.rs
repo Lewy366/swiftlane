@@ -1261,6 +1261,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)] // Windows paths ignore case and use backslashes
     fn parses_library_folders_vdf() {
         let vdf = r#"
 "libraryfolders"

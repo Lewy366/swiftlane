@@ -2509,6 +2509,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)] // builds Windows-style paths
     fn parses_mft_records_usa_fixup_and_builds_tree_with_cycle_guard() {
         // DOS (ns=2) listed before Win32 (ns=1): Win32 name must win! Non-resident $DATA size.
         let mut r_big = make_synthetic_mft_record(
