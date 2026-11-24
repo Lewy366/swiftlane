@@ -509,7 +509,7 @@ pub fn offer_path(path: &Path) {
     }
 }
 
-fn was_offered(path: &Path) -> bool {
+pub(crate) fn was_offered(path: &Path) -> bool {
     offered_store().lock().is_ok_and(|q| q.iter().any(|p| p == path))
 }
 

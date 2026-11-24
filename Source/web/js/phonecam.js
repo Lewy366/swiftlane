@@ -195,6 +195,7 @@
       $('camSaveJpgs').onclick = async () => doneSaving(await App.api.cam_save_jpg(tray.map(specOf)), t('Saved'));
       $('camTrayClear').onclick = () => { tray = []; renderTray(); };
       $('camClear').onclick = async () => { captures = await App.api.cam_clear(); renderList(); };
+      $('camAddPc').onclick = async () => added(await App.api.cam_pick());
       App.on('camera-capture', e => {
         toast('New photo from your phone');
         if (!captures.some(c => c.id === e.id)) captures.push(e);
@@ -206,5 +207,18 @@
       captures = await App.api.cam_list() || [];
       renderList(); renderTray();
     },
+    // Pictures dropped on the window (Rust only accepts paths Windows handed it in the drop)
+    async drop(files) {
+      const pics = files.filter(f => f.kind === 'image');
+      if (!pics.length) { toast(t('Drop pictures (JPG, PNG, WebP or HEIC) here.')); return; }
+      added(await App.api.cam_add(pics.map(f => f.path)));
+    },
   };
+
+  function added(r) {
+    if (!r || r.cancelled) return;
+    if (Array.isArray(r.list)) { captures = r.list; renderList(); }
+    if (r.errors && r.errors.length) toast(r.errors[0]);
+    else if (r.added && r.added.length) toast(t('Pictures added'));
+  }
 })();

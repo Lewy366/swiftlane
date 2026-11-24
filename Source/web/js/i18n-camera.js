@@ -1,5 +1,7 @@
 // Translations for Phone camera & document scan (added to i18n.js's tables).
 Object.assign(I18N.de, {
+  'Photos': 'Fotos', 'Add pictures from this PC…': 'Bilder von diesem PC hinzufügen…', 'Pictures added': 'Bilder hinzugefügt', 'Drop pictures (JPG, PNG, WebP or HEIC) here.': 'Lege hier Bilder ab (JPG, PNG, WebP oder HEIC).',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. Or add pictures from this PC, or drop them here. Copies are kept in a private temporary folder and deleted when Swiftlane closes; your originals are never changed.': 'Öffne Swiftlane am Handy, tippe auf Kamera / Scan und mach ein Foto. Oder füge Bilder von diesem PC hinzu bzw. lege sie hier ab. Kopien liegen in einem privaten temporären Ordner und werden beim Schließen von Swiftlane gelöscht; deine Originale bleiben unverändert.',
   'Phone camera': 'Handy-Kamera', 'Photos from your phone camera, and document scans to JPG or PDF': 'Fotos von der Handykamera und Dokumentscans als JPG oder PDF',
   'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Fotos, die du am Handy mit Kamera / Scan aufnimmst, warten hier. Nutze eins als Foto oder entzerre eine Seite zu einem sauberen Scan. Gespeichert wird erst, wenn du klickst.',
   'From your phone': 'Von deinem Handy', 'Remove all': 'Alle entfernen', 'No photos yet': 'Noch keine Fotos',
@@ -19,6 +21,8 @@ Object.assign(I18N.de, {
   'That photo isn\'t there anymore.': 'Dieses Foto ist nicht mehr da.', 'There are no pages to save.': 'Es gibt keine Seiten zum Speichern.',
 });
 Object.assign(I18N.pl, {
+  'Photos': 'Zdjęcia', 'Add pictures from this PC…': 'Dodaj obrazy z tego komputera…', 'Pictures added': 'Dodano obrazy', 'Drop pictures (JPG, PNG, WebP or HEIC) here.': 'Upuść tutaj obrazy (JPG, PNG, WebP lub HEIC).',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. Or add pictures from this PC, or drop them here. Copies are kept in a private temporary folder and deleted when Swiftlane closes; your originals are never changed.': 'Na telefonie otwórz Swiftlane, stuknij Aparat / Skan i zrób zdjęcie. Albo dodaj obrazy z tego komputera lub upuść je tutaj. Kopie leżą w prywatnym folderze tymczasowym i są usuwane po zamknięciu Swiftlane; oryginały nigdy nie są zmieniane.',
   'Phone camera': 'Aparat telefonu', 'Photos from your phone camera, and document scans to JPG or PDF': 'Zdjęcia z aparatu telefonu i skany dokumentów do JPG lub PDF',
   'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Zdjęcia zrobione przyciskiem Aparat / Skan na telefonie czekają tutaj. Użyj ich jako zdjęć albo wyprostuj stronę w czysty skan. Nic nie jest zapisywane, dopóki nie klikniesz.',
   'From your phone': 'Z twojego telefonu', 'Remove all': 'Usuń wszystkie', 'No photos yet': 'Jeszcze brak zdjęć',
@@ -38,6 +42,8 @@ Object.assign(I18N.pl, {
   'That photo isn\'t there anymore.': 'Tego zdjęcia już nie ma.', 'There are no pages to save.': 'Brak stron do zapisania.',
 });
 Object.assign(I18N.it, {
+  'Photos': 'Foto', 'Add pictures from this PC…': 'Aggiungi immagini da questo PC…', 'Pictures added': 'Immagini aggiunte', 'Drop pictures (JPG, PNG, WebP or HEIC) here.': 'Trascina qui le immagini (JPG, PNG, WebP o HEIC).',
+  'On your phone, open Swiftlane, tap Camera / Scan and take a photo. Or add pictures from this PC, or drop them here. Copies are kept in a private temporary folder and deleted when Swiftlane closes; your originals are never changed.': 'Sul telefono apri Swiftlane, tocca Fotocamera / Scansione e scatta una foto. Oppure aggiungi immagini da questo PC o trascinale qui. Le copie restano in una cartella temporanea privata e vengono eliminate alla chiusura di Swiftlane; gli originali non vengono mai modificati.',
   'Phone camera': 'Fotocamera del telefono', 'Photos from your phone camera, and document scans to JPG or PDF': 'Foto della fotocamera del telefono e scansioni di documenti in JPG o PDF',
   'Photos you take with Camera / Scan on your phone wait here. Use one as a photo, or flatten a page into a clean scan. Nothing is saved until you click.': 'Le foto scattate con Fotocamera / Scansione sul telefono aspettano qui. Usane una come foto oppure raddrizza una pagina in una scansione pulita. Nulla viene salvato finché non clicchi.',
   'From your phone': 'Dal tuo telefono', 'Remove all': 'Rimuovi tutto', 'No photos yet': 'Ancora nessuna foto',

@@ -51,6 +51,13 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         "cam_use_photo" => use_photo(app, arg(args, 0).as_str().unwrap_or("")),
         "cam_save_jpg" => save_jpg(app, arg(args, 0)),
         "cam_save_pdf" => save_pdf(app, arg(args, 0), arg(args, 1).as_str().unwrap_or("new")),
+        "cam_pick" => pick(app),
+        "cam_add" => {
+            let paths: Vec<PathBuf> = arg(args, 0).as_array().map(|a| a.iter().filter_map(|v| v.as_str()).map(PathBuf::from).collect()).unwrap_or_default();
+            // Only paths Windows handed to Rust in a drop on the window; the page can't name other files.
+            let paths: Vec<PathBuf> = paths.into_iter().filter(|p| super::biosusb::was_offered(p)).collect();
+            add_files(&paths)
+        }
         "cam_remove" => {
             remove(arg(args, 0).as_str().unwrap_or(""));
             list()
@@ -278,6 +285,86 @@ fn register(tmp: &Path, size: u64) -> Result<Value, String> {
     let e = entry(&c);
     s.push(c);
     Ok(e)
+}
+
+// ------------------------------------------------------------------ pictures already on the PC
+
+/// "Add pictures from this PC": the file picker runs here, so the chosen paths never pass through the page.
+fn pick(app: &AppHandle) -> Value {
+    let picked: Vec<PathBuf> = app
+        .dialog()
+        .file()
+        .add_filter("Pictures", &["jpg", "jpeg", "png", "webp", "heic"])
+        .blocking_pick_files()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|p| p.into_path().ok())
+        .collect();
+    if picked.is_empty() {
+        return json!({ "cancelled": true });
+    }
+    add_files(&picked)
+}
+
+/// Copies each picture into the private folder (the original is never touched) under the same
+/// size, count and picture checks as photos from the phone.
+fn add_files(paths: &[PathBuf]) -> Value {
+    let mut added = Vec::new();
+    let mut errors = Vec::new();
+    for p in paths {
+        let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        match copy_in(p) {
+            Ok(e) => added.push(e),
+            Err(m) => errors.push(format!("{name}: {m}")),
+        }
+    }
+    json!({ "added": added, "errors": errors, "list": list() })
+}
+
+fn copy_in(src: &Path) -> Result<Value, String> {
+    let s = src.to_string_lossy();
+    if s.starts_with(r"\\") {
+        return Err("Pictures on network or device paths can't be added.".into());
+    }
+    let meta = std::fs::metadata(src).map_err(|_| "Swiftlane couldn't read this file.".to_string())?;
+    if !meta.is_file() {
+        return Err("That isn't a file.".into());
+    }
+    let size = meta.len();
+    if size == 0 || size > MAX_CAPTURE_BYTES {
+        return Err("Pictures can be 40 MB at most.".into());
+    }
+    let dir = private_dir().ok_or("Swiftlane couldn't make its temporary folder.")?;
+    {
+        let s = STORE.lock().unwrap();
+        if s.len() >= MAX_CAPTURES || s.iter().map(|c| c.size).sum::<u64>() + size > MAX_STORE_BYTES {
+            return Err("Too many pictures are waiting. Remove some first.".into());
+        }
+    }
+    if fs4::available_space(dir).map(|free| free < size + DISK_HEADROOM).unwrap_or(true) {
+        return Err("Not enough disk space on the PC.".into());
+    }
+    let tmp = dir.join(format!(".{}.part", token(8)));
+    let copied = (|| -> std::io::Result<u64> {
+        let f = std::fs::File::open(src)?;
+        let mut out = std::fs::OpenOptions::new().write(true).create_new(true).open(&tmp)?;
+        // Read one byte past the limit, so a file that grew after the size check is still refused.
+        std::io::copy(&mut std::io::Read::take(f, MAX_CAPTURE_BYTES + 1), &mut out)
+    })();
+    let n = match copied {
+        Ok(n) if n > 0 && n <= MAX_CAPTURE_BYTES => n,
+        Ok(_) => {
+            let _ = std::fs::remove_file(&tmp);
+            return Err("Pictures can be 40 MB at most.".into());
+        }
+        Err(_) => {
+            let _ = std::fs::remove_file(&tmp);
+            return Err("Swiftlane couldn't read this file.".into());
+        }
+    };
+    register(&tmp, n).inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+    })
 }
 
 fn now() -> f64 {
