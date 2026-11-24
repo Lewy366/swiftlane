@@ -3,27 +3,71 @@
 <head>
 <meta charset="utf-8">
 <title>Uninstall Swiftlane</title>
+<link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 <style>
   body { overflow: auto; }
-  main { max-width: 640px; margin: 0 auto; padding: 34px 28px; }
-  h1 { font: 650 26px/1.2 var(--display); margin: 14px 0 6px; }
+  main { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; padding: 34px 28px; }
+  h1 { font: 650 25px/1.2 var(--display); margin: 6px 0 4px; letter-spacing: -.02em; }
   .lead { color: var(--muted); margin: 0 0 20px; }
-  .head { display: flex; align-items: center; gap: 14px; }
-  .head img { width: 54px; height: 54px; border-radius: 14px; }
+  .head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .head .brand-mark { width: 52px; height: 52px; flex-shrink: 0; display: block; }
+  .head .brand-mark .wm-l { fill: var(--violet); }
   ul.gone { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.8; font-size: 13.5px; }
   ul.gone code { font-size: 12px; }
   .opt { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
   .opt input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--err); }
   .opt b { display: block; }
-  .opt small { color: var(--muted); display: block; font-size: 12.5px; }
+  .opt small { color: var(--muted); display: block; font-size: 12.5px; margin-top: 2px; }
   .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
   .result-icon { width: 70px; height: 70px; border-radius: 50%; display: grid; place-items: center; margin: 30px auto 12px; font-size: 34px; background: rgba(61,220,151,.15); color: var(--ok); }
 </style>
 </head>
 <body>
+<div class="wall" aria-hidden="true">
+  <svg class="night" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="topoGlowDark" cx="76%" cy="22%" r="60%">
+        <stop offset="0%" stop-color="#1a9fff" stop-opacity="0.13"/>
+        <stop offset="100%" stop-color="#0f131c" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="#0f131c"/>
+    <rect width="1440" height="900" fill="url(#topoGlowDark)"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.22">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <path d="M-100 525 C230 355, 440 585, 725 405 C965 250, 1190 320, 1540 110"/>
+      <path d="M-100 460 C240 285, 455 515, 745 335 C985 180, 1200 245, 1540 25"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="120" ry="58" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="385" cy="695" rx="216" ry="116" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="138" ry="70" transform="rotate(12 385 695)"/>
+    </g>
+  </svg>
+  <svg class="day" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <rect width="1440" height="900" fill="#e9eef6"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.16">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+    </g>
+  </svg>
+</div>
 <main id="ask">
-  <div class="head"><img src="icon-180.png" alt=""><div><h1>Uninstall Swiftlane</h1></div></div>
+  <div class="head">
+    <svg class="brand-mark" viewBox="0 0 256 256" role="img" aria-label="Swiftlane">
+      <rect x="8" y="8" width="240" height="240" rx="54" fill="#0e121c" stroke="rgba(255,255,255,.16)" stroke-width="5"/>
+      <path class="wm-l" d="M 152 60 H 178 V 166 H 218 L 205 194 H 152 Z"/>
+      <rect x="142" y="122" width="44" height="44" rx="4" fill="#0e121c"/>
+      <path fill="#f3f5f8" d="M 136 60 H 82 C 52 60 38 76 38 98 C 38 120 52 134 82 138 L 120 143 C 130 145 134 150 134 157 C 134 165 126 168 112 168 H 50 L 38 194 H 114 C 146 194 162 178 162 155 C 162 131 146 119 114 115 L 80 110 C 70 108 66 104 66 97 C 66 90 72 86 86 86 H 126 Z"/>
+    </svg>
+    <div><h1>Uninstall Swiftlane</h1></div>
+  </div>
   <p class="lead">This removes Swiftlane and everything it set up on this PC.</p>
   <section class="card">
     <h2>What will be removed</h2>

@@ -1,7 +1,8 @@
 """Swiftlane Setup: the install wizard window.
 
 Packed as "Swiftlane Setup.exe" (asks for admin rights when it starts) together with
-payload.zip (the built app). The pages live in setup/ui; the install work is installer.py.
+payload.zip (the built app). The pages live in Source/web/setup.html + Source/web/setup/;
+the install work is installer.py.
 """
 import ctypes
 import json
@@ -18,7 +19,12 @@ import installer
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))  # contains web/ (pages, styles, translations)
 PAYLOAD = Path(os.environ.get("SWIFTLANE_PAYLOAD") or ROOT / "payload.zip")
 VERSION = (ROOT / "version.txt").read_text("utf-8").strip() if (ROOT / "version.txt").exists() else "dev"
-FEATURES = ("transfer", "share", "remote", "airplay", "pdf", "trimmer", "vault", "diskmap", "netscan", "exposure", "contacts", "worldclock", "converter", "images", "downloader", "currency", "calculator", "speedtest", "adblock")
+FEATURES = (
+    "transfer", "share", "contacts", "findfiles", "duplicates", "diskmap",
+    "converter", "images", "pdf", "trimmer", "downloader", "vault",
+    "netscan", "exposure", "startup", "qrstudio", "worldclock", "airplay",
+    "remote", "currency", "calculator", "speedtest", "adblock",
+)
 
 
 def windows_language():
@@ -73,7 +79,7 @@ class SetupApi:
             "calc_angle": cfg.get("calc_angle", "deg"),
             "notify": cfg.get("notify", True),
             "features": {f: cfg.get("features", {}).get(f, f != "remote") for f in FEATURES},  # the remote starts off
-            "theme": {"accent": "cyan", "custom": "#14b8e0", **cfg.get("theme", {})},
+            "theme": {"accent": "cyan", "custom": "#14b8e0", "mode": "dark", **cfg.get("theme", {})},
             "networks": networks,
             "node": bool(shutil.which("node")),
             "autostart": self._system.read_value(__import__("winreg").HKEY_CURRENT_USER, installer.RUN_KEY, installer.APP) is not None,
@@ -178,7 +184,7 @@ def main():
     api = SetupApi()
     title = "Updating Swiftlane" if "--update" in sys.argv else "Swiftlane Setup"
     window = webview.create_window(title, url=str(ROOT / "web" / "setup.html"), js_api=api,
-                                   width=920, height=660, resizable=False, background_color="#07070d")
+                                   width=920, height=660, resizable=False, background_color="#0f131c")
     api._window = window
     webview.start(private_mode=True, icon=str(ROOT / "web" / "icon.ico"))
 

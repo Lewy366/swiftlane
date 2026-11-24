@@ -347,7 +347,11 @@ def install(payload_zip, choices, system=None, progress=None, fail_at=None, hive
                 except PermissionError as e:
                     last = e
                     time.sleep(0.75)
-            holders = programs_using([dest / f"{APP}.exe", *list(dest.glob("_internal/*.dll"))[:40]])
+            holders = programs_using([
+                dest / f"{APP}.exe", dest / "ffmpeg.exe", dest / "yt-dlp.exe",
+                *list(dest.glob("*.dll"))[:20],
+                *list(dest.glob("_internal/*.dll"))[:20],
+            ])
             raise InstallError("The old Swiftlane folder is in use" +
                                (f" by: {', '.join(h['name'] for h in holders)}." if holders else " by another program.") +
                                f" Close it and run Setup again. ({last})")

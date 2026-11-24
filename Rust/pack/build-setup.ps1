@@ -36,7 +36,9 @@ function Smoke-Check([string]$AppDir) {
         "toolkit\calc.py",
         "uninstall.ps1",
         "airplay-install.ps1",
-        "licenses\SOURCES.txt"
+        "licenses\SOURCES.txt",
+        "licenses\FluentUI-System-Icons-LICENSE.txt",
+        "licenses\Geist-Font-OFL.txt"
     )
     foreach ($rel in $required) {
         $p = Join-Path $AppDir $rel
@@ -131,6 +133,10 @@ try {
         Copy-Item (Join-Path $SourceDir "uninstall.ps1") (Join-Path $Stage "uninstall.ps1") -Force
         Copy-Item (Join-Path $SourceDir "airplay-install.ps1") (Join-Path $Stage "airplay-install.ps1") -Force
         Copy-Item (Join-Path $SourceDir "toolkit\calc.py") (Join-Path $Stage "toolkit\calc.py") -Force
+        if (Test-Path (Join-Path $RepoRoot "licenses")) {
+            New-Item -ItemType Directory -Force -Path (Join-Path $Stage "licenses") | Out-Null
+            Copy-Item (Join-Path $RepoRoot "licenses\*") (Join-Path $Stage "licenses") -Force
+        }
     }
 
     Write-Host "[3/5] Smoke-checking assembled Rust folder..."
@@ -163,6 +169,7 @@ try {
         --add-data "$web\setup.html;web" `
         --add-data "$web\setup;web\setup" `
         --add-data "$web\css;web\css" `
+        --add-data "$web\fonts;web\fonts" `
         --add-data "$web\js\i18n.js;web\js" `
         --add-data "$web\icon-180.png;web" `
         --add-data "$web\icon.ico;web" `

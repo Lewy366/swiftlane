@@ -1,30 +1,56 @@
 // Swiftlane Setup wizard pages.
 const $ = id => document.getElementById(id);
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function svgEl(tag, attrs) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  return e;
+}
+function infoIcon() {
+  const s = svgEl('svg', { class: 'i' });
+  s.append(svgEl('use', { href: '#i-info' }));
+  return s;
+}
+function brandMark(cls) {
+  const s = svgEl('svg', { class: cls, viewBox: '0 0 256 256', role: 'img', 'aria-label': 'Swiftlane' });
+  s.append(
+    svgEl('rect', { x: '8', y: '8', width: '240', height: '240', rx: '54', fill: '#0e121c', stroke: 'rgba(255,255,255,.16)', 'stroke-width': '5' }),
+    svgEl('path', { class: 'wm-l', d: 'M 152 60 H 178 V 166 H 218 L 205 194 H 152 Z' }),
+    svgEl('rect', { x: '142', y: '122', width: '44', height: '44', rx: '4', fill: '#0e121c' }),
+    svgEl('path', { fill: '#f3f5f8', d: 'M 136 60 H 82 C 52 60 38 76 38 98 C 38 120 52 134 82 138 L 120 143 C 130 145 134 150 134 157 C 134 165 126 168 112 168 H 50 L 38 194 H 114 C 146 194 162 178 162 155 C 162 131 146 119 114 115 L 80 110 C 70 108 66 104 66 97 C 66 90 72 86 86 86 H 126 Z' }),
+  );
+  return s;
+}
 function fmtSize(n) { return n >= 1e9 ? (n / 1e9).toFixed(1) + ' GB' : Math.round(n / 1e6) + ' MB'; }
 let toastTimer;
 function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
 const ACCENTS = {
-  cyan: ['#14b8e0', '#7fdcf2'], aurora: ['#7c5cff', '#00c8ff'], ocean: ['#2f6bff', '#00d4c8'], forest: ['#22c55e', '#a3e635'],
-  sunset: ['#ff6a3d', '#ff3d9a'], rose: ['#ec4899', '#a855f7'], ruby: ['#ef4444', '#f59e0b'], mono: ['#9ca3af', '#e5e7eb'],
+  cyan: ['#14b8e0', '#7fdcf2'], sunset: ['#ff8a3d', '#ffb07a'], aurora: ['#8b7cf6', '#b6abff'], ocean: ['#4c8dff', '#8db6ff'],
+  forest: ['#3fbf7f', '#7fdcab'], rose: ['#f2639b', '#f79bbf'], ruby: ['#f05252', '#f68b8b'], mono: ['#d6d3cc', '#ecebe7'],
 };
+const ACCENT_NAMES = { cyan: 'Cyan', sunset: 'Sunset', aurora: 'Aurora', ocean: 'Ocean', forest: 'Forest', rose: 'Rose', ruby: 'Ruby', mono: 'Mono' };
+
 const FEATURES = [
-  ['transfer', 'Phone transfer', 'Send and receive files with your phone over your network'],
+  ['transfer', 'Phone transfer & camera', 'Send files with your phone and scan documents from its camera'],
   ['share', 'Share links', 'Send files to anyone with a link, through Tailscale'],
-  ['remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
   ['contacts', 'Send to contacts', 'Straight to another Swiftlane, no link needed'],
-  ['airplay', 'Screen mirroring', 'Phone or laptop screen on this PC: AirPlay, Miracast, browser'],
-  ['pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
-  ['trimmer', 'Video trimmer', 'Cut clips, shrink them to send, keep the sound'],
-  ['vault', 'Vault', 'Files only your password opens'],
-  ['diskmap', 'Disk space', 'See what fills up your drives'],
-  ['netscan', 'Network devices', 'Who is on your home network'],
-  ['exposure', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
-  ['worldclock', 'World clock', 'Live times on a map, plan across time zones'],
+  ['findfiles', 'Find files', 'Instant file search with optional NTFS MFT scan'],
+  ['duplicates', 'Duplicate finder', 'Find exact duplicate files and clean them safely'],
+  ['diskmap', 'Storage & Cleanup', 'Drive map, quick cache cleaner, Downloads tidy and Steam games'],
   ['converter', 'File converter', 'Images, video, audio and PDF'],
   ['images', 'Image editor', 'Crop, resize, straighten, adjust colours, compress'],
+  ['pdf', 'PDF tools', 'Merge, split, reorder, rotate, sign, make smaller'],
+  ['trimmer', 'Video trimmer & Shrink', 'Cut clips and shrink videos or pictures to fit Discord, WhatsApp or email'],
   ['downloader', 'Video downloader', 'YouTube and other sites'],
+  ['vault', 'Vault', 'Files only your password opens'],
+  ['netscan', 'Network devices', 'Who is on your home network'],
+  ['exposure', 'Is my PC exposed?', 'Firewall, open ports, remote access, router'],
+  ['startup', 'Startup check', 'See and toggle apps that start with Windows'],
+  ['qrstudio', 'QR Studio', 'Make Wi-Fi or link QR codes and decode screenshots offline'],
+  ['worldclock', 'World clock', 'Live times on a map, plan across time zones'],
+  ['airplay', 'Screen mirroring', 'Phone or laptop screen on this PC: AirPlay, Miracast, browser'],
+  ['remote', 'PC remote', 'Control volume, music, slides and more from your paired phone'],
   ['currency', 'Currency converter', 'Live exchange rates'],
   ['calculator', 'Calculator', 'Scientific, ClassWiz style'],
   ['speedtest', 'Speed test', 'Download, upload and ping'],
@@ -38,10 +64,25 @@ const STEPS = [
 ];
 let step = 0;
 
-function applyAccent() {
-  const [a, b] = c.theme.accent === 'custom' ? [c.theme.custom, `color-mix(in oklab, ${c.theme.custom} 60%, white)`] : ACCENTS[c.theme.accent] || ACCENTS.cyan;
-  document.documentElement.style.setProperty('--violet', a); document.documentElement.style.setProperty('--cyan', b);
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+function inkOn(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff';
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+  return .2126 * r + .7152 * g + .0722 * b > .3 ? '#0b1218' : '#fff';
 }
+function applyTheme() {
+  const [a, b] = c.theme.accent === 'custom'
+    ? [c.theme.custom, `color-mix(in oklab, ${c.theme.custom} 65%, white)`]
+    : (ACCENTS[c.theme.accent] || ACCENTS.cyan);
+  const root = document.documentElement.style;
+  root.setProperty('--violet', a);
+  root.setProperty('--cyan', b);
+  root.setProperty('--on-accent', inkOn(a));
+  const mode = c.theme.mode || 'dark';
+  document.body.classList.toggle('light', mode === 'light' || (mode === 'auto' && !darkQuery.matches));
+}
+darkQuery.addEventListener('change', () => { if (c) applyTheme(); });
+
 function visibleSteps() { return STEPS.filter(([k]) => k !== 'phone' || c.features.transfer); }
 
 function renderStepList() {
@@ -79,15 +120,15 @@ function head(title, lead) { const f = document.createDocumentFragment(); f.appe
 // ------------------------------------------------------------ pages
 const PAGES = {
   welcome(p) {
-    const hero = el('div', 'hero'), img = el('img'); img.src = 'icon-180.png';
-    hero.append(img, el('h1', null, 'Welcome to Swiftlane'),
-      el('p', 'lead', 'Send files between your phone and this PC, plus a converter, image editor, video downloader, currency converter, calculator, speed test and ad blocker test.'));
+    const hero = el('div', 'hero');
+    hero.append(brandMark('hero-mark'), el('h1', null, 'Welcome to Swiftlane'),
+      el('p', 'lead', 'Send files and scan documents with your phone, find files and duplicates, clean up storage, edit images and PDFs, shrink or trim videos, and more — all offline on your PC.'));
     p.append(hero);
     if (info.existing) {
-      const card = el('div', 'card'); card.style.marginTop = '20px';
+      const card = el('div', 'card'); card.style.marginTop = '22px';
       card.append(el('h2', null, `Swiftlane ${info.existing.version} is already installed`),
         el('p', 'muted small', 'Updating keeps your settings, pairing code and files.'));
-      const row = el('div'); row.style.cssText = 'display:flex; gap:10px; margin-top:6px';
+      const row = el('div'); row.style.cssText = 'display:flex; gap:10px; margin-top:8px';
       const upd = el('button', 'btn primary', info.existing.version === info.version ? 'Repair' : `Update to ${info.version}`); upd.onclick = () => go(1);
       const un = el('button', 'btn danger', 'Uninstall');
       un.onclick = async () => { if (!await api.uninstall_existing()) toast('Couldn’t find the installed Swiftlane.'); };
@@ -112,7 +153,7 @@ const PAGES = {
     p.append(grid);
     if (c.features.downloader && !info.node) {
       const n = el('div', 'notice'); n.style.marginTop = '16px';
-      n.innerHTML = '<svg class="i"><use href="#i-info"/></svg>';
+      n.append(infoIcon());
       const s = el('span', null, 'Node.js isn’t installed. The video downloader works without it, but YouTube may only offer some formats. ');
       const a = el('a', null, 'Get Node.js'); a.href = '#'; a.style.color = 'var(--cyan)'; a.onclick = e => { e.preventDefault(); api.open_url('https://nodejs.org/en/download'); };
       n.append(s, a); p.append(n);
@@ -158,24 +199,43 @@ const PAGES = {
     const card = el('div', 'card');
     card.append(el('h2', null, 'Accent colour'));
     const sw = el('div', 'swatches');
-    for (const [key, [a, b]] of Object.entries(ACCENTS)) {
-      const s = el('button', 'swatch' + (c.theme.accent === key ? ' on' : '')); s.style.background = `linear-gradient(135deg, ${a}, ${b})`;
-      s.onclick = () => { c.theme.accent = key; applyAccent(); render(); }; sw.append(s);
+    for (const [key, [a]] of Object.entries(ACCENTS)) {
+      const s = el('button', 'swatch' + (c.theme.accent === key ? ' on' : ''));
+      s.style.background = a; s.title = ACCENT_NAMES[key] || key;
+      s.onclick = () => { c.theme.accent = key; applyTheme(); render(); }; sw.append(s);
     }
     const custom = el('label', 'swatch custom' + (c.theme.accent === 'custom' ? ' on' : ''));
     custom.style.background = c.theme.accent === 'custom' ? c.theme.custom : 'conic-gradient(#f44, #fd0, #4f4, #0df, #44f, #f4f, #f44)';
+    custom.title = 'Your own colour';
     const picker = el('input'); picker.type = 'color'; picker.value = c.theme.custom;
-    picker.oninput = () => { c.theme.custom = picker.value; c.theme.accent = 'custom'; applyAccent(); custom.style.background = picker.value; };
+    picker.oninput = () => { c.theme.custom = picker.value; c.theme.accent = 'custom'; applyTheme(); custom.style.background = picker.value; };
     picker.onchange = () => render();
     custom.append(picker, el('span', null, '+')); sw.append(custom);
-    card.append(sw); p.append(card);
+    card.append(sw);
+    const modeSeg = el('div', 'seg');
+    for (const [v, l] of [['dark', 'Dark'], ['light', 'Light'], ['auto', 'Auto']]) {
+      const b = el('button', (c.theme.mode || 'dark') === v ? 'on' : '', l);
+      b.onclick = () => { c.theme.mode = v; applyTheme(); render(); }; modeSeg.append(b);
+    }
+    const modeRow = opt('Appearance', 'Dark, light, or match Windows', modeSeg);
+    modeRow.classList.add('opt-bar');
+    modeRow.append(modeSeg);
+    modeRow.style.marginTop = '14px';
+    card.append(modeRow);
+    p.append(card);
     const more = el('div', 'card');
     const angle = el('div', 'seg');
     for (const [v, l] of [['deg', 'Deg'], ['rad', 'Rad'], ['gra', 'Gra']]) {
       const b = el('button', c.calc_angle === v ? 'on' : '', l); b.onclick = () => { c.calc_angle = v; render(); }; angle.append(b);
     }
-    more.append(opt('Calculator starts in', 'Angle unit for sin, cos, tan', angle),
-      opt('Notifications', 'When files arrive or a job finishes', switchInput(c.notify, v => c.notify = v)));
+    const angleRow = opt('Calculator starts in', 'Angle unit for sin, cos, tan', angle);
+    angleRow.classList.add('opt-bar');
+    angleRow.append(angle);
+    const notifSw = switchInput(c.notify, v => c.notify = v);
+    const notifRow = opt('Notifications', 'When files arrive or a job finishes', notifSw);
+    notifRow.classList.add('opt-bar');
+    notifRow.append(notifSw);
+    more.append(angleRow, notifRow);
     p.append(more);
   },
   ready(p) {
@@ -193,7 +253,7 @@ const PAGES = {
     for (const [k, v] of rows) { const dt = el('dt', null, k), dd = el('dd', null, v); dd.setAttribute('translate', 'no'); dl.append(dt, dd); }
     p.append(dl);
     const n = el('div', 'notice'); n.style.marginTop = '20px';
-    n.innerHTML = '<svg class="i"><use href="#i-info"/></svg>';
+    n.append(infoIcon());
     n.append(el('span', null, 'If anything goes wrong while installing, Setup undoes every change and leaves your PC exactly as it was.'));
     p.append(n);
   },
@@ -272,7 +332,8 @@ window.addEventListener('pywebviewready', async () => {
     install_dir: info.install_dir, start_menu: true, desktop: info.desktop, autostart: info.autostart,
     features: info.features, save_dir: info.save_dir, sort_files: info.sort_files, download_dir: info.download_dir,
     firewall: true, private_networks: info.networks.filter(n => n.category !== 'Private' && /ethernet|wi-?fi|wlan/i.test(n.alias)).map(n => n.alias),
-    theme: { accent: info.theme.accent || 'aurora', custom: info.theme.custom || '#7c5cff' }, calc_angle: info.calc_angle, notify: info.notify,
+    theme: { accent: info.theme.accent || 'cyan', custom: info.theme.custom || '#14b8e0', mode: info.theme.mode || 'dark' },
+    calc_angle: info.calc_angle, notify: info.notify,
     _launch: true, _pair: !info.existing,
   };
   $('ver').textContent = 'Setup ' + info.version;
@@ -280,11 +341,11 @@ window.addEventListener('pywebviewready', async () => {
     c.start_menu = info.start_menu; c.private_networks = [];
     $('stepList').hidden = true;
     $('language').value = info.language; setLanguage(info.language);
-    applyAccent();
+    applyTheme();
     return startInstall();
   }
   $('language').value = info.language;
-  applyAccent();
+  applyTheme();
   setLanguage(info.language);
   render();
 });

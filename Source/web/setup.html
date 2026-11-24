@@ -3,62 +3,138 @@
 <head>
 <meta charset="utf-8">
 <title>Swiftlane Setup</title>
+<link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 <style>
   body { overflow: hidden; }
   /* The window has a fixed size: the row is pinned to it, so a long step scrolls inside .pane and the buttons stay visible. */
-  .wizard { height: 100%; display: grid; grid-template-columns: 230px 1fr; grid-template-rows: minmax(0, 1fr); }
-  .steps-bar { padding: 26px 18px; border-right: 1px solid var(--border); background: rgba(10,10,18,.55); display: flex; flex-direction: column; gap: 4px; }
-  .steps-bar .brand { padding-bottom: 22px; }
-  .step-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 10px; color: var(--faint); font-weight: 550; font-size: 13.5px; }
-  .step-item i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11.5px;
+  .wizard { position: relative; z-index: 1; height: 100%; display: grid; grid-template-columns: 236px 1fr; grid-template-rows: minmax(0, 1fr); }
+  .steps-bar { padding: 22px 16px; border-right: 1px solid var(--border); background: var(--pane-side); display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; }
+  .steps-bar .brand { padding: 2px 4px 20px; display: flex; align-items: center; gap: 11px; }
+  .steps-bar .brand-mark { width: 34px; height: 34px; flex-shrink: 0; display: block; }
+  .steps-bar .brand-mark .wm-l { fill: var(--violet); }
+  .steps-bar .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .steps-bar .brand-word { font: 700 14.5px/1.1 var(--display); letter-spacing: .12em; color: var(--text); }
+  .steps-bar .brand-word span { font-weight: 400; color: var(--accent); }
+  .steps-bar .brand small { font-size: 11.5px; color: var(--faint); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .step-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 9px; color: var(--faint); font-weight: 550; font-size: 13.5px; }
+  .step-item i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11.5px; font-variant-numeric: tabular-nums;
                  border: 1.5px solid var(--faint); flex-shrink: 0; }
-  .step-item.on { color: var(--text); background: var(--panel-2); }
-  .step-item.on i { border-color: transparent; background: var(--grad); color: #fff; }
+  .step-item.on { color: var(--text); background: var(--nav-active); }
+  .step-item.on i { border-color: transparent; background: var(--violet); color: var(--on-accent); font-weight: 650; }
   .step-item.done { color: var(--muted); }
   .step-item.done i { border-color: var(--ok); color: var(--ok); }
   .steps-bar .spacer { flex: 1; }
   .lang { margin-top: 10px; }
   .content { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-  .pane { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 30px 34px 10px; }
+  .pane { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 28px 34px 12px; }
   .footer { flex-shrink: 0; }
   .pane::-webkit-scrollbar { width: 8px; }
   .pane::-webkit-scrollbar-button { display: none; height: 0; }
   .pane::-webkit-scrollbar-track { background: transparent; }
   .pane::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 18%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
   .pane:hover::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--text) 30%, transparent); }
-  .steps-bar { min-height: 0; overflow-y: auto; }
-  .pane h1 { font: 650 26px/1.15 var(--display); margin: 0 0 6px; letter-spacing: -.02em; }
+  .pane h1 { font: 650 25px/1.15 var(--display); margin: 0 0 6px; letter-spacing: -.02em; }
   .pane > p.lead { color: var(--muted); margin: 0 0 22px; }
-  .footer { display: flex; align-items: center; gap: 10px; padding: 14px 34px 20px; border-top: 1px solid var(--border); }
+  .footer { display: flex; align-items: center; gap: 10px; padding: 14px 34px 18px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--pane-side) 84%, transparent); }
   .footer .spacer { flex: 1; }
   .path-row { display: flex; gap: 8px; }
   .path-row .input { font-family: var(--mono); font-size: 13px; }
   .opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
   .opt:first-of-type { border-top: 0; }
-  .opt > div { flex: 1; }
+  .opt > div { flex: 1; min-width: 0; }
+  .opt > .seg { flex: 0 0 auto; }
+  .opt.opt-bar { align-items: center; }
   .opt b { display: block; font-weight: 550; }
-  .opt small { color: var(--muted); font-size: 12.5px; display: block; }
-  .tree { font: 12.5px/1.7 var(--mono); color: var(--muted); background: rgba(0,0,0,.25); border-radius: 12px; padding: 10px 14px; margin-top: 8px; }
-  .hero { text-align: center; padding-top: 30px; }
-  .hero img { width: 92px; height: 92px; border-radius: 24px; box-shadow: 0 18px 50px -10px color-mix(in srgb, var(--violet) 70%, transparent); }
-  .hero h1 { font-size: 34px; margin-top: 18px; }
-  .summary { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; font-size: 13.5px; }
+  .opt small { color: var(--muted); font-size: 12.5px; display: block; margin-top: 1px; }
+  .tree { font: 12.5px/1.7 var(--mono); color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-top: 8px; }
+  .hero { text-align: center; padding-top: 24px; }
+  .hero-mark { width: 88px; height: 88px; margin: 0 auto; display: block; filter: drop-shadow(0 8px 18px rgba(0,0,0,.32)); }
+  .hero-mark .wm-l { fill: var(--violet); }
+  .hero h1 { font-size: 30px; margin-top: 18px; letter-spacing: -.025em; }
+  .hero .lead { max-width: 520px; margin: 10px auto 0; line-height: 1.55; }
+  .summary { display: grid; grid-template-columns: 168px 1fr; gap: 8px 16px; font-size: 13.5px; }
   .summary dt { color: var(--muted); } .summary dd { margin: 0; overflow-wrap: anywhere; }
-  .big-progress { height: 10px; border-radius: 10px; background: var(--panel-2); overflow: hidden; margin: 26px 0 12px; }
-  .big-progress i { display: block; height: 100%; width: 0; background: var(--grad); transition: width .3s; }
-  .result-icon { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; margin: 20px auto 16px; font-size: 38px; }
+  .big-progress { height: 10px; border-radius: 10px; background: var(--surface-2); overflow: hidden; margin: 26px 0 12px; }
+  .big-progress i { display: block; height: 100%; width: 0; background: var(--violet); transition: width .3s; }
+  .result-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 20px auto 16px; font-size: 34px; }
   .result-icon.ok { background: rgba(61,220,151,.15); color: var(--ok); } .result-icon.bad { background: rgba(255,93,115,.15); color: var(--err); }
   .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; }
+  .feature-grid .opt:nth-child(-n+2) { border-top: 0; }
 </style>
 </head>
 <body>
+<div class="wall" aria-hidden="true">
+  <svg class="night" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="topoGlowDark" cx="76%" cy="22%" r="60%">
+        <stop offset="0%" stop-color="#1a9fff" stop-opacity="0.13"/>
+        <stop offset="100%" stop-color="#0f131c" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="#0f131c"/>
+    <rect width="1440" height="900" fill="url(#topoGlowDark)"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.22">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <path d="M-100 525 C230 355, 440 585, 725 405 C965 250, 1190 320, 1540 110"/>
+      <path d="M-100 460 C240 285, 455 515, 745 335 C985 180, 1200 245, 1540 25"/>
+      <path d="M145 950 C410 745, 670 850, 935 670 C1150 525, 1320 580, 1540 475"/>
+      <path d="M290 950 C530 785, 770 875, 1020 720 C1210 605, 1355 645, 1540 565"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="120" ry="58" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="55" ry="24" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="385" cy="695" rx="216" ry="116" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="138" ry="70" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="66" ry="31" transform="rotate(12 385 695)"/>
+    </g>
+  </svg>
+  <svg class="day" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="topoGlowLight" cx="76%" cy="22%" r="60%">
+        <stop offset="0%" stop-color="#1a9fff" stop-opacity="0.11"/>
+        <stop offset="100%" stop-color="#e9eef6" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="#e9eef6"/>
+    <rect width="1440" height="900" fill="url(#topoGlowLight)"/>
+    <g fill="none" stroke="#64748b" stroke-width="1.25" opacity="0.16">
+      <path d="M-100 720 C190 565, 385 795, 670 615 C910 465, 1150 555, 1540 360"/>
+      <path d="M-100 655 C205 495, 405 725, 690 545 C930 390, 1165 475, 1540 275"/>
+      <path d="M-100 590 C215 425, 420 655, 710 475 C950 320, 1175 400, 1540 190"/>
+      <path d="M-100 525 C230 355, 440 585, 725 405 C965 250, 1190 320, 1540 110"/>
+      <path d="M-100 460 C240 285, 455 515, 745 335 C985 180, 1200 245, 1540 25"/>
+      <path d="M145 950 C410 745, 670 850, 935 670 C1150 525, 1320 580, 1540 475"/>
+      <path d="M290 950 C530 785, 770 875, 1020 720 C1210 605, 1355 645, 1540 565"/>
+      <ellipse cx="1130" cy="230" rx="265" ry="145" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="192" ry="98" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="120" ry="58" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="1130" cy="230" rx="55" ry="24" transform="rotate(-18 1130 230)"/>
+      <ellipse cx="385" cy="695" rx="216" ry="116" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="138" ry="70" transform="rotate(12 385 695)"/>
+      <ellipse cx="385" cy="695" rx="66" ry="31" transform="rotate(12 385 695)"/>
+    </g>
+  </svg>
+</div>
 <svg width="0" height="0" style="position:absolute">
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 20 20"><g style="display:var(--i-r,inline)"><path d="M10.4921 8.91012C10.4497 8.67687 10.2456 8.49999 10.0001 8.49999C9.72397 8.49999 9.50011 8.72385 9.50011 8.99999V13.5021L9.50817 13.592C9.55051 13.8253 9.75465 14.0021 10.0001 14.0021C10.2763 14.0021 10.5001 13.7783 10.5001 13.5021V8.99999L10.4921 8.91012ZM10.7988 6.74999C10.7988 6.33578 10.463 5.99999 10.0488 5.99999C9.63461 5.99999 9.29883 6.33578 9.29883 6.74999C9.29883 7.16421 9.63461 7.49999 10.0488 7.49999C10.463 7.49999 10.7988 7.16421 10.7988 6.74999ZM18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10ZM3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10Z"/></g><g style="display:var(--i-f,none)"><path d="M18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10ZM9.50806 8.91012C9.55039 8.67687 9.75454 8.49999 10 8.49999C10.2455 8.49999 10.4496 8.67687 10.4919 8.91012L10.5 8.99999V13.5021L10.4919 13.592C10.4496 13.8253 10.2455 14.0021 10 14.0021C9.75454 14.0021 9.55039 13.8253 9.50806 13.592L9.5 13.5021V8.99999L9.50806 8.91012ZM9.25 6.74999C9.25 6.33578 9.58579 5.99999 10 5.99999C10.4142 5.99999 10.75 6.33578 10.75 6.74999C10.75 7.16421 10.4142 7.49999 10 7.49999C9.58579 7.49999 9.25 7.16421 9.25 6.74999Z"/></g></symbol> <!-- Fluent UI System Icons (MIT), see licenses/ -->
 </svg>
 <div class="wizard">
   <aside class="steps-bar">
-    <div class="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="8" fill="#20201e" stroke="#3a3936"/><path d="M22.5 9.5h-9.25a3.75 3.75 0 0 0 0 7.5h5.5a3.75 3.75 0 0 1 0 7.5H9.5" fill="none" stroke="#ecebe7" stroke-width="2.4" stroke-linecap="round"/><circle cx="22.5" cy="9.5" r="2.7" fill="var(--accent)"/></svg><div><b>Swiftlane</b><small id="ver"></small></div></div>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 256 256" role="img" aria-label="Swiftlane">
+        <rect x="8" y="8" width="240" height="240" rx="54" fill="#0e121c" stroke="rgba(255,255,255,.16)" stroke-width="5"/>
+        <path class="wm-l" d="M 152 60 H 178 V 166 H 218 L 205 194 H 152 Z"/>
+        <rect x="142" y="122" width="44" height="44" rx="4" fill="#0e121c"/>
+        <path fill="#f3f5f8" d="M 136 60 H 82 C 52 60 38 76 38 98 C 38 120 52 134 82 138 L 120 143 C 130 145 134 150 134 157 C 134 165 126 168 112 168 H 50 L 38 194 H 114 C 146 194 162 178 162 155 C 162 131 146 119 114 115 L 80 110 C 70 108 66 104 66 97 C 66 90 72 86 86 86 H 126 Z"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-word" translate="no"><b>SWIFT</b><span>LANE</span></span>
+        <small id="ver"></small>
+      </div>
+    </div>
     <div id="stepList"></div>
     <div class="spacer"></div>
     <select class="input lang" id="language" title="Language"><option value="en">English</option><option value="de">Deutsch</option><option value="pl">Polski</option><option value="it">Italiano</option></select>
