@@ -170,9 +170,9 @@
 
   const FALLBACK_VENDORS = [
     { id: 'asus', label: 'ASUS', support_url: 'https://www.asus.com/support/download-center/', in_bios_tool: 'EZ Flash', flashback_name: 'BIOS FlashBack', flashback_filename: '', bios_key: 'Del or F2' },
-    { id: 'msi', label: 'MSI', support_url: 'https://www.msi.com/support/download/', in_bios_tool: 'M-Flash', flashback_name: 'Flash BIOS Button', flashback_filename: 'MSI.ROM', bios_key: 'Del' },
-    { id: 'gigabyte', label: 'Gigabyte', support_url: 'https://www.gigabyte.com/Support', in_bios_tool: 'Q-Flash', flashback_name: 'Q-Flash Plus', flashback_filename: 'GIGABYTE.bin', bios_key: 'Del or End' },
-    { id: 'asrock', label: 'ASRock', support_url: 'https://www.asrock.com/support/', in_bios_tool: 'Instant Flash', flashback_name: 'BIOS Flashback', flashback_filename: 'CREATIVE.ROM', bios_key: 'F2 or Del' },
+    { id: 'msi', label: 'MSI', support_url: 'https://www.msi.com/support/download', in_bios_tool: 'M-Flash', flashback_name: 'Flash BIOS Button', flashback_filename: 'MSI.ROM', bios_key: 'Del' },
+    { id: 'gigabyte', label: 'Gigabyte', support_url: 'https://www.gigabyte.com/Support/Motherboard', in_bios_tool: 'Q-Flash', flashback_name: 'Q-Flash Plus', flashback_filename: 'GIGABYTE.bin', bios_key: 'Del or End' },
+    { id: 'asrock', label: 'ASRock', support_url: 'https://www.asrock.com/support/index.asp?cat=BIOS', in_bios_tool: 'Instant Flash', flashback_name: 'BIOS Flashback', flashback_filename: 'CREATIVE.ROM', bios_key: 'F2 or Del' },
     { id: 'biostar', label: 'BIOSTAR', support_url: 'https://www.biostar.com.tw/app/en/support/download.php', in_bios_tool: 'BIOS-FLASHER', flashback_name: 'SMART BIOS UPDATE', flashback_filename: '', bios_key: 'Del or F12' },
     { id: 'other', label: 'Other / Custom', support_url: '', in_bios_tool: 'In-BIOS updater', flashback_name: 'BIOS Flashback', flashback_filename: '', bios_key: 'Del or F2' },
   ];
@@ -220,7 +220,7 @@
   function validateCustomName(raw) {
     const val = String(raw || '').trim();
     if (!val) return { ok: false, reason: '' };
-    if (val.length > 64) return { ok: false, reason: t('Filename is too long (max 64 characters).') };
+    if (val.length > 32) return { ok: false, reason: t('Filename is too long (max 32 characters).') };
     if (/[\\/:*?"<>|\x00-\x1f]/.test(val) || val.includes('..')) {
       return { ok: false, reason: t('Enter a plain filename only (no folder path or invalid characters).') };
     }
@@ -447,11 +447,11 @@
       sel.setAttribute('translate', 'no');
       for (const c of inspected.candidates) {
         const opt = el('option', null, `${c.entry} (${fmtSize(c.size || 0)})`);
-        opt.value = c.entry;
+        opt.value = String(c.index);
         sel.append(opt);
       }
-      sel.value = inspected.entry_name || inspected.candidates[0].entry;
-      sel.onchange = () => inspectFile(currentPath, sel.value);
+      sel.value = String(inspected.entry_index != null ? inspected.entry_index : inspected.candidates[0].index);
+      sel.onchange = () => inspectFile(currentPath, Number(sel.value));
       candRow.append(sel);
       infoWrap.append(candRow);
     }
@@ -491,7 +491,7 @@
     if (notes.children.length) infoWrap.append(notes);
   }
 
-  async function inspectFile(path, entryName) {
+  async function inspectFile(path, entryIndex) {
     if (!path || inspecting) return;
     inspecting = true;
     currentPath = path;
@@ -503,8 +503,8 @@
     try {
       const vendorId = selectedVendorId || (board && board.vendor) || '';
       const boardModel = (board && (!selectedVendorId || selectedVendorId === board.vendor)) ? (board.model || '') : '';
-      const r = entryName
-        ? await App.api.biosusb_inspect(path, vendorId, boardModel, entryName)
+      const r = Number.isInteger(entryIndex)
+        ? await App.api.biosusb_inspect(path, vendorId, boardModel, entryIndex)
         : await App.api.biosusb_inspect(path, vendorId, boardModel);
       if (!r || r.error) {
         inspected = null;
@@ -955,7 +955,8 @@
         toast(r.error);
       } else {
         prepared.ejected = true;
-        toast(t('Safe to remove USB stick'));
+        const also = Array.isArray(r && r.also_ejected) ? r.also_ejected : [];
+        toast(t('Safe to remove USB stick') + (also.length ? ` (${t('also ejected')} ${also.join(', ')})` : ''));
         await loadDrives();
       }
     } catch (err) {
@@ -985,7 +986,7 @@
         renderDrives();
         renderAction();
         if (currentPath && inspected) {
-          inspectFile(currentPath, inspected.entry_name || undefined);
+          inspectFile(currentPath, inspected.entry_index);
         }
       };
 
@@ -1034,7 +1035,8 @@
 
     drop(files) {
       if (!files || !files.length) return;
-      inspectFile(files[0]);
+      const f = files[0];
+      inspectFile(typeof f === 'string' ? f : f && f.path);
     },
 
     relang() {

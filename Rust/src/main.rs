@@ -74,6 +74,9 @@ fn main() {
             // Files dropped on the window: their full paths only ever go to Rust, never into the page.
             if let WindowEvent::DragDrop(DragDropEvent::Drop { paths, .. }) = event {
                 let app = window.app_handle();
+                for p in paths.iter().filter(|p| p.is_file()) {
+                    tools::biosusb::offer_path(p); // the BIOS USB tool only inspects paths Rust handed out
+                }
                 let files: Vec<_> = paths.iter().filter(|p| p.is_file()).map(|p| api::file_info(p)).collect();
                 let folders: Vec<_> = paths.iter().filter(|p| p.is_dir()).map(|p| p.to_string_lossy().to_string()).collect();
                 if !folders.is_empty() {

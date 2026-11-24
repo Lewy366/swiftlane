@@ -9,7 +9,7 @@
 
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -211,8 +211,17 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
             let path = arg(args, 0).as_str().unwrap_or("");
             let board_vendor = arg(args, 1).as_str().filter(|s| !s.trim().is_empty());
             let board_model = arg(args, 2).as_str().filter(|s| !s.trim().is_empty());
-            let entry_name = arg(args, 3).as_str().filter(|s| !s.trim().is_empty());
-            match inspect(Path::new(path), board_vendor, board_model, entry_name) {
+            let entry_index = arg(args, 3).as_u64().map(|n| n as usize);
+            let p = Path::new(path);
+            if let Err(e) = check_path_syntax(p) {
+                return Some(json!({ "error": e }));
+            }
+            if !was_offered(p) {
+                return Some(json!({
+                    "error": "Pick the file with the Browse button or drop it onto Swiftlane."
+                }));
+            }
+            match inspect(p, board_vendor, board_model, entry_index) {
                 Ok(v) => v,
                 Err(e) => json!({ "error": e }),
             }
@@ -220,7 +229,7 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         "biosusb_drives" => list_drives(),
         "biosusb_format" => {
             let letter = arg(args, 0).as_str().unwrap_or("");
-            match format_drive(letter) {
+            match format_drive(app, letter) {
                 Ok(()) => json!({ "ok": true }),
                 Err(e) => json!({ "error": e }),
             }
@@ -232,7 +241,10 @@ pub fn dispatch(app: &AppHandle, method: &str, args: &[Value]) -> Option<Value> 
         "biosusb_eject" => {
             let drive = arg(args, 0).as_str().unwrap_or("");
             match eject_drive(drive) {
-                Ok(()) => json!({ "ok": true }),
+                Ok(also) => {
+                    let also: Vec<String> = also.iter().map(|c| format!("{c}:")).collect();
+                    json!({ "ok": true, "also_ejected": also })
+                }
                 Err(e) => json!({ "error": e }),
             }
         }
@@ -476,6 +488,40 @@ fn open_diskmgmt() -> Result<(), String> {
     platform::open_diskmgmt()
 }
 
+const MAX_OFFERED_PATHS: usize = 32;
+const MAX_ZIP_ENTRIES: usize = 10_000;
+
+static OFFERED: OnceLock<Mutex<VecDeque<PathBuf>>> = OnceLock::new();
+
+fn offered_store() -> &'static Mutex<VecDeque<PathBuf>> {
+    OFFERED.get_or_init(|| Mutex::new(VecDeque::new()))
+}
+
+/// Remembers a path that Rust itself handed out (file picker or native drop event). The page
+/// can only ask to inspect paths remembered here. The list is small and process-local.
+pub fn offer_path(path: &Path) {
+    if let Ok(mut q) = offered_store().lock() {
+        q.retain(|p| p != path);
+        q.push_back(path.to_path_buf());
+        while q.len() > MAX_OFFERED_PATHS {
+            q.pop_front();
+        }
+    }
+}
+
+fn was_offered(path: &Path) -> bool {
+    offered_store().lock().is_ok_and(|q| q.iter().any(|p| p == path))
+}
+
+/// Rejects network (UNC) and device paths, which are never a downloaded BIOS file.
+fn check_path_syntax(path: &Path) -> Result<(), String> {
+    let s = path.to_string_lossy();
+    if s.starts_with(r"\\") || s.starts_with("//") {
+        return Err("Network and device paths aren't supported. Copy the file to a local folder first.".into());
+    }
+    Ok(())
+}
+
 fn pick_file(app: &AppHandle) -> Value {
     let picked = app
         .dialog()
@@ -488,7 +534,13 @@ fn pick_file(app: &AppHandle) -> Value {
         .blocking_pick_file()
         .and_then(|p| p.into_path().ok());
     match picked {
-        Some(path) => json!({ "path": path.to_string_lossy() }),
+        Some(path) => {
+            if let Err(e) = check_path_syntax(&path) {
+                return json!({ "error": e });
+            }
+            offer_path(&path);
+            json!({ "path": path.to_string_lossy() })
+        }
         None => json!({ "cancelled": true }),
     }
 }
@@ -680,7 +732,10 @@ fn stream_to_staged<R: Read>(
     let dest_path = staging_dir.join(format!("{token}.bin"));
 
     let res = (|| -> Result<(u64, String, Vec<u8>), String> {
-        let mut out = File::create(&dest_path)
+        let mut out = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&dest_path)
             .map_err(|e| format!("Couldn't create staged BIOS file ({e})."))?;
         let mut limited = reader.take(MAX_BIOS_BYTES + 1);
         let mut hasher = Sha256::new();
@@ -734,10 +789,10 @@ fn inspect(
     path: &Path,
     board_vendor: Option<&str>,
     board_model: Option<&str>,
-    entry_name: Option<&str>,
+    entry_index: Option<usize>,
 ) -> Result<Value, String> {
     let dir = biosusb_dir();
-    let (val, staged) = inspect_into(path, board_vendor, board_model, entry_name, &dir)?;
+    let (val, staged) = inspect_into(path, board_vendor, board_model, entry_index, &dir)?;
 
     let token = val["token"].as_str().unwrap_or("").to_string();
     let mut store = staged_store().lock().unwrap();
@@ -769,12 +824,13 @@ fn inspect_into(
     path: &Path,
     board_vendor: Option<&str>,
     board_model: Option<&str>,
-    requested_entry: Option<&str>,
+    requested_index: Option<usize>,
     staging_dir: &Path,
 ) -> Result<(Value, StagedBios), String> {
     if path.as_os_str().is_empty() {
         return Err("Pick a downloaded BIOS ZIP or image file first.".into());
     }
+    check_path_syntax(path)?;
     let meta = std::fs::metadata(path)
         .map_err(|_| "Swiftlane can't find that file. It may have been moved or deleted.".to_string())?;
     if !meta.is_file() {
@@ -802,15 +858,24 @@ fn inspect_into(
             size: u64,
         }
 
+        if archive.len() > MAX_ZIP_ENTRIES {
+            return Err(format!(
+                "This ZIP has too many files ({}). A BIOS download contains only a few.",
+                archive.len()
+            ));
+        }
+
         let mut candidates: Vec<ZipCand> = Vec::new();
         let mut has_bios_renamer = false;
         let mut saw_too_small = false;
         let mut saw_too_large = false;
+        let mut saw_encrypted = false;
         let mut largest_skipped: u64 = 0;
 
         for i in 0..archive.len() {
+            // Raw access reads only the entry header; nothing is decompressed while scanning.
             let entry = archive
-                .by_index(i)
+                .by_index_raw(i)
                 .map_err(|e| format!("Couldn't read an entry in this ZIP archive ({e})."))?;
             let raw_name = entry
                 .name()
@@ -839,6 +904,10 @@ fn inspect_into(
             if is_junk_extension(&basename) {
                 continue;
             }
+            if entry.encrypted() {
+                saw_encrypted = true;
+                continue;
+            }
             let size = entry.size();
             if size < MIN_BIOS_BYTES {
                 saw_too_small = true;
@@ -853,6 +922,12 @@ fn inspect_into(
         }
 
         if candidates.is_empty() {
+            if saw_encrypted {
+                return Err(
+                    "The BIOS file in this ZIP is password-protected, which Swiftlane can't open. Extract it yourself and pick the extracted file."
+                        .into(),
+                );
+            }
             if saw_too_large {
                 return Err(
                     "The file inside this ZIP is over 130 MB, which is too large for a motherboard BIOS."
@@ -873,11 +948,13 @@ fn inspect_into(
 
         candidates.sort_by(|a, b| b.size.cmp(&a.size));
 
-        let chosen = if let Some(req) = requested_entry.filter(|s| !s.is_empty()) {
+        // Entries are chosen by their position in the archive (names can repeat across folders),
+        // and the position must be one of the candidates found above.
+        let chosen = if let Some(req) = requested_index {
             candidates
                 .iter()
-                .find(|c| c.entry == req || c.entry.eq_ignore_ascii_case(req))
-                .ok_or_else(|| format!("Couldn't find “{req}” inside this ZIP archive."))?
+                .find(|c| c.index == req)
+                .ok_or_else(|| "That file isn't one of the BIOS files in this ZIP archive.".to_string())?
         } else {
             &candidates[0]
         };
@@ -886,12 +963,15 @@ fn inspect_into(
         let chosen_entry_name = chosen.entry.clone();
         let candidates_json: Vec<Value> = candidates
             .iter()
-            .map(|c| json!({ "entry": c.entry, "size": c.size }))
+            .map(|c| json!({ "index": c.index, "entry": c.entry, "size": c.size }))
             .collect();
 
         let zip_entry = archive
             .by_index(chosen_index)
             .map_err(|e| format!("Couldn't decompress “{chosen_entry_name}” ({e})."))?;
+        if zip_entry.encrypted() {
+            return Err("That file in the ZIP is password-protected, which Swiftlane can't open.".into());
+        }
         let (token, staged_path, actual_size, sha256, head) =
             stream_to_staged(zip_entry, staging_dir)?;
 
@@ -914,6 +994,7 @@ fn inspect_into(
             "source_kind": "zip",
             "source_name": source_name,
             "entry_name": chosen_entry_name,
+            "entry_index": chosen_index,
             "candidates": candidates_json,
             "size": actual_size,
             "sha256": sha256,
@@ -959,7 +1040,8 @@ fn inspect_into(
             "source_kind": "file",
             "source_name": source_name,
             "entry_name": staged.entry_name,
-            "candidates": [{ "entry": staged.entry_name, "size": actual_size }],
+            "entry_index": 0,
+            "candidates": [{ "index": 0, "entry": staged.entry_name, "size": actual_size }],
             "size": actual_size,
             "sha256": sha256,
             "looks_valid": looks_valid,
@@ -1080,13 +1162,14 @@ fn list_drives() -> Value {
     json!({ "drives": list })
 }
 
-fn format_drive(letter_str: &str) -> Result<(), String> {
+fn format_drive(app: &AppHandle, letter_str: &str) -> Result<(), String> {
     let letter = parse_drive_letter(letter_str)?;
     platform::verify_removable_usb_drive(letter)?;
-    platform::format_drive_dialog(letter)
+    platform::format_drive_dialog(app, letter)
 }
 
-fn eject_drive(letter_str: &str) -> Result<(), String> {
+/// Ejects the stick; returns the other drive letters that went with it (same USB device).
+fn eject_drive(letter_str: &str) -> Result<Vec<char>, String> {
     let letter = parse_drive_letter(letter_str)?;
     platform::verify_removable_usb_drive(letter)?;
     platform::eject_usb_drive(letter)
@@ -1273,6 +1356,7 @@ mod platform {
     use std::os::windows::fs::OpenOptionsExt;
     use std::path::{Path, PathBuf};
     use std::time::Duration;
+    use tauri::{AppHandle, Manager};
     use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
     use windows_sys::Win32::Storage::FileSystem::{
         CreateFileW, GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives, GetVolumeInformationW,
@@ -1294,7 +1378,6 @@ mod platform {
     const IOCTL_STORAGE_GET_DEVICE_NUMBER: u32 = 0x002D_1080;
     const IOCTL_DISK_GET_PARTITION_INFO_EX: u32 = 0x0007_0048;
 
-    const BUS_TYPE_UNKNOWN: u32 = 0;
     const BUS_TYPE_USB: u32 = 7;
 
     const SHFMT_ID_DEFAULT: u32 = 0xFFFF;
@@ -1418,6 +1501,12 @@ mod platform {
     #[link(name = "cfgmgr32")]
     extern "system" {
         fn CM_Get_Parent(pdn_dev_inst: *mut u32, dn_dev_inst: u32, ul_flags: u32) -> u32;
+        fn CM_Get_Device_IDW(
+            dn_dev_inst: u32,
+            buffer: *mut u16,
+            buffer_len: u32,
+            ul_flags: u32,
+        ) -> u32;
         fn CM_Request_Device_EjectW(
             dn_dev_inst: u32,
             p_veto_type: *mut u32,
@@ -1645,7 +1734,10 @@ mod platform {
         if ok == 0 || (returned as usize) < std::mem::size_of::<StorageDeviceDescriptorHeader>() {
             return None;
         }
-        let hdr = unsafe { &*(out.as_ptr() as *const StorageDeviceDescriptorHeader) };
+        // The byte buffer has alignment 1, the header has alignment 4: copy it out unaligned.
+        let hdr = unsafe {
+            std::ptr::read_unaligned(out.as_ptr() as *const StorageDeviceDescriptorHeader)
+        };
         Some(hdr.bus_type)
     }
 
@@ -1725,15 +1817,15 @@ mod platform {
         }
 
         let mut partition_style = "unknown".to_string();
-        if let Some(h) = open_volume_metadata(letter) {
-            if let Some(bus) = query_bus_type(h.0) {
-                if bus != BUS_TYPE_USB && bus != BUS_TYPE_UNKNOWN {
-                    return Ok(None);
-                }
-            }
-            if let Some(ps) = query_partition_style_ioctl(h.0) {
-                partition_style = ps.to_string();
-            }
+        // Fail closed: if we can't open the drive or can't prove it is on the USB bus, it isn't USB.
+        let Some(h) = open_volume_metadata(letter) else {
+            return Ok(None);
+        };
+        if query_bus_type(h.0) != Some(BUS_TYPE_USB) {
+            return Ok(None);
+        }
+        if let Some(ps) = query_partition_style_ioctl(h.0) {
+            partition_style = ps.to_string();
         }
 
         let mut label_buf = [0u16; 260];
@@ -1842,9 +1934,17 @@ mod platform {
         }
     }
 
-    pub fn format_drive_dialog(letter: char) -> Result<(), String> {
+    /// Shows Windows' own format dialog, owned by Swiftlane's main window. This call blocks until
+    /// the dialog closes; it runs on a blocking worker thread (api::call uses spawn_blocking),
+    /// so the async runtime is not held up.
+    pub fn format_drive_dialog(app: &AppHandle, letter: char) -> Result<(), String> {
+        let hwnd: *mut c_void = app
+            .get_webview_window("main")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| h.0 as *mut c_void)
+            .unwrap_or(std::ptr::null_mut());
         let drive_index = (letter as u32).saturating_sub('A' as u32);
-        let r = unsafe { SHFormatDrive(std::ptr::null_mut(), drive_index, SHFMT_ID_DEFAULT, 0) };
+        let r = unsafe { SHFormatDrive(hwnd, drive_index, SHFMT_ID_DEFAULT, 0) };
         match r {
             SHFMT_NOFORMAT => Err("Windows reported that this drive cannot be formatted.".into()),
             SHFMT_ERROR => Err("Windows couldn't format this drive.".into()),
@@ -1973,7 +2073,8 @@ mod platform {
         None
     }
 
-    pub fn eject_usb_drive(letter: char) -> Result<(), String> {
+    /// The parent device node of the disk behind a drive letter.
+    fn parent_devinst_of_drive(letter: char) -> Result<u32, String> {
         let dev_num = {
             let h = open_volume_metadata(letter)
                 .ok_or_else(|| format!("Couldn't open drive {letter}: to eject it."))?;
@@ -1991,6 +2092,50 @@ mod platform {
                     .into(),
             );
         }
+        Ok(parent_inst)
+    }
+
+    fn device_id(inst: u32) -> Option<String> {
+        let mut buf = [0u16; 512];
+        let cr = unsafe { CM_Get_Device_IDW(inst, buf.as_mut_ptr(), buf.len() as u32, 0) };
+        if cr != CR_SUCCESS {
+            return None;
+        }
+        let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+        Some(String::from_utf16_lossy(&buf[..end]))
+    }
+
+    fn is_usb_device_id(id: &str) -> bool {
+        let up = id.to_ascii_uppercase();
+        up.starts_with("USB\\") || up.starts_with("USBSTOR\\")
+    }
+
+    /// Ejects the whole USB device behind `letter` and returns the other drive letters that
+    /// live on the same device (they go away too).
+    pub fn eject_usb_drive(letter: char) -> Result<Vec<char>, String> {
+        let parent_inst = parent_devinst_of_drive(letter)?;
+
+        // Only ever eject a USB device node, never something higher up (a hub, a controller).
+        match device_id(parent_inst) {
+            Some(id) if is_usb_device_id(&id) => {}
+            _ => {
+                return Err(
+                    "This drive isn't directly on a USB device, so Swiftlane won't eject it. Use Safely Remove Hardware in the taskbar."
+                        .into(),
+                )
+            }
+        }
+
+        // Other USB drives on the same device (card-reader slots, extra partitions' disks).
+        let mut also: Vec<char> = Vec::new();
+        for d in enumerate_usb_drives() {
+            if d.letter.eq_ignore_ascii_case(&letter) {
+                continue;
+            }
+            if parent_devinst_of_drive(d.letter).is_ok_and(|p| p == parent_inst) {
+                also.push(d.letter);
+            }
+        }
 
         let mut last_veto = false;
         for attempt in 0..3 {
@@ -2006,7 +2151,7 @@ mod platform {
                 )
             };
             if cr == CR_SUCCESS && veto_type == 0 {
-                return Ok(());
+                return Ok(also);
             }
             last_veto = cr == CR_REMOVE_VETOED || veto_type != 0;
             if attempt < 2 && last_veto {
@@ -2110,6 +2255,7 @@ mod platform {
     use super::{RawBoardInfo, UsbDriveInfo};
     use sha2::{Digest, Sha256};
     use std::fs::File;
+    use tauri::AppHandle;
     use std::io::Read;
     use std::path::Path;
 
@@ -2138,10 +2284,10 @@ mod platform {
     pub fn verify_removable_usb_drive(_letter: char) -> Result<UsbDriveInfo, String> {
         Err("USB preparation is only available on Windows.".into())
     }
-    pub fn format_drive_dialog(_letter: char) -> Result<(), String> {
+    pub fn format_drive_dialog(_app: &AppHandle, _letter: char) -> Result<(), String> {
         Err("Drive formatting is only available on Windows.".into())
     }
-    pub fn eject_usb_drive(_letter: char) -> Result<(), String> {
+    pub fn eject_usb_drive(_letter: char) -> Result<Vec<char>, String> {
         Err("Safe eject is only available on Windows.".into())
     }
     pub fn read_sha256_unbuffered(path: &Path, expected_size: u64) -> Result<(String, bool), String> {
@@ -2540,10 +2686,142 @@ mod tests {
         assert_eq!(v_default["sha256"], big_sha);
         assert_eq!(v_default["candidates"].as_array().unwrap().len(), 2);
 
+        let r1_index = v_default["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["entry"] == "BOARD_R1.BIN")
+            .unwrap()["index"]
+            .as_u64()
+            .unwrap() as usize;
         let (v_switched, _) =
-            inspect_into(&zip_path, None, None, Some("BOARD_R1.BIN"), &stage).unwrap();
+            inspect_into(&zip_path, None, None, Some(r1_index), &stage).unwrap();
         assert_eq!(v_switched["entry_name"], "BOARD_R1.BIN");
         assert_eq!(v_switched["sha256"], small_sha);
+
+        // An index that isn't a BIOS candidate is refused.
+        assert!(inspect_into(&zip_path, None, None, Some(99), &stage).is_err());
+    }
+
+    #[test]
+    fn zip_duplicate_basenames_are_selected_by_index() {
+        let tmp = TempDir::new();
+        let stage = tmp.path().join("stage");
+        let a = make_bios_bytes(4 * 1024 * 1024, true);
+        let b = make_bios_bytes(8 * 1024 * 1024, true);
+        let a_sha = hex::encode(Sha256::digest(&a));
+        let b_sha = hex::encode(Sha256::digest(&b));
+        let zip_path = tmp.path().join("DUP.zip");
+        write_zip(
+            &zip_path,
+            &[
+                ("A/BIOS.CAP", &a, CompressionMethod::Deflated),
+                ("B/BIOS.CAP", &b, CompressionMethod::Deflated),
+            ],
+        );
+        let (v_default, _) = inspect_into(&zip_path, None, None, None, &stage).unwrap();
+        assert_eq!(v_default["sha256"], b_sha);
+        let cands = v_default["candidates"].as_array().unwrap();
+        assert_eq!(cands.len(), 2);
+        assert_eq!(cands[0]["entry"], cands[1]["entry"]);
+        let small = cands.iter().find(|c| c["size"] == a.len() as u64).unwrap();
+        let idx = small["index"].as_u64().unwrap() as usize;
+        let (v, _) = inspect_into(&zip_path, None, None, Some(idx), &stage).unwrap();
+        assert_eq!(v["sha256"], a_sha);
+        assert_eq!(v["entry_index"], idx as u64);
+    }
+
+    /// Marks every entry in a ZIP as encrypted by setting general-purpose flag bit 0 in the local
+    /// and central headers (enough for the scanner; nothing here decrypts).
+    fn mark_zip_encrypted(path: &Path, only_name: &str) {
+        let mut bytes = std::fs::read(path).unwrap();
+        let name = only_name.as_bytes();
+        let mut i = 0;
+        while i + 46 < bytes.len() {
+            let local = bytes[i..i + 4] == [0x50, 0x4B, 0x03, 0x04];
+            let central = bytes[i..i + 4] == [0x50, 0x4B, 0x01, 0x02];
+            if local || central {
+                let (flag_off, name_len_off, name_off) =
+                    if local { (6, 26, 30) } else { (8, 28, 46) };
+                let nlen = u16::from_le_bytes([bytes[i + name_len_off], bytes[i + name_len_off + 1]]) as usize;
+                if bytes.get(i + name_off..i + name_off + nlen) == Some(name) {
+                    bytes[i + flag_off] |= 1;
+                }
+            }
+            i += 1;
+        }
+        std::fs::write(path, bytes).unwrap();
+    }
+
+    #[test]
+    fn zip_skips_encrypted_entries_and_errors_if_only_encrypted() {
+        let tmp = TempDir::new();
+        let stage = tmp.path().join("stage");
+        let big = make_bios_bytes(8 * 1024 * 1024, true);
+        let small = make_bios_bytes(4 * 1024 * 1024, true);
+        let small_sha = hex::encode(Sha256::digest(&small));
+
+        let zip_path = tmp.path().join("ENC.zip");
+        write_zip(
+            &zip_path,
+            &[
+                ("SECRET.CAP", &big, CompressionMethod::Stored),
+                ("OPEN.CAP", &small, CompressionMethod::Stored),
+            ],
+        );
+        mark_zip_encrypted(&zip_path, "SECRET.CAP");
+        let (v, _) = inspect_into(&zip_path, None, None, None, &stage).unwrap();
+        assert_eq!(v["entry_name"], "OPEN.CAP");
+        assert_eq!(v["sha256"], small_sha);
+        assert_eq!(v["candidates"].as_array().unwrap().len(), 1);
+
+        let only = tmp.path().join("ONLY.zip");
+        write_zip(&only, &[("SECRET.CAP", &big, CompressionMethod::Stored)]);
+        mark_zip_encrypted(&only, "SECRET.CAP");
+        let err = inspect_into(&only, None, None, None, &stage).unwrap_err();
+        assert!(err.contains("password"));
+    }
+
+    #[test]
+    fn zip_with_too_many_entries_is_rejected() {
+        let tmp = TempDir::new();
+        let stage = tmp.path().join("stage");
+        let zip_path = tmp.path().join("MANY.zip");
+        let f = File::create(&zip_path).unwrap();
+        let mut zw = ZipWriter::new(f);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        for i in 0..(MAX_ZIP_ENTRIES + 1) {
+            zw.start_file(format!("f{i}.txt"), opts).unwrap();
+        }
+        zw.finish().unwrap();
+        let err = inspect_into(&zip_path, None, None, None, &stage).unwrap_err();
+        assert!(err.contains("too many files"));
+    }
+
+    #[test]
+    fn unc_and_device_paths_are_rejected() {
+        for bad in [
+            r"\\server\share\bios.zip",
+            r"\\?\C:\bios.zip",
+            r"\\.\PhysicalDrive0",
+            "//server/share/bios.zip",
+        ] {
+            assert!(check_path_syntax(Path::new(bad)).is_err(), "{bad}");
+        }
+        assert!(check_path_syntax(Path::new(r"C:\Users\me\bios.zip")).is_ok());
+
+        let tmp = TempDir::new();
+        let stage = tmp.path().join("stage");
+        assert!(inspect_into(Path::new(r"\\server\share\bios.zip"), None, None, None, &stage).is_err());
+    }
+
+    #[test]
+    fn only_offered_paths_are_remembered() {
+        let tmp = TempDir::new();
+        let p = tmp.path().join("x.zip");
+        assert!(!was_offered(&p));
+        offer_path(&p);
+        assert!(was_offered(&p));
     }
 
     #[test]
