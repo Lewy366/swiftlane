@@ -14,11 +14,10 @@
     pdf: 'PDF tools',
   };
   const CURRENT_NOTES = [
-    'Full-bleed Home screen with Recent tools, Recent files, and live Patch notes',
-    'Storage & Cleanup: 5-10x faster parallel drive map + optional 2-5s NTFS MFT scan',
-    'Cleanup advisor sorting findings into Safe to remove, Consider, and Should stay',
-    'Built-in Quick clean (caches & Steam leftovers), Downloads tidy, and Steam games',
-    'Find files, Duplicate finder, Startup check, and offline QR Studio',
+    'Refreshed native icons, crisp solid buttons, neutral file badges, and clean selection states without glowing borders',
+    'New offline Geist & Geist Mono fonts for sharper UI text and tabular numbers across every tool',
+    'Updated Setup wizard and Uninstaller with the Interlocked SL logo, Topographic backdrop, Dark / Light / Auto picker, and all 23 tools',
+    'Fixed the Home screen shifting upwards when opening the slide-out menu, plus Light-mode and Vault polish',
   ];
 
   let receivedLive = [];

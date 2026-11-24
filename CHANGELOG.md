@@ -2,6 +2,13 @@
 
 What's new in each version of Swiftlane.
 
+## 2.2.0 (2026-11-24)
+
+- Cleaner native look: refreshed icons throughout the app, crisp solid buttons, calm neutral file badges, and understated selection states without glowing borders.
+- New offline fonts (Geist and Geist Mono) for sharper text and aligned numbers across every tool, including English, German, Polish and Italian.
+- Updated Setup wizard and Uninstaller with the Interlocked SL logo, Topographic backdrop, live Dark / Light / Auto appearance picker, and all 23 tools.
+- Fixed the Home screen shifting upwards when opening the slide-out menu, plus Light-mode divider and spacing polish in Setup and Vault.
+
 ## 2.1.0 (2026-11-24)
 
 - New: Shrink to size — right-click a video or picture (or drop it in) and pick Discord 10 MB, WhatsApp 16 MB, Email 25 MB or your own limit; the smaller file lands on your clipboard, ready to paste with Ctrl+V. It warns before a long video would look bad and offers to trim it first.
