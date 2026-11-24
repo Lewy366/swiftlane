@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 2.3.0 (2026-11-24)
+
+- New: BIOS update USB — Swiftlane recognises your motherboard, links you to its official download page, checks the file you got (zip or plain BIOS file) and puts it on a USB stick under the right name for your board, including the names BIOS Flashback buttons need. It only lists removable USB sticks, warns about BitLocker, battery power and brand-name PCs, and reads the copy back from the stick to prove it's identical before telling you to eject.
+
 ## 2.2.0 (2026-11-24)
 
 - Cleaner native look: refreshed icons throughout the app, crisp solid buttons, calm neutral file badges, and understated selection states without glowing borders.
