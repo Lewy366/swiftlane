@@ -1,6 +1,6 @@
 [package]
 name = "swiftlane-setup"
-version = "2.3.2"
+version = "2.3.3"
 description = "Swiftlane Setup wizard for Windows"
 edition = "2021"
 publish = false

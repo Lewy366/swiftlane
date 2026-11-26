@@ -2,6 +2,12 @@
 
 What's new in each version of Swiftlane.
 
+## 2.3.3 (2026-11-27)
+
+- Faster AirPlay mirroring: smoother 60 fps video, GPU-accelerated rendering, and much lower audio and video delay (no extra download needed if AirPlay is already installed).
+- Instant Screen mirroring page and quicker browser casting: the page now opens right away, and laptop browser casting connects faster at up to 60 fps.
+- Updated Swiftlane Setup installer with the same full rollback safety, plus small Settings and Uninstaller text fixes.
+
 ## 2.3.2 (2026-11-26)
 
 - Faster Duplicate finder: folder scans now run across multiple threads at once, matching the speed of Storage & Cleanup's drive map while still skipping system folders, symlinks and cloud placeholders.
