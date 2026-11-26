@@ -2,6 +2,10 @@
 
 What's new in each version of Swiftlane.
 
+## 2.3.2 (2026-11-26)
+
+- Faster Duplicate finder: folder scans now run across multiple threads at once, matching the speed of Storage & Cleanup's drive map while still skipping system folders, symlinks and cloud placeholders.
+
 ## 2.3.1 (2026-11-24)
 
 - Phone camera & document scan now takes pictures already on your PC: click "Add pictures from this PC…" or drop them on the page, then scan them like phone photos. Swiftlane works on a copy, so your originals are never changed.
