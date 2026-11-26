@@ -146,6 +146,23 @@ fn airplay_event(app: &AppHandle, kind: &str, name: Option<&str>, pin: Option<&s
     push(app, "airplay", airplay_state(app));
 }
 
+fn uxplay_args(name: &str, pin: &str, reg: &Path, key: &Path) -> Vec<std::ffi::OsString> {
+    let os = |s: &str| std::ffi::OsString::from(s);
+    vec![
+        os("-n"), os(name),
+        os("-nh"),
+        os("-pin"), os(pin),
+        os("-reg"), reg.as_os_str().to_os_string(),
+        os("-key"), key.as_os_str().to_os_string(),
+        os("-vc"), os("d3d11upload ! d3d11convert"),
+        os("-vs"), os("d3d11videosink"),
+        os("-as"), os("wasapi2sink"),
+        os("-fps"), os("60"),
+        os("-al"), os("0.06"),
+        os("-nohold"),
+    ]
+}
+
 fn start_receiver(app: &AppHandle) -> Result<(), String> {
     {
         let mut r = RECEIVER.lock().unwrap();
@@ -176,13 +193,7 @@ fn start_receiver(app: &AppHandle) -> Result<(), String> {
             .env("GST_REGISTRY_1_0", dir.join("plugins.bin"))
             .env("HOME", &dir)
             .current_dir(&dir)
-            .arg("-n").arg(format!("{} (Swiftlane)", pc_name()))
-            .arg("-nh")
-            .arg("-pin").arg(&pin)
-            .arg("-reg").arg(register())
-            .arg("-key").arg(dir.join("key.pem"))
-            .arg("-vs").arg("d3d11videosink")
-            .arg("-nohold");
+            .args(uxplay_args(&format!("{} (Swiftlane)", pc_name()), &pin, &register(), &dir.join("key.pem")));
         let (reader, writer) = std::io::pipe().map_err(|e| format!("Couldn't start the AirPlay receiver ({e})."))?;
         let writer2 = writer.try_clone().map_err(|e| format!("Couldn't start the AirPlay receiver ({e})."))?;
         cmd.stdin(Stdio::null()).stdout(writer).stderr(writer2);
@@ -358,12 +369,10 @@ fn airplay_forget(app: &AppHandle) -> Value {
 
 /// Is this a Private (home) network? The firewall rule only covers those. Null if Windows won't say.
 fn network_is_private() -> Value {
-    let out = win::powershell("(Get-NetConnectionProfile | Where-Object IPv4Connectivity -ne 'Disconnected').NetworkCategory", 15);
-    let cats: Vec<String> = out.unwrap_or_default().lines().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()).collect();
-    if cats.is_empty() {
-        return Value::Null;
+    match win::network_is_private() {
+        Some(priv_net) => json!(priv_net),
+        None => Value::Null,
     }
-    json!(cats.iter().all(|c| c == "Private" || c == "DomainAuthenticated"))
 }
 
 /// Fetch the receiver zip into `folder` (a fresh temp folder) and check its size and SHA-256 on
@@ -457,20 +466,26 @@ const CAPABILITY: &str = "App.WirelessDisplay.Connect~~~~0.0.1.0";
 const APP_ID: &str = "Microsoft.PPIProjection_cw5n1h2txyewy!Microsoft.PPIProjection"; // Wireless Display's Start menu ID
 
 /// True/False if Windows says this PC's Wi-Fi and graphics can receive Miracast, Null if unknown.
+/// Cached for the session because WDDM/Wi-Fi hardware capability doesn't change while Swiftlane runs.
 fn miracast_supported() -> Value {
-    let out = win::run_capture(&win::system32().join("netsh.exe"), &["wlan", "show", "drivers"], 30).unwrap_or_default();
-    for line in out.lines() {
-        if line.contains("Wireless Display Supported") {
-            return json!(line.split_once(':').map(|(_, v)| v.trim().to_lowercase().starts_with("yes")).unwrap_or(false));
-        }
-    }
-    Value::Null
+    static SUPPORTED: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
+    SUPPORTED
+        .get_or_init(|| {
+            let out = win::run_capture(&win::system32().join("netsh.exe"), &["wlan", "show", "drivers"], 30).unwrap_or_default();
+            for line in out.lines() {
+                if line.contains("Wireless Display Supported") {
+                    return json!(line.split_once(':').map(|(_, v)| v.trim().to_lowercase().starts_with("yes")).unwrap_or(false));
+                }
+            }
+            Value::Null
+        })
+        .clone()
 }
 
-/// Is the Wireless Display app installed?
+/// Is the Wireless Display app installed? (Direct SystemApps check avoids spawning PowerShell.)
 fn miracast_app() -> bool {
-    let out = win::powershell(&format!("Get-StartApps | Where-Object {{ $_.AppID -eq '{APP_ID}' }} | Select-Object -First 1 -ExpandProperty AppID"), 30);
-    out.is_some_and(|o| o.trim() == APP_ID)
+    let dir = win::windows_dir().join("SystemApps").join("Microsoft.PPIProjection_cw5n1h2txyewy");
+    dir.join("Receiver.exe").is_file() || dir.join("AppxManifest.xml").is_file()
 }
 
 fn miracast_state() -> Value {
@@ -937,8 +952,55 @@ mod win {
         reader.join().ok().map(|b| String::from_utf8_lossy(&b).to_string())
     }
 
-    pub fn powershell(command: &str, timeout: u64) -> Option<String> {
-        run_capture(&powershell_exe(), &["-NoProfile", "-NonInteractive", "-Command", command], timeout)
+    /// Checks whether every connected network profile is Private or DomainAuthenticated via COM
+    /// INetworkListManager (avoids spawning PowerShell).
+    pub fn network_is_private() -> Option<bool> {
+        use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
+        use windows::Win32::Networking::NetworkListManager::{
+            INetworkListManager, NetworkListManager, NLM_ENUM_NETWORK_CONNECTED,
+            NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED, NLM_NETWORK_CATEGORY_PRIVATE,
+        };
+        use windows::Win32::System::Com::{
+            CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_MULTITHREADED,
+        };
+
+        struct ComGuard(bool);
+        impl Drop for ComGuard {
+            fn drop(&mut self) {
+                if self.0 {
+                    unsafe {
+                        CoUninitialize();
+                    }
+                }
+            }
+        }
+
+        unsafe {
+            let init = CoInitializeEx(None, COINIT_MULTITHREADED);
+            if init.is_err() && init != RPC_E_CHANGED_MODE {
+                return None;
+            }
+            let _guard = ComGuard(init.is_ok());
+            let mgr: INetworkListManager = CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL).ok()?;
+            let enums = mgr.GetNetworks(NLM_ENUM_NETWORK_CONNECTED).ok()?;
+            let (mut saw_any, mut all_private) = (false, true);
+            loop {
+                let mut buf = [None];
+                let mut fetched = 0u32;
+                if enums.Next(&mut buf, Some(&mut fetched)).is_err() || fetched == 0 {
+                    break;
+                }
+                if let Some(net) = buf[0].take() {
+                    if let Ok(cat) = net.GetCategory() {
+                        saw_any = true;
+                        if cat != NLM_NETWORK_CATEGORY_PRIVATE && cat != NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED {
+                            all_private = false;
+                        }
+                    }
+                }
+            }
+            saw_any.then_some(all_private)
+        }
     }
 }
 
@@ -967,7 +1029,7 @@ mod win {
     pub fn run_capture(_exe: &Path, _args: &[&str], _timeout: u64) -> Option<String> {
         None
     }
-    pub fn powershell(_command: &str, _timeout: u64) -> Option<String> {
+    pub fn network_is_private() -> Option<bool> {
         None
     }
 }
@@ -1011,11 +1073,35 @@ mod tests {
         assert_eq!(RULE, "Swiftlane AirPlay");
     }
 
+    #[test]
+    fn uxplay_launch_args_enable_fast_pipeline() {
+        let args = uxplay_args("MyPC (Swiftlane)", "1234", Path::new("phones.txt"), Path::new("key.pem"));
+        let strs: Vec<String> = args.iter().map(|s| s.to_string_lossy().into_owned()).collect();
+        for pair in [
+            ("-vc", "d3d11upload ! d3d11convert"),
+            ("-vs", "d3d11videosink"),
+            ("-as", "wasapi2sink"),
+            ("-fps", "60"),
+            ("-al", "0.06"),
+        ] {
+            let idx = strs.iter().position(|s| s == pair.0).expect(pair.0);
+            assert_eq!(strs.get(idx + 1).map(String::as_str), Some(pair.1));
+        }
+        assert!(strs.iter().any(|s| s == "-nohold"));
+    }
+
     #[cfg(windows)]
     #[test]
     fn helper_paths_are_absolute() {
         assert!(win::powershell_exe().is_absolute());
         assert!(win::system32().is_absolute());
         assert!(install_dir().is_absolute() && install_dir().ends_with("Swiftlane AirPlay"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn native_network_and_miracast_checks_do_not_panic() {
+        let _ = win::network_is_private();
+        let _ = miracast_app();
     }
 }

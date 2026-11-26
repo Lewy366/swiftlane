@@ -57,8 +57,24 @@
   function gathered(conn) {
     return new Promise(resolve => {
       if (conn.iceGatheringState === 'complete') return resolve();
-      conn.addEventListener('icegatheringstatechange', () => { if (conn.iceGatheringState === 'complete') resolve(); });
-      setTimeout(resolve, 3000);
+      let settled = false, hostTimer = null;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(hardTimer);
+        clearTimeout(hostTimer);
+        conn.removeEventListener('icegatheringstatechange', onState);
+        conn.removeEventListener('icecandidate', onCand);
+        resolve();
+      };
+      const onState = () => { if (conn.iceGatheringState === 'complete') done(); };
+      const onCand = e => {
+        if (!e.candidate) done();
+        else if (!hostTimer) hostTimer = setTimeout(done, 150);
+      };
+      const hardTimer = setTimeout(done, 1500);
+      conn.addEventListener('icegatheringstatechange', onState);
+      conn.addEventListener('icecandidate', onCand);
     });
   }
 

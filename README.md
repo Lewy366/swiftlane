@@ -25,7 +25,7 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - **Security tools:** an encrypted **Vault**, **Network devices** (see who's on your home network), **Is my PC exposed?**, **Startup check** (see and toggle apps that start with Windows) and **BIOS update USB** (prepare and verify a FAT32 USB stick for a motherboard BIOS update).
 - **World clock:** live times on a world map with the night side shaded from the sun's real position, analog clocks for your cities, and a planner to see any moment in every time zone.
 - **Find files**, **Duplicate finder**, **Storage & Cleanup** (drive map, quick cache cleaner, Downloads tidy and Steam games), **File converter**, **Image editor**, **PDF tools**, **Video trimmer**, **Shrink to size**, **Phone camera & document scan**, **QR Studio**, **Video downloader**, **Currency converter**, **Calculator** (Casio ClassWiz style), **Speed test** and **Ad blocker test**.
-- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Send to contacts*, *Convert* or *Shrink to size*.
+- Right-click any file in File Explorer and pick *Send to phone*, *Share with a link*, *Convert* or *Shrink to size*.
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
 - Works in a small window too. Make it as narrow as you like (down to 400 px) and the pages stack into one column; below about 860 px the sidebar tucks away behind a ☰ menu button.
 

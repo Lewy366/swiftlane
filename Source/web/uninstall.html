@@ -94,21 +94,21 @@ function fmtSize(n) { const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (n >= 
 Object.assign(I18N.de, { 'Uninstall Swiftlane': 'Swiftlane deinstallieren', 'This removes Swiftlane and everything it set up on this PC.': 'Entfernt Swiftlane und alles, was es auf diesem PC eingerichtet hat.',
   'What will be removed': 'Was entfernt wird', 'Also delete the files Swiftlane made': 'Auch die von Swiftlane erstellten Dateien löschen', 'Cancel': 'Abbrechen', 'Uninstall': 'Deinstallieren',
   'Swiftlane has been removed': 'Swiftlane wurde entfernt', 'Close': 'Schließen', 'The program': 'Das Programm', 'Your settings, pairing code, logs and background picture': 'Deine Einstellungen, Kopplungscode, Protokolle und Hintergrundbild',
-  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Firewall-Regel, Startmenü- und Desktop-Verknüpfungen, Eintrag in Einstellungen > Apps, Autostart',
+  'Firewall rule, File Explorer menu, AirPlay receiver, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Firewall-Regel, Datei-Explorer-Menü, AirPlay-Empfänger, Startmenü- und Desktop-Verknüpfungen, Eintrag in Einstellungen > Apps, Autostart',
   'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Reste älterer Versionen (PocketDrop) und der Cache des Video-Downloaders',
   'Removing…': 'Wird entfernt…', 'Windows didn’t give permission, so nothing was removed.': 'Windows hat keine Erlaubnis gegeben, daher wurde nichts entfernt.',
   'Swiftlane hasn’t made any files yet.': 'Swiftlane hat noch keine Dateien erstellt.', 'Files you saved elsewhere yourself are never touched.': 'Dateien, die du selbst woanders gespeichert hast, bleiben unberührt.' });
 Object.assign(I18N.pl, { 'Uninstall Swiftlane': 'Odinstaluj Swiftlane', 'This removes Swiftlane and everything it set up on this PC.': 'Usuwa Swiftlane i wszystko, co skonfigurował na tym komputerze.',
   'What will be removed': 'Co zostanie usunięte', 'Also delete the files Swiftlane made': 'Usuń też pliki utworzone przez Swiftlane', 'Cancel': 'Anuluj', 'Uninstall': 'Odinstaluj',
   'Swiftlane has been removed': 'Swiftlane został usunięty', 'Close': 'Zamknij', 'The program': 'Program', 'Your settings, pairing code, logs and background picture': 'Twoje ustawienia, kod parowania, dzienniki i obraz tła',
-  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Reguła zapory, skróty w menu Start i na pulpicie, wpis w Ustawienia > Aplikacje, autostart',
+  'Firewall rule, File Explorer menu, AirPlay receiver, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Reguła zapory, menu Eksploratora plików, odbiornik AirPlay, skróty w menu Start i na pulpicie, wpis w Ustawienia > Aplikacje, autostart',
   'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Pozostałości starszych wersji (PocketDrop) i pamięć podręczna pobierania wideo',
   'Removing…': 'Usuwanie…', 'Windows didn’t give permission, so nothing was removed.': 'Windows nie udzielił zgody, więc nic nie zostało usunięte.',
   'Swiftlane hasn’t made any files yet.': 'Swiftlane nie utworzył jeszcze żadnych plików.', 'Files you saved elsewhere yourself are never touched.': 'Pliki zapisane przez ciebie gdzie indziej pozostają nietknięte.' });
 Object.assign(I18N.it, { 'Uninstall Swiftlane': 'Disinstalla Swiftlane', 'This removes Swiftlane and everything it set up on this PC.': 'Rimuove Swiftlane e tutto ciò che ha configurato su questo PC.',
   'What will be removed': 'Cosa verrà rimosso', 'Also delete the files Swiftlane made': 'Elimina anche i file creati da Swiftlane', 'Cancel': 'Annulla', 'Uninstall': 'Disinstalla',
   'Swiftlane has been removed': 'Swiftlane è stato rimosso', 'Close': 'Chiudi', 'The program': 'Il programma', 'Your settings, pairing code, logs and background picture': 'Impostazioni, codice di associazione, registri e immagine di sfondo',
-  'Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Regola del firewall, collegamenti nel menu Start e sul desktop, voce in Impostazioni > App, avvio automatico',
+  'Firewall rule, File Explorer menu, AirPlay receiver, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows': 'Regola del firewall, menu di Esplora file, ricevitore AirPlay, collegamenti nel menu Start e sul desktop, voce in Impostazioni > App, avvio automatico',
   'Leftovers from older versions (PocketDrop) and the video downloader’s cache': 'Resti di versioni precedenti (PocketDrop) e cache del download video',
   'Removing…': 'Rimozione…', 'Windows didn’t give permission, so nothing was removed.': 'Windows non ha dato il permesso, quindi non è stato rimosso nulla.',
   'Swiftlane hasn’t made any files yet.': 'Swiftlane non ha ancora creato file.', 'Files you saved elsewhere yourself are never touched.': 'I file che hai salvato altrove non vengono toccati.' });
@@ -128,7 +128,7 @@ window.addEventListener('pywebviewready', async () => {
   const item = (text, path) => { const li = el('li', null, text); if (path) { li.append(document.createTextNode(' ')); const c = el('code', null, path); c.setAttribute('translate', 'no'); li.append(c); } list.append(li); };
   item('The program', info.install_dir);
   item('Your settings, pairing code, logs and background picture', info.config_dir);
-  item('Firewall rule, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows');
+  item('Firewall rule, File Explorer menu, AirPlay receiver, Start menu and desktop shortcuts, Settings > Apps entry, start with Windows');
   item('Leftovers from older versions (PocketDrop) and the video downloader’s cache');
   const fi = $('filesInfo');
   if (info.files) { fi.textContent = `${info.files} files (${fmtSize(info.files_size)}): received, converted, edited and downloaded. Off by default.`; fi.append(el('br'), document.createTextNode(t('Files you saved elsewhere yourself are never touched.'))); }

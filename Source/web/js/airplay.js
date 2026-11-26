@@ -129,11 +129,16 @@
       $('apSource').onclick = e => { e.preventDefault(); App.api.airplay_open_source(); };
     },
     async show() {
-      render(await App.api.airplay_state());
+      const [ap, ca, mc] = await Promise.all([
+        App.api.airplay_state(),
+        App.api.cast_state(),
+        App.api.miracast_state(),
+      ]);
+      render(ap);
       $('apSize').textContent = `${t('One-time download')} · ${Math.round(state.size / 1e6)} MB`;
       if (state.on) checkNetwork();
-      renderCast(await App.api.cast_state());
-      renderMiracast(await App.api.miracast_state());
+      renderCast(ca);
+      renderMiracast(mc);
     },
   };
 })();

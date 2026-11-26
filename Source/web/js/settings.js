@@ -26,7 +26,7 @@
     ['speedtest', 'gauge', 'Speed test', 'Download, upload and ping'],
     ['adblock', 'shield', 'Ad blocker test', 'Are ads and trackers blocked?'],
   ];
-  const ACCENT_NAMES = { sunset: 'Sunset', aurora: 'Aurora', ocean: 'Ocean', forest: 'Forest', rose: 'Rose', ruby: 'Ruby', mono: 'Mono' };
+  const ACCENT_NAMES = { cyan: 'Cyan', sunset: 'Sunset', aurora: 'Aurora', ocean: 'Ocean', forest: 'Forest', rose: 'Rose', ruby: 'Ruby', mono: 'Mono' };
 
   function renderFeatures() {
     const list = $('featureList'); list.replaceChildren();

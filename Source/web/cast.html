@@ -93,9 +93,24 @@
   function gathered(conn) {
     return new Promise(resolve => {
       if (conn.iceGatheringState === 'complete') return resolve();
-      const done = () => { if (conn.iceGatheringState === 'complete') resolve(); };
-      conn.addEventListener('icegatheringstatechange', done);
-      setTimeout(resolve, 3000);
+      let settled = false, hostTimer = null;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(hardTimer);
+        clearTimeout(hostTimer);
+        conn.removeEventListener('icegatheringstatechange', onState);
+        conn.removeEventListener('icecandidate', onCand);
+        resolve();
+      };
+      const onState = () => { if (conn.iceGatheringState === 'complete') done(); };
+      const onCand = e => {
+        if (!e.candidate) done();
+        else if (!hostTimer) hostTimer = setTimeout(done, 150);
+      };
+      const hardTimer = setTimeout(done, 1500);
+      conn.addEventListener('icegatheringstatechange', onState);
+      conn.addEventListener('icecandidate', onCand);
     });
   }
 
@@ -104,7 +119,7 @@
     const label = $('name').value.trim().slice(0, 40);
     try { localStorage.setItem('swiftlane-cast-name', label); } catch (e) {}
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: true });
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio: true });
     } catch (e) { stream = null; say(''); return; }
     $('go').textContent = t('Stop sharing'); $('go').className = 'stop';
     stream.getVideoTracks()[0].addEventListener('ended', () => stop('Stopped.'));
@@ -129,7 +144,7 @@
         if (s.status === 'denied') return stop('The PC said no.', true);
         if (s.status === 'expired' || s.status === 'unknown') return stop('Nobody answered on the PC. Try again.', true);
         if (s.status === 'ended') return stop('Stopped.');
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 200));
       }
     } catch (e) { if (conn === pc) stop(e.message, true); }
   }
