@@ -4,6 +4,15 @@ version = "2.3.2"
 description = "Swiftlane: phone transfer, share links and everyday tools for Windows"
 edition = "2021"
 publish = false
+default-run = "swiftlane"
+
+[[bin]]
+name = "swiftlane"
+path = "src/main.rs"
+
+[[bin]]
+name = "swiftlane-pack"
+path = "src/bin/swiftlane-pack.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -82,8 +91,8 @@ opt-level = 3
 opt-level = 3
 
 [profile.release]
-codegen-units = 1
-lto = true
+codegen-units = 4
+lto = "thin"
 opt-level = "s"
 panic = "abort"
 strip = true

@@ -1,4 +1,4 @@
-# Builds "Swiftlane Setup.exe" for the Rust version of Swiftlane.
+# Builds "Swiftlane Setup.exe" for the Rust version of Swiftlane (pure Rust + PowerShell, zero Python).
 #
 # Usage:
 #   pwsh -File Rust/pack/build-setup.ps1                       # full local Rust build + pack + Setup.exe
@@ -17,6 +17,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $RustDir = Join-Path $RepoRoot "Rust"
+$SetupDir = Join-Path $RustDir "setup"
 $SourceDir = Join-Path $RepoRoot "Source"
 $PackDir = $PSScriptRoot
 
@@ -24,7 +25,12 @@ $runId = [guid]::NewGuid().ToString("N").Substring(0, 8)
 $Work = Join-Path ([IO.Path]::GetTempPath()) "Swiftlane-rust-build-$runId"
 $Stage = Join-Path $Work "app"
 $PackOut = Join-Path $Work "payload"
-$PyWork = Join-Path $Work "pyi"
+
+if (Test-Path (Join-Path $env:USERPROFILE ".cargo\bin")) {
+    $env:PATH = (Join-Path $env:USERPROFILE ".cargo\bin") + ";" + $env:PATH
+}
+$targetDir = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $env:LOCALAPPDATA "swiftlane-cargo-target" }
+$env:CARGO_TARGET_DIR = $targetDir
 
 function Smoke-Check([string]$AppDir) {
     $required = @(
@@ -87,11 +93,24 @@ public static class SwiftlaneDllCheck {
 }
 
 try {
-    New-Item -ItemType Directory -Force -Path $Work, $PackOut, $PyWork | Out-Null
+    New-Item -ItemType Directory -Force -Path $Work, $PackOut | Out-Null
+
+    Write-Host "Building swiftlane-pack.exe..."
+    Push-Location $RustDir
+    try {
+        & cargo build --release --locked --bin swiftlane-pack
+        if ($LASTEXITCODE -ne 0) { throw "cargo build --release --locked --bin swiftlane-pack failed" }
+    } finally {
+        Pop-Location
+    }
+    $packExe = Join-Path $targetDir "release\swiftlane-pack.exe"
+    if (-not (Test-Path $packExe)) {
+        throw "swiftlane-pack.exe not found at $packExe"
+    }
 
     Write-Host "[1/5] Checking versions and web scripts..."
-    & python (Join-Path $PackDir "set-version.py") --check
-    if ($LASTEXITCODE -ne 0) { throw "Rust version files are out of sync. Run Rust/pack/set-version.py <X.Y.Z>." }
+    & $packExe version --check --root $RepoRoot
+    if ($LASTEXITCODE -ne 0) { throw "Rust version files are out of sync. Run swiftlane-pack version <X.Y.Z>." }
 
     if (Get-Command node -ErrorAction SilentlyContinue) {
         Get-ChildItem (Join-Path $SourceDir "web") -Recurse -Filter "*.js" | ForEach-Object {
@@ -109,12 +128,6 @@ try {
         New-Item -ItemType Directory -Force -Path $Stage, (Join-Path $Stage "toolkit") | Out-Null
         & (Join-Path $PackDir "fetch-helpers.ps1") -OutDir $Stage
 
-        if (Test-Path (Join-Path $env:USERPROFILE ".cargo\bin")) {
-            $env:PATH = (Join-Path $env:USERPROFILE ".cargo\bin") + ";" + $env:PATH
-        }
-        $targetDir = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $env:LOCALAPPDATA "swiftlane-cargo-target" }
-        $env:CARGO_TARGET_DIR = $targetDir
-
         Push-Location $RustDir
         try {
             if (-not $SkipTests) {
@@ -123,8 +136,8 @@ try {
                 if ($LASTEXITCODE -ne 0) { throw "cargo test failed" }
             }
             Write-Host "Building Swiftlane.exe (release)..."
-            & cargo build --release --locked
-            if ($LASTEXITCODE -ne 0) { throw "cargo build --release failed" }
+            & cargo build --release --locked --bin swiftlane
+            if ($LASTEXITCODE -ne 0) { throw "cargo build --release --locked --bin swiftlane failed" }
         } finally {
             Pop-Location
         }
@@ -143,12 +156,25 @@ try {
     Smoke-Check $appDir
 
     Write-Host "[4/5] Packing payload.zip..."
-    & python (Join-Path $PackDir "make-payload.py") $appDir $PackOut
-    if ($LASTEXITCODE -ne 0) { throw "make-payload.py failed" }
+    & $packExe payload $appDir $PackOut --root $RepoRoot
+    if ($LASTEXITCODE -ne 0) { throw "swiftlane-pack payload failed" }
+    $version = (Get-Content (Join-Path $PackOut "version.txt") -Raw).Trim()
 
-    Write-Host "[5/5] Building Setup wizard executable..."
-    & python -m pip install --user --disable-pip-version-check -q pyinstaller pywebview
-    if ($LASTEXITCODE -ne 0) { throw "pip install pyinstaller/pywebview failed" }
+    Write-Host "[5/5] Building native Rust Setup wizard and bundling..."
+    if (-not (Test-Path (Join-Path $SetupDir "Cargo.toml"))) {
+        throw "Native Setup crate not found at $SetupDir"
+    }
+    Push-Location $SetupDir
+    try {
+        & cargo build --release --locked
+        if ($LASTEXITCODE -ne 0) { throw "cargo build --release failed in Rust/setup" }
+    } finally {
+        Pop-Location
+    }
+    $setupExe = Join-Path $targetDir "release\swiftlane-setup.exe"
+    if (-not (Test-Path $setupExe)) {
+        throw "swiftlane-setup.exe not found at $setupExe"
+    }
 
     $outPath = if ($Output) {
         if ([IO.Path]::IsPathRooted($Output)) { $Output } else { Join-Path $RepoRoot $Output }
@@ -156,28 +182,10 @@ try {
         Join-Path $RepoRoot "Swiftlane Setup.exe"
     }
     $outDir = Split-Path -Parent $outPath
-    $outBase = [IO.Path]::GetFileNameWithoutExtension($outPath)
     New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-    $web = Join-Path $SourceDir "web"
-    & python -m PyInstaller --onefile --windowed --uac-admin --noconfirm --log-level WARN `
-        --name $outBase `
-        --icon (Join-Path $web "icon.ico") `
-        --paths (Join-Path $SourceDir "setup") `
-        --add-data "$PackOut\payload.zip;." `
-        --add-data "$PackOut\version.txt;." `
-        --add-data "$web\setup.html;web" `
-        --add-data "$web\setup;web\setup" `
-        --add-data "$web\css;web\css" `
-        --add-data "$web\fonts;web\fonts" `
-        --add-data "$web\js\i18n.js;web\js" `
-        --add-data "$web\icon-180.png;web" `
-        --add-data "$web\icon.ico;web" `
-        --distpath $outDir `
-        --workpath $PyWork `
-        --specpath $PyWork `
-        (Join-Path $SourceDir "setup\setup.py")
-    if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed building Setup wizard" }
+    & $packExe bundle $setupExe (Join-Path $PackOut "payload.zip") $version $outPath
+    if ($LASTEXITCODE -ne 0) { throw "swiftlane-pack bundle failed" }
 
     $sizeMb = [Math]::Round((Get-Item $outPath).Length / 1MB, 1)
     Write-Host ""

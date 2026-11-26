@@ -326,6 +326,20 @@ $('nextBtn').onclick = () => go(1);
 $('cancelBtn').onclick = () => { if (confirm(t('Cancel Swiftlane Setup? Nothing has been changed yet.'))) api.close(); };
 $('language').onchange = e => setLanguage(e.target.value);
 
+if (window.__TAURI__ && !window.pywebview) {
+  const T = window.__TAURI__;
+  window.pywebview = {
+    api: new Proxy({}, {
+      get: (_, method) => typeof method === 'string'
+        ? (...args) => T.core.invoke('setup_call', { method, args })
+        : undefined,
+    }),
+  };
+  const fire = () => window.dispatchEvent(new Event('pywebviewready'));
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', fire);
+  else queueMicrotask(fire);
+}
+
 window.addEventListener('pywebviewready', async () => {
   api = window.pywebview.api;
   info = await api.info();
