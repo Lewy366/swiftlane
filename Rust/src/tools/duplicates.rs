@@ -1,6 +1,11 @@
 //! Duplicate file finder: scans a drive or folder for byte-identical files using a parallel
-//! multi-stage pipeline (walk -> group by size -> parallel 4 KiB head+tail partial SHA-256 ->
-//! parallel full 256 KiB-chunked SHA-256).
+//! multi-stage pipeline:
+//!   1. Parallel `FindFirstFileExW` (`FindExInfoBasic` + `FIND_FIRST_EX_LARGE_FETCH` + `\\?\` paths)
+//!      across worker threads, reading size + modified time directly from the directory entry
+//!      without per-file `metadata()` syscalls.
+//!   2. Group by exact file size (discarding unique sizes).
+//!   3. Parallel 4 KiB head + 4 KiB tail partial SHA-256.
+//!   4. Parallel full 256 KiB-chunked SHA-256.
 //!
 //! Safety rules:
 //! - Skips symlinks and Windows reparse points (junctions, mount points, cloud placeholders) so
@@ -11,14 +16,16 @@
 
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Condvar, Mutex};
 use std::thread;
-use std::time::{Duration, Instant, UNIX_EPOCH};
+use std::time::{Duration, Instant};
+#[cfg(not(windows))]
+use std::time::UNIX_EPOCH;
 use tauri::{AppHandle, Manager};
 
 use super::diskmap::{drives, protected, to_recycle_bin};
@@ -29,11 +36,9 @@ use crate::jobs::JobError;
 
 const PARTIAL_BYTES: usize = 4 * 1024; // 4 KiB head + 4 KiB tail
 const FULL_CHUNK: usize = 256 * 1024; // 256 KiB full-hash read buffer
-const MAX_THREADS: usize = 8;
+const MAX_HASH_THREADS: usize = 16;
 const PROGRESS_INTERVAL: Duration = Duration::from_millis(80);
-
-#[cfg(windows)]
-const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
+const WALK_PROGRESS_STEP: u64 = 2000;
 
 #[derive(Debug)]
 pub enum ScanError {
@@ -135,12 +140,6 @@ impl DupResult {
 static DUPS: Mutex<Option<DupResult>> = Mutex::new(None);
 
 // ------------------------------------------------------------------ walk safety helpers
-
-#[cfg(windows)]
-fn is_reparse_point(meta: &std::fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-    meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
 
 #[cfg(not(windows))]
 fn is_reparse_point(_meta: &std::fs::Metadata) -> bool {
@@ -257,7 +256,7 @@ impl<'a, F: Fn(Option<f64>, &str) + Sync> ProgressGate<'a, F> {
 
 fn worker_count(items: usize) -> usize {
     let cpus = thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
-    cpus.clamp(1, MAX_THREADS).min(items.max(1))
+    cpus.clamp(1, MAX_HASH_THREADS).min(items.max(1))
 }
 
 /// Computes either the full SHA-256 (for files `<= 8 KiB`) or the 4 KiB head + 4 KiB tail
@@ -346,32 +345,245 @@ fn tail_str(s: &str, n: usize) -> String {
     s.chars().skip(count.saturating_sub(n)).collect()
 }
 
-// ------------------------------------------------------------------ 3-stage parallel pipeline
+// ------------------------------------------------------------------ parallel directory walk (Windows FindFirstFileExW)
 
-pub fn scan(
-    root: &Path,
-    min_bytes: u64,
-    progress: &(impl Fn(Option<f64>, &str) + Sync),
-    cancelled: &(impl Fn() -> bool + Sync),
-) -> Result<DupResult, ScanError> {
-    let min_size = min_bytes.max(1);
-    let root_clean: PathBuf = root.components().collect();
-    let root_str = root_clean.to_string_lossy().to_string();
-    let guard = WalkGuard::new();
-    let gate = ProgressGate::new(progress);
+struct DirWalkOut {
+    subdirs: Vec<PathBuf>,
+    files: Vec<FileEntry>,
+    scanned: u64,
+}
 
-    // Stage 1: iterative folder walk, collecting (path, size, modified_unix)
-    let mut stack = vec![root_clean];
-    let mut by_size: HashMap<u64, Vec<FileEntry>> = HashMap::new();
-    let mut scanned_files = 0u64;
+#[cfg(windows)]
+mod win_walk {
+    use super::*;
+    use std::borrow::Cow;
+    use std::ffi::c_void;
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::{GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 
-    while let Some(dir) = stack.pop() {
-        if cancelled() {
-            return Err(ScanError::Cancelled);
+    const FIND_EX_INFO_BASIC: i32 = 1;
+    const FIND_EX_SEARCH_NAME_MATCH: i32 = 0;
+    const FIND_FIRST_EX_LARGE_FETCH: u32 = 0x0000_0002;
+    const FILE_ATTRIBUTE_DIRECTORY: u32 = 0x0000_0010;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
+    const ERROR_FILE_NOT_FOUND: u32 = 2;
+    const ERROR_NO_MORE_FILES: u32 = 18;
+    const ERROR_INVALID_PARAMETER: u32 = 87;
+    const WINDOWS_TO_UNIX_EPOCH_SECS: u64 = 11_644_473_600;
+
+    #[repr(C)]
+    #[allow(dead_code)]
+    struct FileTime {
+        dw_low_date_time: u32,
+        dw_high_date_time: u32,
+    }
+
+    #[repr(C)]
+    #[allow(dead_code)]
+    struct Win32FindDataW {
+        dw_file_attributes: u32,
+        ft_creation_time: FileTime,
+        ft_last_access_time: FileTime,
+        ft_last_write_time: FileTime,
+        n_file_size_high: u32,
+        n_file_size_low: u32,
+        dw_reserved0: u32,
+        dw_reserved1: u32,
+        c_file_name: [u16; 260],
+        c_alternate_file_name: [u16; 14],
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn FindFirstFileExW(
+            lp_file_name: *const u16,
+            f_info_level_id: i32,
+            lp_find_file_data: *mut Win32FindDataW,
+            f_search_op: i32,
+            lp_search_filter: *const c_void,
+            dw_additional_flags: u32,
+        ) -> HANDLE;
+        fn FindNextFileW(h_find_file: HANDLE, lp_find_file_data: *mut Win32FindDataW) -> i32;
+        fn FindClose(h_find_file: HANDLE) -> i32;
+    }
+
+    struct FindHandleGuard(HANDLE);
+    impl Drop for FindHandleGuard {
+        fn drop(&mut self) {
+            unsafe {
+                FindClose(self.0);
+            }
         }
-        let Ok(rd) = std::fs::read_dir(&dir) else {
-            continue;
+    }
+
+    fn to_extended_search_pattern(dir: &Path) -> Vec<u16> {
+        let abs = if dir.is_absolute() {
+            Cow::Borrowed(dir)
+        } else {
+            Cow::Owned(std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf()))
         };
+        let raw: Vec<u16> = abs
+            .as_os_str()
+            .encode_wide()
+            .map(|c| if c == b'/' as u16 { b'\\' as u16 } else { c })
+            .collect();
+        let verbatim = [b'\\' as u16, b'\\' as u16, b'?' as u16, b'\\' as u16];
+        let device = [b'\\' as u16, b'\\' as u16, b'.' as u16, b'\\' as u16];
+        let unc = [b'\\' as u16, b'\\' as u16];
+
+        let mut out = Vec::with_capacity(raw.len() + 12);
+        if raw.starts_with(&verbatim) || raw.starts_with(&device) {
+            out.extend_from_slice(&raw);
+        } else if raw.starts_with(&unc) {
+            out.extend(r"\\?\UNC\".encode_utf16());
+            out.extend_from_slice(&raw[2..]);
+        } else {
+            out.extend(r"\\?\".encode_utf16());
+            out.extend_from_slice(&raw);
+        }
+        if !out.ends_with(&[b'\\' as u16]) {
+            out.push(b'\\' as u16);
+        }
+        out.push(b'*' as u16);
+        out.push(0);
+        out
+    }
+
+    fn filetime_to_unix_secs(ft: &FileTime) -> u64 {
+        let ticks = ((ft.dw_high_date_time as u64) << 32) | (ft.dw_low_date_time as u64);
+        (ticks / 10_000_000).saturating_sub(WINDOWS_TO_UNIX_EPOCH_SECS)
+    }
+
+    pub fn scan_dir(
+        dir: &Path,
+        min_size: u64,
+        guard: &WalkGuard,
+        seen: &AtomicU64,
+        on_progress: &(impl Fn(u64, &Path) + Sync),
+        cancelled: &(impl Fn() -> bool + Sync),
+    ) -> Result<DirWalkOut, ScanError> {
+        let pattern = to_extended_search_pattern(dir);
+        let mut data: Win32FindDataW = unsafe { std::mem::zeroed() };
+        let mut handle = unsafe {
+            FindFirstFileExW(
+                pattern.as_ptr(),
+                FIND_EX_INFO_BASIC,
+                &mut data,
+                FIND_EX_SEARCH_NAME_MATCH,
+                std::ptr::null(),
+                FIND_FIRST_EX_LARGE_FETCH,
+            )
+        };
+        if handle == INVALID_HANDLE_VALUE {
+            let err = unsafe { GetLastError() };
+            if err == ERROR_INVALID_PARAMETER {
+                handle = unsafe {
+                    FindFirstFileExW(
+                        pattern.as_ptr(),
+                        FIND_EX_INFO_BASIC,
+                        &mut data,
+                        FIND_EX_SEARCH_NAME_MATCH,
+                        std::ptr::null(),
+                        0,
+                    )
+                };
+            }
+        }
+        if handle == INVALID_HANDLE_VALUE {
+            let err = unsafe { GetLastError() };
+            if err == ERROR_FILE_NOT_FOUND || err == ERROR_NO_MORE_FILES {
+                return Ok(DirWalkOut { subdirs: Vec::new(), files: Vec::new(), scanned: 0 });
+            }
+            return Ok(DirWalkOut { subdirs: Vec::new(), files: Vec::new(), scanned: 0 });
+        }
+        let _guard = FindHandleGuard(handle);
+
+        let mut out = DirWalkOut {
+            subdirs: Vec::new(),
+            files: Vec::new(),
+            scanned: 0,
+        };
+        let mut batch = 0u64;
+        let mut iter_count = 0u32;
+
+        loop {
+            iter_count = iter_count.wrapping_add(1);
+            if iter_count & 0x3FF == 0 && cancelled() {
+                return Err(ScanError::Cancelled);
+            }
+
+            let name_len = data
+                .c_file_name
+                .iter()
+                .position(|&c| c == 0)
+                .unwrap_or(data.c_file_name.len());
+            let name_u16 = &data.c_file_name[..name_len];
+            let is_dot = name_u16 == [b'.' as u16] || name_u16 == [b'.' as u16, b'.' as u16];
+
+            if !is_dot && !name_u16.is_empty() {
+                let attrs = data.dw_file_attributes;
+                // Skip all reparse points (symlinks, junctions, mount points, cloud placeholders).
+                if (attrs & FILE_ATTRIBUTE_REPARSE_POINT) == 0 {
+                    let name = String::from_utf16_lossy(name_u16);
+                    let path = dir.join(&name);
+                    if (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0 {
+                        if !guard.should_skip_dir(&path) {
+                            out.subdirs.push(path);
+                        }
+                    } else {
+                        out.scanned += 1;
+                        batch += 1;
+                        if batch >= WALK_PROGRESS_STEP {
+                            let prev = seen.fetch_add(batch, Ordering::Relaxed);
+                            let now = prev + batch;
+                            batch = 0;
+                            if now / WALK_PROGRESS_STEP != prev / WALK_PROGRESS_STEP {
+                                on_progress(now, dir);
+                            }
+                        }
+                        let size = ((data.n_file_size_high as u64) << 32)
+                            | (data.n_file_size_low as u64);
+                        if size >= min_size {
+                            let modified = filetime_to_unix_secs(&data.ft_last_write_time);
+                            out.files.push(FileEntry { path, size, modified });
+                        }
+                    }
+                }
+            }
+
+            if unsafe { FindNextFileW(handle, &mut data) } == 0 {
+                break;
+            }
+        }
+
+        if batch > 0 {
+            let prev = seen.fetch_add(batch, Ordering::Relaxed);
+            let now = prev + batch;
+            if now / WALK_PROGRESS_STEP != prev / WALK_PROGRESS_STEP {
+                on_progress(now, dir);
+            }
+        }
+        Ok(out)
+    }
+}
+
+#[cfg(not(windows))]
+mod unix_walk {
+    use super::*;
+
+    pub fn scan_dir(
+        dir: &Path,
+        min_size: u64,
+        guard: &WalkGuard,
+        seen: &AtomicU64,
+        on_progress: &(impl Fn(u64, &Path) + Sync),
+        cancelled: &(impl Fn() -> bool + Sync),
+    ) -> Result<DirWalkOut, ScanError> {
+        let Ok(rd) = std::fs::read_dir(dir) else {
+            return Ok(DirWalkOut { subdirs: Vec::new(), files: Vec::new(), scanned: 0 });
+        };
+        let mut out = DirWalkOut { subdirs: Vec::new(), files: Vec::new(), scanned: 0 };
+        let mut batch = 0u64;
         for (idx, entry) in rd.enumerate() {
             if idx & 0x1ff == 0 && cancelled() {
                 return Err(ScanError::Cancelled);
@@ -388,33 +600,188 @@ pub fn scan(
             let path = entry.path();
             if ft.is_dir() {
                 if !guard.should_skip_dir(&path) {
-                    stack.push(path);
+                    out.subdirs.push(path);
                 }
                 continue;
             }
             if !ft.is_file() {
                 continue;
             }
-            scanned_files += 1;
-            let size = meta.len();
-            if size == 0 || size < min_size {
-                continue;
+            out.scanned += 1;
+            batch += 1;
+            if batch >= WALK_PROGRESS_STEP {
+                let prev = seen.fetch_add(batch, Ordering::Relaxed);
+                let now = prev + batch;
+                batch = 0;
+                if now / WALK_PROGRESS_STEP != prev / WALK_PROGRESS_STEP {
+                    on_progress(now, dir);
+                }
             }
-            let modified = meta
-                .modified()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs())
-                .unwrap_or(0);
-            by_size.entry(size).or_default().push(FileEntry { path, size, modified });
+            let size = meta.len();
+            if size >= min_size {
+                let modified = meta
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                out.files.push(FileEntry { path, size, modified });
+            }
         }
-        gate.emit(false, || {
-            (
-                None,
-                format!("Scanning… {} files · {}", grouped(scanned_files), tail_str(&dir.to_string_lossy(), 60)),
-            )
-        });
+        if batch > 0 {
+            let prev = seen.fetch_add(batch, Ordering::Relaxed);
+            let now = prev + batch;
+            if now / WALK_PROGRESS_STEP != prev / WALK_PROGRESS_STEP {
+                on_progress(now, dir);
+            }
+        }
+        Ok(out)
     }
+}
+
+struct WalkQueue {
+    queue: VecDeque<PathBuf>,
+    active: usize,
+    cancelled: bool,
+}
+
+fn parallel_walk(
+    root: PathBuf,
+    min_size: u64,
+    guard: &WalkGuard,
+    gate: &ProgressGate<impl Fn(Option<f64>, &str) + Sync>,
+    cancelled: &(impl Fn() -> bool + Sync),
+) -> Result<(HashMap<u64, Vec<FileEntry>>, u64), ScanError> {
+    let mut initial = VecDeque::with_capacity(256);
+    initial.push_back(root);
+    let state = Mutex::new(WalkQueue {
+        queue: initial,
+        active: 0,
+        cancelled: false,
+    });
+    let cvar = Condvar::new();
+    let seen = AtomicU64::new(0);
+
+    let workers = thread::scope(|s| -> Result<Vec<(HashMap<u64, Vec<FileEntry>>, u64)>, ScanError> {
+        let num_workers = thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4)
+            .saturating_mul(2)
+            .clamp(4, 16);
+
+        let handles: Vec<_> = (0..num_workers)
+            .map(|_| {
+                s.spawn(|| -> Result<(HashMap<u64, Vec<FileEntry>>, u64), ScanError> {
+                    let mut local_by_size: HashMap<u64, Vec<FileEntry>> = HashMap::new();
+                    let mut local_scanned = 0u64;
+
+                    loop {
+                        let dir = {
+                            let mut st = state.lock().unwrap();
+                            loop {
+                                if st.cancelled || cancelled() {
+                                    st.cancelled = true;
+                                    cvar.notify_all();
+                                    return Err(ScanError::Cancelled);
+                                }
+                                if let Some(d) = st.queue.pop_front() {
+                                    st.active += 1;
+                                    break d;
+                                }
+                                if st.active == 0 {
+                                    return Ok((local_by_size, local_scanned));
+                                }
+                                st = cvar.wait(st).unwrap();
+                            }
+                        };
+
+                        let on_progress = |count: u64, cur_dir: &Path| {
+                            gate.emit(false, || {
+                                (
+                                    None,
+                                    format!(
+                                        "Scanning… {} files · {}",
+                                        grouped(count),
+                                        tail_str(&cur_dir.to_string_lossy(), 60)
+                                    ),
+                                )
+                            });
+                        };
+
+                        #[cfg(windows)]
+                        let res = win_walk::scan_dir(&dir, min_size, guard, &seen, &on_progress, cancelled);
+                        #[cfg(not(windows))]
+                        let res = unix_walk::scan_dir(&dir, min_size, guard, &seen, &on_progress, cancelled);
+
+                        match res {
+                            Ok(out) => {
+                                local_scanned += out.scanned;
+                                for f in out.files {
+                                    local_by_size.entry(f.size).or_default().push(f);
+                                }
+                                let mut st = state.lock().unwrap();
+                                st.active -= 1;
+                                if !out.subdirs.is_empty() {
+                                    for sub in out.subdirs {
+                                        st.queue.push_back(sub);
+                                    }
+                                    cvar.notify_all();
+                                } else if st.queue.is_empty() && st.active == 0 {
+                                    cvar.notify_all();
+                                }
+                            }
+                            Err(ScanError::Cancelled) => {
+                                let mut st = state.lock().unwrap();
+                                st.active -= 1;
+                                st.cancelled = true;
+                                cvar.notify_all();
+                                return Err(ScanError::Cancelled);
+                            }
+                        }
+                    }
+                })
+            })
+            .collect();
+
+        let mut results = Vec::with_capacity(handles.len());
+        for h in handles {
+            results.push(h.join().unwrap_or_else(|_| {
+                Ok((HashMap::new(), 0))
+            })?);
+        }
+        Ok(results)
+    })?;
+
+    let mut by_size: HashMap<u64, Vec<FileEntry>> = HashMap::new();
+    let mut scanned_files = 0u64;
+    for (local_map, local_count) in workers {
+        scanned_files += local_count;
+        for (size, mut list) in local_map {
+            by_size.entry(size).or_default().append(&mut list);
+        }
+    }
+    Ok((by_size, scanned_files))
+}
+
+// ------------------------------------------------------------------ 3-stage parallel pipeline
+
+pub fn scan(
+    root: &Path,
+    min_bytes: u64,
+    progress: &(impl Fn(Option<f64>, &str) + Sync),
+    cancelled: &(impl Fn() -> bool + Sync),
+) -> Result<DupResult, ScanError> {
+    if cancelled() {
+        return Err(ScanError::Cancelled);
+    }
+    let min_size = min_bytes.max(1);
+    let root_clean: PathBuf = root.components().collect();
+    let root_str = root_clean.to_string_lossy().to_string();
+    let guard = WalkGuard::new();
+    let gate = ProgressGate::new(progress);
+
+    // Stage 1: parallel FindFirstFileExW walk, collecting (path, size, modified_unix)
+    let (by_size, scanned_files) = parallel_walk(root_clean, min_size, &guard, &gate, cancelled)?;
 
     if cancelled() {
         return Err(ScanError::Cancelled);
