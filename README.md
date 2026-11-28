@@ -29,6 +29,10 @@ Swiftlane is a toolkit for Windows. The main idea is AirDrop-style file transfer
 - Available in English, Deutsch, Polski and Italiano. You can change the accent colour and use your own background picture.
 - Works in a small window too. Make it as narrow as you like (down to 400 px) and the pages stack into one column; below about 860 px the sidebar tucks away behind a ☰ menu button.
 
+![Swiftlane Home](docs/screenshots/home.webp)
+
+*Home screen with recent tools, recent files and live update notes.*
+
 ![Swiftlane: all tools on one page](docs/screenshots/all-tools.webp)
 
 *Every tool on one page. Star the ones you use most, or press **Ctrl+K** anywhere to jump to a tool by name.*
@@ -183,12 +187,15 @@ Drop in one or more PDFs and the pages show up as a board. You can reorder them 
 Pick the start and end on a filmstrip. Your options are *Fast cut* (instant, no quality loss, starts at the nearest keyframe), *Exact cut*, *Fit a size* (Discord 10 MB, email 20 MB, WhatsApp 64 MB or your own) and *Sound only* (MP3).
 
 ### Shrink to size
+![Shrink to size](docs/screenshots/shrink-to-size.webp)
 
 Drop a video or picture (or right-click it in Explorer and pick *Shrink to size with Swiftlane*), choose *Discord (10 MB)*, *WhatsApp (16 MB)*, *Email (25 MB)* or your own limit, and Swiftlane makes it fit. Before it starts you see what you'll get (video bitrate and size). If a long video would look rough, it says so plainly and offers to *trim it first* in the Video trimmer. Videos are encoded in two passes with a safety margin and checked afterwards; pictures become JPEGs (or stay PNG if that already fits) with the quality lowered first and the size only if needed. When it's done the file is on the clipboard, so Ctrl+V pastes it in Discord, WhatsApp Desktop or Explorer. *Save as...* and *Show in folder* are there too. MB means 1,000,000 bytes, so the result fits however the other side counts.
 
 **Security:** the original is only read, never changed or replaced. Results go to a private temporary folder that is emptied when Swiftlane starts and closes, and only files from that folder can be copied or saved from the page. Metadata such as GPS location is left out of the result.
 
 ### Phone camera & document scan
+![Phone camera & document scan](docs/screenshots/phone-camera.webp)
+
 On the phone page, *Camera / Scan* opens the phone's own camera app (nothing is streamed). Each photo goes to the PC over the normal paired connection and appears in *Phone camera* as a thumbnail, with *Take another* / *Done* on the phone for several shots in a row. Pictures already on the PC work too: click *Add pictures from this PC…* or drop them on the page (a copy is used; the original is never changed). For each photo: *Use as photo* saves it as a JPG in your save folder (a JPG is kept exactly as it arrived, like any other transfer), or *Scan document* shows it with four draggable corners (with a magnifier while you drag, so you can place them exactly). Swiftlane flattens the page from those corners (perspective correction), and you can choose *Original colour*, *Grayscale* or *Black & white* and turn it in 90° steps. Corners are never applied automatically; they start just inside the photo's edges. Add the pages to the scan tray, put them in order, then save as JPG, as one new PDF, or as a new PDF that adds them after an existing one.
 
 **Security:** photos use the same upload route as every other file: pairing code, 15-minute lockout after 10 wrong tries, and a Content-Length check, with a smaller 40 MB limit per photo and at most 60 waiting. They only count as pictures if their first bytes say so, and their decoded size is capped (64 million pixels) so a crafted file can't use up memory. Photos wait in a private temporary folder that is deleted when Swiftlane closes (and left-overs of a crash are swept away). Nothing reaches your save folder until you click. Scans are re-encoded pictures, so they carry no camera or location data; the PDF you add to is only read and the result is always a new file you name in the Save box.
@@ -199,24 +206,29 @@ On the phone page, *Camera / Scan* opens the phone's own camera app (nothing is 
 Pick a drive or folder and see what's taking up the room as an interactive map of blocks you can click into (with an optional fast NTFS scan for whole drives), plus a list of the biggest files and a **Cleanup Advisor** with quick cache cleaning, Downloads tidy-up and Steam game size overview. Junctions and links aren't followed, so nothing gets counted twice. *Move to the Recycle Bin* is used so removed files can be restored, and system or program folders are never offered for deletion.
 
 ### Find files
+![Find files](docs/screenshots/find-files.webp)
 
 Search for files across your drives in real time by name, extension or size, with an optional fast NTFS scan (asks for admin permission once) to index a whole drive in seconds.
 
 ### Duplicate finder
+![Duplicate finder](docs/screenshots/duplicate-finder.webp)
 
 Scan folders for exact byte-for-byte duplicate files, review every group side by side, and safely move unwanted copies to the Recycle Bin.
 
 ### Startup check
+![Startup check](docs/screenshots/startup-check.webp)
 
 See every app configured to start when you sign in to Windows and toggle them on or off without digging through Task Manager or the registry.
 
 ### BIOS update USB
+![BIOS update USB](docs/screenshots/bios-update-usb.webp)
 
 Prepare a FAT32 USB stick for updating your motherboard's BIOS without guesswork. Swiftlane detects your motherboard model, revision and current BIOS version (and links you to the manufacturer's support page, or lets you pick another vendor if you are preparing a stick for a different PC). Drop the BIOS zip or image you downloaded, pick **In-BIOS updater** (such as M-Flash, EZ Flash, Q-Flash or Instant Flash) or **Flashback button** (which sets the expected filename for rear-button flashing), choose your FAT32 USB stick, and Swiftlane copies the BIOS file, verifies it on the stick, and lets you safely eject it with vendor-specific steps to finish in UEFI/BIOS.
 
 **Safety:** Swiftlane never flashes your BIOS from Windows, never downloads BIOS files automatically, and never runs vendor executables (such as `BIOSRenamer.exe`) inside a zip. Only removable USB sticks are listed (never fixed or system drives), every copy is checked by reading the file back from the USB stick to verify its SHA-256 checksum, and you get clear warnings when BitLocker is active on C: (so you back up your recovery key first) as well as a reminder never to power off or unplug the PC while flashing.
 
 ### QR Studio
+![QR Studio](docs/screenshots/qr-studio.webp)
 
 Create Wi-Fi, link or text QR codes and export them as PNG or SVG, or paste a screenshot / drop an image to decode a QR code completely offline.
 

@@ -25,6 +25,6 @@ Source/release/
 Dev tools/
 
 # design screenshots (local only)
-screenshots/
+/screenshots/
 
 graphify-out/
